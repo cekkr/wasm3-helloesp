@@ -10,6 +10,76 @@
 
 #include "wasm3_defs.h"
 
+// Ad hoc configuration settings for ESP32
+// m3_config_platform.h
+#include "esp_heap_caps.h"
+#include "esp_log.h"
+
+// Ridefinizione delle funzioni di gestione memoria
+#define M3_MALLOC(size)     heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL)
+#define M3_REALLOC(ptr, size) heap_caps_realloc(ptr, size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL)
+#define M3_FREE(ptr)        heap_caps_free(ptr)
+
+// Opzionale: Wrapper per tracciamento allocazioni
+#ifdef DEBUG_MEMORY
+static void* debug_malloc(size_t size) {
+    void* ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+    ESP_LOGI("WASM3_MEM", "Malloc: %d bytes at %p", size, ptr);
+    return ptr;
+}
+
+static void* debug_realloc(void* ptr, size_t size) {
+    void* new_ptr = heap_caps_realloc(ptr, size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+    ESP_LOGI("WASM3_MEM", "Realloc: %p -> %p (%d bytes)", ptr, new_ptr, size);
+    return new_ptr;
+}
+
+static void debug_free(void* ptr) {
+    ESP_LOGI("WASM3_MEM", "Free: %p", ptr);
+    heap_caps_free(ptr);
+}
+
+#undef M3_MALLOC
+#undef M3_REALLOC
+#undef M3_FREE
+#define M3_MALLOC(size)     debug_malloc(size)
+#define M3_REALLOC(ptr, size) debug_realloc(ptr, size)
+#define M3_FREE(ptr)        debug_free(ptr)
+#endif
+
+// Funzione helper per verificare memoria disponibile
+static bool check_memory_available(size_t required_size) {
+    multi_heap_info_t info;
+    heap_caps_get_info(&info, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+    
+    // Verifica sia la memoria totale che la dimensione del blocco più grande
+    if (info.total_free_bytes < required_size || 
+        info.largest_free_block < required_size) {
+        ESP_LOGE("WASM3_MEM", "Not enough memory. Required: %d, Free: %d, Largest block: %d",
+                 required_size, info.total_free_bytes, info.largest_free_block);
+        return false;
+    }
+    return true;
+}
+
+// Funzione per pre-allocare la memoria necessaria
+static void* preallocate_wasm_memory(size_t size) {
+    if (!check_memory_available(size)) {
+        return NULL;
+    }
+    
+    // Alloca in una regione specifica della memoria
+    void* ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+    if (ptr) {
+        ESP_LOGI("WASM3_MEM", "Pre-allocated %d bytes at %p", size, ptr);
+    }
+    return ptr;
+}
+
+///
+/// End of ad hoc memory management
+///
+
 /*
  * Internal helpers
  */
