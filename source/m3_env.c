@@ -335,7 +335,7 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
 M3Result  InitMemory  (IM3Runtime io_runtime, IM3Module i_module)
 {
     if (i_module->memoryInfo.pageSize == 0) { //todo: use costants or external settings
-        i_module->memoryInfo.pageSize = 65536;  // Standard WebAssembly page size
+        i_module->memoryInfo.pageSize = 65524; // 65536 - 12  
         ESP_LOGI("WASM3", "InitMemory - Fixed pageSize to standard 64KB");
     }
 
