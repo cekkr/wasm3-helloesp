@@ -124,18 +124,38 @@ void *  m3_Realloc_Impl  (void * i_ptr, size_t i_newSize, size_t i_oldSize)
 
 #else
 
-void *  m3_Malloc_Impl  (size_t i_size)
+void* m3_Malloc_Impl(size_t i_size)
 {
-    return calloc (i_size, 1);
+    ESP_LOGI("WASM3", "Calling m3_Malloc_Impl of size %d", i_size);
+    return calloc(i_size); // basic allocation
+
+    // Usa MALLOC_CAP_8BIT per memoria generale
+    void* ptr = heap_caps_malloc(i_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+    if (ptr) {
+        // Stessa pulizia incrementale
+        const size_t block_size = 1024;
+        uint8_t* p = (uint8_t*)ptr;
+        size_t remaining = i_size;
+        
+        while (remaining > 0) {
+            size_t to_clear = (remaining < block_size) ? remaining : block_size;
+            memset(p, 0, to_clear);
+            p += to_clear;
+            remaining -= to_clear;
+        }
+    }
+    return ptr;
 }
 
 void  m3_Free_Impl  (void * io_ptr)
 {
+    ESP_LOGI("WASM3", "Calling m3_Free_Impl");
     free (io_ptr);
 }
 
 void *  m3_Realloc_Impl  (void * i_ptr, size_t i_newSize, size_t i_oldSize)
 {
+    ESP_LOGI("WASM3", "Calling m3_Realloc_Impl");
     if (M3_UNLIKELY(i_newSize == i_oldSize)) return i_ptr;
 
     void * newPtr = realloc (i_ptr, i_newSize);
@@ -154,6 +174,7 @@ void *  m3_Realloc_Impl  (void * i_ptr, size_t i_newSize, size_t i_oldSize)
 
 void *  m3_CopyMem  (const void * i_from, size_t i_size)
 {
+    ESP_LOGI("WASM3", "Calling m3_CopyMem");
     void * ptr = m3_Malloc("CopyMem", i_size);
     if (ptr) {
         memcpy (ptr, i_from, i_size);

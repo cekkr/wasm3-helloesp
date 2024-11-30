@@ -334,13 +334,32 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
 
 M3Result  InitMemory  (IM3Runtime io_runtime, IM3Module i_module)
 {
-     ESP_LOGI("WASM3", "InitMemory - Module memory info: initial pages: %ld, max pages: %ld", 
-             i_module->memoryInfo.initPages,
-             i_module->memoryInfo.maxPages);
-    
-    // Se ci sono questi dati disponibili
-    ESP_LOGI("WASM3", "InitMemory - Attempting to allocate: %ld bytes", 
-             i_module->memoryInfo.initPages * i_module->memoryInfo.pageSize);
+    if (i_module->memoryInfo.pageSize == 0) { //todo: use costants or external settings
+        i_module->memoryInfo.pageSize = 65536;  // Standard WebAssembly page size
+        ESP_LOGI("WASM3", "InitMemory - Fixed pageSize to standard 64KB");
+    }
+
+    #ifdef DEBUG_MEMORY
+     // Prima del calcolo
+    ESP_LOGI("WASM3", "InitMemory - Module memory info: initial pages: %lu, max pages: %lu", 
+            (unsigned long)i_module->memoryInfo.initPages,
+            (unsigned long)i_module->memoryInfo.maxPages);
+
+    ESP_LOGI("WASM3", "InitMemory - Page size: %lu bytes", 
+            (unsigned long)i_module->memoryInfo.pageSize);
+    #endif
+
+    // Calcolo con verifica overflow
+    size_t alloc_size = 0;
+    if (i_module->memoryInfo.pageSize > 0) {  // previene divisione per zero
+        alloc_size = (size_t)i_module->memoryInfo.initPages * i_module->memoryInfo.pageSize;
+        
+        // Verifica overflow
+        if (alloc_size / i_module->memoryInfo.pageSize != i_module->memoryInfo.initPages) {
+            ESP_LOGE("WASM3", "Memory size calculation overflow!");
+            return "memory size overflow";
+        }
+    }
 
     M3Result result = m3Err_none;                                     //d_m3Assert (not io_runtime->memory.wasmPages);
 
@@ -353,6 +372,12 @@ M3Result  InitMemory  (IM3Runtime io_runtime, IM3Module i_module)
 
         result = ResizeMemory (io_runtime, i_module->memoryInfo.initPages);
     }
+
+    #ifdef DEBUG_MEMORY
+    ESP_LOGI("WASM3", "InitMemory - Calculated allocation size: %lu bytes", 
+            (unsigned long)alloc_size);
+    #endif
+
 
     return result;
 }
