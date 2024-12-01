@@ -706,12 +706,12 @@ d_m3Op (MemGrow)
                 memory->numPages = requiredPages;
                 memory->total_size = newSize;
                 
-                ESP_LOGI("WASM3", "Memory grown to %d pages (%zu bytes, %zu segments)", 
+                ESP_LOGI("WASM3", "Memory grown to %lu pages (%zu bytes, %zu segments)", 
                          requiredPages, newSize, newNumSegments);
             }
             else {
                 _r0 = -1;
-                ESP_LOGE("WASM3", "Failed to grow memory to %d pages", requiredPages);
+                ESP_LOGE("WASM3", "Failed to grow memory to %lu pages", requiredPages);
             }
         }
     }
@@ -824,7 +824,7 @@ d_m3Op  (Entry)
             if (!memory->segments[i].is_allocated) {
                 if (!allocate_segment(memory, i)) {
                     forwardTrap(m3Err_mallocFailed);
-                    return;
+                    return NULL;
                 }
             }
         }

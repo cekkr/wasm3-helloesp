@@ -308,6 +308,24 @@ void        FillBacktraceFunctionInfo  (IM3Runtime io_runtime, IM3Function i_fun
 void        ClearBacktrace             (IM3Runtime io_runtime);
 # endif
 
-d_m3EndExternC
 
+static void* default_malloc(size_t size);
+static void default_free(void* ptr);
+static void* default_realloc(void* ptr, size_t new_size);
+
+typedef struct {
+    void* (*malloc)(size_t size);
+    void  (*free)(void* ptr);
+    void* (*realloc)(void* ptr, size_t new_size);
+} MemoryAllocator;
+
+static MemoryAllocator default_allocator = {
+    .malloc = default_malloc,
+    .free = default_free,
+    .realloc = default_realloc
+};
+
+static MemoryAllocator* current_allocator = &default_allocator;
+
+d_m3EndExternC
 #endif // m3_core_h

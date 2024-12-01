@@ -13,6 +13,7 @@
 #include "m3_compile.h"
 
 #define WASM_SEGMENT_SIZE 4096
+#define WASM_PAGE_SIZE 65536 //todo: think about
 
 d_m3BeginExternC
 
@@ -52,12 +53,6 @@ typedef struct MemorySegment {
     bool is_allocated;    // Flag per indicare se il segmento è stato allocato
     size_t size;         // Dimensione del segmento
 } MemorySegment;
-
-typedef struct {
-    void* (*malloc)(size_t size);
-    void  (*free)(void* ptr);
-    void* (*realloc)(void* ptr, size_t new_size);
-} MemoryAllocator;
 
 typedef struct {
     u32                     numPages;
@@ -247,6 +242,8 @@ void *                      v_FindFunction              (IM3Module i_module, con
 IM3CodePage                 AcquireCodePage             (IM3Runtime io_runtime);
 IM3CodePage                 AcquireCodePageWithCapacity (IM3Runtime io_runtime, u32 i_lineCount);
 void                        ReleaseCodePage             (IM3Runtime io_runtime, IM3CodePage i_codePage);
+
+static bool allocate_segment(M3Memory* memory, size_t segment_index);
 
 d_m3EndExternC
 

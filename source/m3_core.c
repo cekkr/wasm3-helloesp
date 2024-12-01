@@ -337,14 +337,6 @@ static void* default_realloc(void* ptr, size_t new_size) {
     return new_ptr;
 }
 
-static MemoryAllocator default_allocator = {
-    .malloc = default_malloc,
-    .free = default_free,
-    .realloc = default_realloc
-};
-
-static MemoryAllocator* current_allocator = &default_allocator;
-
 void m3_SetMemoryAllocator(MemoryAllocator* allocator) {
     current_allocator = allocator ? allocator : &default_allocator;
 }
