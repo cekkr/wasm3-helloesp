@@ -266,6 +266,18 @@ void* m3_Realloc_Impl_old(void* i_ptr, size_t i_newSize, size_t i_oldSize)
 }*/
 
 ///
+/// General functions
+///
+
+int min(int a, int b) {
+    return (a < b) ? a : b;
+}
+
+int max(int a, int b) {
+    return (a > b) ? a : b;
+}
+
+///
 /// Segmented memory implementation
 ///
 
@@ -350,42 +362,38 @@ void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize) {
     M3Memory* mem = (M3Memory*)i_ptr;
     size_t new_num_segments = (i_newSize + mem->segment_size - 1) / mem->segment_size;
     
-    // Riallocare l'array dei segmenti se necessario
-    if (new_num_segments != mem->num_segments) {
-        void** new_segments = current_allocator->realloc(
-            mem->segments, 
-            new_num_segments * sizeof(void*),
-            mem->num_segments * sizeof(void*)
-        );
-        
-        if (!new_segments) return NULL;
-        mem->segments = new_segments;
-        
-        // Allocare nuovi segmenti se necessario
-        for (size_t i = mem->num_segments; i < new_num_segments; i++) {
-            size_t segment_size = (i == new_num_segments - 1) ?
-                (i_newSize - (i * mem->segment_size)) : mem->segment_size;
-                
-            mem->segments[i] = current_allocator->malloc(segment_size);
-            if (!mem->segments[i]) {
-                // Pulizia in caso di fallimento
-                for (size_t j = mem->num_segments; j < i; j++) {
-                    current_allocator->free(mem->segments[j]);
-                }
-                return NULL;
+    // Riallocare l'array dei segmenti
+    void** new_segments = current_allocator->realloc(
+        mem->segments, 
+        new_num_segments * sizeof(void*)
+    );
+    
+    if (!new_segments) return NULL;
+    mem->segments = new_segments;
+    
+    // Allocare nuovi segmenti se necessario
+    for (size_t i = mem->num_segments; i < new_num_segments; i++) {
+        size_t segment_size = (i == new_num_segments - 1) ?
+            (i_newSize - (i * mem->segment_size)) : mem->segment_size;
+            
+        mem->segments[i] = current_allocator->malloc(segment_size);
+        if (!mem->segments[i]) {
+            // Pulizia in caso di fallimento
+            for (size_t j = mem->num_segments; j < i; j++) {
+                current_allocator->free(mem->segments[j]);
             }
-            // Inizializza il nuovo segmento a zero
-            memset(mem->segments[i], 0, segment_size);
+            return NULL;
         }
-        
-        // Liberare i segmenti in eccesso se stiamo riducendo
-        for (size_t i = new_num_segments; i < mem->num_segments; i++) {
-            current_allocator->free(mem->segments[i]);
-        }
-        
-        mem->num_segments = new_num_segments;
+        // Inizializza il nuovo segmento a zero
+        memset(mem->segments[i], 0, segment_size);
     }
     
+    // Liberare i segmenti in eccesso se stiamo riducendo
+    for (size_t i = new_num_segments; i < mem->num_segments; i++) {
+        current_allocator->free(mem->segments[i]);
+    }
+    
+    mem->num_segments = new_num_segments;
     return i_ptr;
 }
 
