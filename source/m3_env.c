@@ -477,6 +477,8 @@ M3Result  ResizeMemory  (IM3Runtime io_runtime, u32 i_numPages)
 //#include <stdlib.h> // For malloc, realloc, free
 //#include <string.h> // For memcpy
 
+static const int DEBUG_TOP_MEMORY = 1;
+
 M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) {
     if (i_module->memoryInfo.pageSize == 0) {
         i_module->memoryInfo.pageSize = 65536; 
@@ -571,10 +573,10 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
     return m3Err_none;
 }
 
-
-
 void FreeMemory(IM3Runtime io_runtime) {
-     M3Memory * memory = &io_runtime->memory;
+    if(DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory called");
+    
+    M3Memory * memory = &io_runtime->memory;
 
     if (memory->segments) {
         for (size_t i = 0; i < memory->num_segments; i++) {

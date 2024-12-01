@@ -327,22 +327,37 @@ void m3_SetMemoryAllocator(MemoryAllocator* allocator) {
 // Funzioni principali di gestione memoria
 void* m3_Malloc_Impl(size_t i_size) {
     if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Malloc_Impl of size %zu", i_size);
-    
-    void* ptr = current_allocator->malloc(i_size);
-    if (ptr) {
-        // Pulizia incrementale della memoria
-        const size_t block_size = 1024;
-        uint8_t* p = (uint8_t*)ptr;
-        size_t remaining = i_size;
-        
-        while (remaining > 0) {
-            size_t to_clear = (remaining < block_size) ? remaining : block_size;
-            memset(p, 0, to_clear);
-            p += to_clear;
-            remaining -= to_clear;
-        }
+
+    // Alloca spazio per la struttura M3Memory
+    M3Memory* memory = (M3Memory*)current_allocator->malloc(sizeof(M3Memory));
+    if (!memory) return NULL;
+
+    memset(memory, 0, sizeof(M3Memory));
+
+    size_t num_segments = (i_size + memory->segment_size - 1) / memory->segment_size;
+    memory->segments = (void**)current_allocator->malloc(num_segments * sizeof(void*));
+   if (!memory->segments) {
+        current_allocator->free(memory);
+        return NULL;
     }
-    return ptr;
+    memory->num_segments = num_segments;
+
+    for (size_t i = 0; i < num_segments; ++i) {
+        size_t segment_bytes = (i == num_segments - 1) ? (i_size - (i * memory->segment_size)) : memory->segment_size;
+        memory->segments[i] = current_allocator->malloc(segment_bytes);
+        if (!memory->segments[i]) {
+            // Gestione errori: libera la memoria allocata finora
+            for (size_t j = 0; j < i; ++j) {
+                current_allocator->free(memory->segments[j]);
+            }
+            current_allocator->free(memory->segments);
+            current_allocator->free(memory);
+            return NULL;
+        }
+        memset(memory->segments[i], 0, segment_bytes); // Azzera la memoria del segmento
+    }
+
+    return memory;
 }
 
 void m3_Free_Impl(void* io_ptr) {
@@ -351,7 +366,7 @@ void m3_Free_Impl(void* io_ptr) {
     if (!io_ptr) return;
     
     // Otteniamo la struttura M3Memory dal puntatore mallocated
-    M3Memory* memory = &((M3MemoryHeader*)io_ptr)->runtime->memory;
+    M3Memory* memory = (M3Memory*)io_ptr;
     
     // Liberiamo prima i segmenti se esistono
     if (memory->segments) {
@@ -378,7 +393,7 @@ void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize) {
     }
     
     // Otteniamo la struttura memory dal runtime
-    M3Memory* memory = &((M3MemoryHeader*)i_ptr)->runtime->memory;
+    M3Memory* memory = (M3Memory*)io_ptr;
     
     // Ricalcola il numero di segmenti necessari
     size_t new_num_segments = (i_newSize + memory->segment_size - 1) / memory->segment_size;
