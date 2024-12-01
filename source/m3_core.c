@@ -308,7 +308,7 @@ static const int CHECK_MEMORY_AVAILABLE = 0;
 
 
 // Allocatore di default che usa heap_caps
-static void* default_malloc(size_t size) {
+void* default_malloc(size_t size) {
     if(CHECK_MEMORY_AVAILABLE){
         print_memory_info();
     }
@@ -320,7 +320,7 @@ static void* default_malloc(size_t size) {
     return ptr;
 }
 
-static void default_free(void* ptr) {
+void default_free(void* ptr) {
     if (heap_caps_check_integrity_addr((intptr_t)ptr, false)) {
         heap_caps_free(ptr);
     }
@@ -329,7 +329,7 @@ static void default_free(void* ptr) {
     }
 }
 
-static void* default_realloc(void* ptr, size_t new_size) {
+void* default_realloc(void* ptr, size_t new_size) {
     void* new_ptr = WASM_ENABLE_SPI_MEM ? heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
     if (!new_ptr) {
         new_ptr = heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
@@ -342,7 +342,7 @@ void m3_SetMemoryAllocator(MemoryAllocator* allocator) {
 }
 
 // Funzione per allocare un segmento specifico
-static bool allocate_segment(M3Memory* memory, size_t segment_index) {
+/*bool allocate_segment(M3Memory* memory, size_t segment_index) {
     if (segment_index >= memory->num_segments || 
         memory->segments[segment_index].is_allocated) {
         return false;
@@ -361,7 +361,7 @@ static bool allocate_segment(M3Memory* memory, size_t segment_index) {
     memset(data, 0, segment_size);
 
     return true;
-}
+}*/
 
 void* m3_Malloc_Impl(size_t i_size) {
     if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Malloc_Impl of size %zu", i_size);

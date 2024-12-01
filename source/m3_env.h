@@ -224,7 +224,7 @@ IM3CodePage                 AcquireCodePage             (IM3Runtime io_runtime);
 IM3CodePage                 AcquireCodePageWithCapacity (IM3Runtime io_runtime, u32 i_lineCount);
 void                        ReleaseCodePage             (IM3Runtime io_runtime, IM3CodePage i_codePage);
 
-static bool allocate_segment(M3Memory* memory, size_t segment_index);
+bool allocate_segment(M3Memory* memory, size_t segment_index);
 
 d_m3EndExternC
 

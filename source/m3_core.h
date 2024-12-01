@@ -47,6 +47,8 @@ typedef float           f32;
 
 #endif // d_m3ShortTypesDefined
 
+#include "m3_segmented_memory.h"
+
 #define PRIf32          "f"
 #define PRIf64          "lf"
 
@@ -308,10 +310,10 @@ void        FillBacktraceFunctionInfo  (IM3Runtime io_runtime, IM3Function i_fun
 void        ClearBacktrace             (IM3Runtime io_runtime);
 # endif
 
-
-static void* default_malloc(size_t size);
-static void default_free(void* ptr);
-static void* default_realloc(void* ptr, size_t new_size);
+void* default_malloc(size_t size);
+void default_free(void* ptr);
+void* default_realloc(void* ptr, size_t new_size);
+//bool allocate_segment(M3Memory* memory, size_t segment_index);
 
 typedef struct {
     void* (*malloc)(size_t size);

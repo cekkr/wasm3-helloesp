@@ -18,7 +18,7 @@
 ////////////////////////////////////////////////////////////////
 // Segmented memory management
 
-static bool allocate_segment(M3Memory* memory, size_t segment_index) {
+bool allocate_segment(M3Memory* memory, size_t segment_index) {
     if (!memory || segment_index >= memory->num_segments) {
         return false;
     }

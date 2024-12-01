@@ -8,6 +8,7 @@
 #define m3_exec_h
 
 #include "esp_log.h"
+#include "m3_core.h"
 
 // TODO: all these functions could move over to the .c at some point. normally, I'd say screw it,
 // but it might prove useful to be able to compile m3_exec alone w/ optimizations while the remaining
@@ -22,8 +23,6 @@
 //  so, for example, _rs means the first operand (the first thing pushed to the stack) is in a slot
 //  and the second operand (the top of the stack) is in a register
 //------------------------------------------------------------------------------------------------------
-
-static bool allocate_segment(M3Memory* memory, size_t segment_index);
 
 #ifndef M3_COMPILE_OPCODES
 #  error "Opcodes should only be included in one compilation unit"
