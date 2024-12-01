@@ -9,6 +9,7 @@
 #define m3_exec_defs_h
 
 #include "m3_core.h"
+#include "m3_segmented_memory.h"
 
 d_m3BeginExternC
 
@@ -16,7 +17,7 @@ d_m3BeginExternC
 # define m3MemRuntime(mem)              (((M3MemoryHeader*)(mem))->runtime)
 # define m3MemInfo(mem)                 (&(((M3MemoryHeader*)(mem))->runtime->memory))
 
-# define d_m3BaseOpSig                  pc_t _pc, m3stack_t _sp, M3MemoryHeader * _mem, m3reg_t _r0
+# define d_m3BaseOpSig                  pc_t _pc, m3stack_t _sp, M3Memory* _mem, m3reg_t _r0
 # define d_m3BaseOpArgs                 _sp, _mem, _r0
 # define d_m3BaseOpAllArgs              _pc, _sp, _mem, _r0
 # define d_m3BaseOpDefaultArgs          0
@@ -43,6 +44,7 @@ d_m3BeginExternC
 #   define d_m3ClearRegisters       d_m3BaseClearRegisters
 # endif
 
+#include "m3_env.h"
 
 #define d_m3RetSig                  static inline m3ret_t vectorcall
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)

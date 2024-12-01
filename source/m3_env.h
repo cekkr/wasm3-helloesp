@@ -14,6 +14,7 @@
 
 #define WASM_SEGMENT_SIZE 4096
 #define WASM_PAGE_SIZE 65536 //todo: think about
+#define WASM_ENABLE_SPI_MEM 0
 
 d_m3BeginExternC
 
@@ -47,26 +48,6 @@ M3Memory;
 
 typedef M3Memory *          IM3Memory;
 */
-
-typedef struct MemorySegment {    
-    void* data;           // Puntatore ai dati effettivi
-    bool is_allocated;    // Flag per indicare se il segmento è stato allocato
-    size_t size;         // Dimensione del segmento
-} MemorySegment;
-
-typedef struct {
-    u32                     numPages;
-    u32                     maxPages;
-    u32                     pageSize;
-
-    // Segmentation
-    MemorySegment* segments;    // Array di segmenti
-    size_t num_segments;        // Numero totale di segmenti
-    size_t segment_size;        // Dimensione di ogni segmento
-    size_t total_size;          // Dimensione totale richiesta
-} M3Memory;
-
-typedef M3Memory *          IM3Memory;
 
 //---------------------------------------------------------------------------------------------------------------------------------
 

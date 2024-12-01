@@ -9,8 +9,8 @@
 #include "m3_config.h"
 #include "wasm3.h"
 
-#include "m3_core.h"
 #include "m3_env.h"
+#include "m3_core.h"
 
 #include "esp_debug_helpers.h"
 #include "esp_heap_caps.h"
@@ -304,7 +304,7 @@ void print_memory_info(){
 }
 
 static const int CHECK_MEMORY_AVAILABLE = 0;
-static const int WASM_ENABLE_SPI_MEM = 0;
+//static const int WASM_ENABLE_SPI_MEM = 0;
 
 
 // Allocatore di default che usa heap_caps

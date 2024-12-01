@@ -44,7 +44,7 @@ static bool allocate_segment(M3Memory* memory, size_t segment_index) {
         ptr = heap_caps_malloc(memory->segments[segment_index].size, 
                              MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
         
-        if (DEBUG_MEMORY && !ptr) {
+        if (_DEBUG_MEMORY && !ptr) {
             ESP_LOGE("WASM3", "Failed to allocate segment in internal memory");
         }
     }
@@ -73,8 +73,8 @@ static inline void* GetMemorySegment(IM3Memory memory, u32 offset)
 {
     size_t segment_index = offset / memory->segment_size;
     size_t segment_offset = offset % memory->segment_size;
-    void* segment = memory->segments[segment_index];
-    return (u8*)segment + segment_offset;
+    MemorySegment segment = memory->segments[segment_index];
+    return (u8*)segment.data + segment_offset;
 }
 
 static inline i32 m3_LoadInt(IM3Memory memory, u32 offset)
@@ -312,7 +312,9 @@ void  Runtime_Release  (IM3Runtime i_runtime)
     Environment_ReleaseCodePages (i_runtime->environment, i_runtime->pagesFull);
 
     m3_Free (i_runtime->originStack);
-    m3_FreeMemory (i_runtime->memory);
+
+    void* memory_ptr = &i_runtime->memory;
+    m3_FreeMemory (memory_ptr);
 }
 
 
@@ -874,9 +876,9 @@ _           (CompileFunction (function));
         io_module->startFunction = -1;
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-        result = (M3Result) RunCode (function->compiled, (m3stack_t) runtime->stack, runtime->memory.mallocated, d_m3OpDefaultArgs, d_m3BaseCstr);
+        result = (M3Result) RunCode (function->compiled, (m3stack_t) runtime->stack, runtime->memory, d_m3OpDefaultArgs, d_m3BaseCstr);
 # else
-        result = (M3Result) RunCode (function->compiled, (m3stack_t) runtime->stack, runtime->memory.mallocated, d_m3OpDefaultArgs);
+        result = (M3Result) RunCode (function->compiled, (m3stack_t) runtime->stack, &runtime->memory, d_m3OpDefaultArgs);
 # endif
 
         if (result)
