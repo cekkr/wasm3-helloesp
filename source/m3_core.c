@@ -12,6 +12,8 @@
 #include "m3_core.h"
 #include "m3_env.h"
 
+#include "esp_system.h"
+
 void m3_Abort(const char* message) {
 #ifdef DEBUG
     fprintf(stderr, "Error: %s\n", message);
@@ -298,7 +300,14 @@ static void* default_malloc(size_t size) {
 }
 
 static void default_free(void* ptr) {
-    heap_caps_free(ptr);
+    if (heap_caps_check_integrity_addr((intptr_t)ptr, true)) {
+        heap_caps_free(ptr);
+    }
+    else {
+        ESP_LOGW("WASM3", "Trying to free a memory outside heap limits");
+        esp_backtrace_print(10); // #include "esp_system.h"
+    }
+    
 }
 
 static void* default_realloc(void* ptr, size_t new_size) {
@@ -365,8 +374,8 @@ void* m3_Malloc_Impl(size_t i_size) {
 }
 
 void m3_Free_Impl(void* io_ptr, bool isMemory) {
-    if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Free_Impl");
-    
+    if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Free_Impl");        
+
     if (!io_ptr) return;
     
     if(isMemory){
