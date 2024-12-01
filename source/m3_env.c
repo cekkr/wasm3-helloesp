@@ -651,28 +651,66 @@ M3Result  InitGlobals  (IM3Module io_module)
 }
 
 
-M3Result  InitDataSegments  (M3Memory * io_memory, IM3Module io_module)
+M3Result InitDataSegments(M3Memory* io_memory, IM3Module io_module)
 {
     M3Result result = m3Err_none;
-
-    _throwif ("unallocated linear memory", !(io_memory->mallocated));
+    
+    // Verifica che la struttura di memoria sia inizializzata
+    _throwif("uninitialized memory structure", !io_memory || !io_memory->segments);
 
     for (u32 i = 0; i < io_module->numDataSegments; ++i)
     {
-        M3DataSegment * segment = & io_module->dataSegments [i];
+        M3DataSegment* segment = &io_module->dataSegments[i];
 
         i32 segmentOffset;
         bytes_t start = segment->initExpr;
-_       (EvaluateExpression (io_module, & segmentOffset, c_m3Type_i32, & start, segment->initExpr + segment->initExprSize));
+_       (EvaluateExpression(io_module, &segmentOffset, c_m3Type_i32, &start, 
+                           segment->initExpr + segment->initExprSize));
 
-        m3log (runtime, "loading data segment: %d; size: %d; offset: %d", i, segment->size, segmentOffset);
+        m3log(runtime, "loading data segment: %d; size: %d; offset: %d", 
+              i, segment->size, segmentOffset);
 
-        if (segmentOffset >= 0 && (size_t)(segmentOffset) + segment->size <= io_memory->mallocated->length)
+        // Verifica limiti
+        if (segmentOffset >= 0 && (size_t)(segmentOffset) + segment->size <= io_memory->total_size)
         {
-            u8 * dest = m3MemData (io_memory->mallocated) + segmentOffset;
-            memcpy (dest, segment->data, segment->size);
-        } else {
-            _throw ("data segment out of bounds");
+            // Calcola i segmenti interessati
+            size_t start_segment = segmentOffset / io_memory->segment_size;
+            size_t end_segment = (segmentOffset + segment->size - 1) / io_memory->segment_size;
+            
+            // Alloca tutti i segmenti necessari se non sono già allocati
+            for (size_t seg = start_segment; seg <= end_segment; seg++)
+            {
+                if (!io_memory->segments[seg].is_allocated) {
+                    if (!allocate_segment(io_memory, seg)) {
+                        _throw("failed to allocate memory segment");
+                    }
+                }
+            }
+            
+            // Copia i dati attraverso i segmenti
+            size_t remaining = segment->size;
+            size_t src_offset = 0;
+            size_t dest_offset = segmentOffset;
+            
+            while (remaining > 0)
+            {
+                size_t current_segment = dest_offset / io_memory->segment_size;
+                size_t segment_offset = dest_offset % io_memory->segment_size;
+                size_t bytes_to_copy = M3_MIN(
+                    remaining,
+                    io_memory->segment_size - segment_offset
+                );
+                
+                u8* dest = ((u8*)io_memory->segments[current_segment].data) + segment_offset;
+                memcpy(dest, segment->data + src_offset, bytes_to_copy);
+                
+                remaining -= bytes_to_copy;
+                src_offset += bytes_to_copy;
+                dest_offset += bytes_to_copy;
+            }
+        }
+        else {
+            _throw("data segment out of bounds");
         }
     }
 
@@ -1094,7 +1132,7 @@ void  ReportNativeStackUsage  ()
 }
 
 
-M3Result  m3_CallVL  (IM3Function i_function, va_list i_args)
+M3Result m3_CallVL(IM3Function i_function, va_list i_args)
 {
     IM3Runtime runtime = i_function->module->runtime;
     IM3FuncType ftype = i_function->funcType;
@@ -1106,14 +1144,14 @@ M3Result  m3_CallVL  (IM3Function i_function, va_list i_args)
     }
 
 # if d_m3RecordBacktraces
-    ClearBacktrace (runtime);
+    ClearBacktrace(runtime);
 # endif
 
     m3StackCheckInit();
 
 _   (checkStartFunction(i_function->module))
 
-    s = GetStackPointerForArgs (i_function);
+    s = GetStackPointerForArgs(i_function);
 
     for (u32 i = 0; i < ftype->numArgs; ++i)
     {
@@ -1121,7 +1159,7 @@ _   (checkStartFunction(i_function->module))
         case c_m3Type_i32:  *(i32*)(s) = va_arg(i_args, i32);  s += 8; break;
         case c_m3Type_i64:  *(i64*)(s) = va_arg(i_args, i64);  s += 8; break;
 # if d_m3HasFloat
-        case c_m3Type_f32:  *(f32*)(s) = va_arg(i_args, f64);  s += 8; break; // f32 is passed as f64
+        case c_m3Type_f32:  *(f32*)(s) = va_arg(i_args, f64);  s += 8; break;
         case c_m3Type_f64:  *(f64*)(s) = va_arg(i_args, f64);  s += 8; break;
 # endif
         default: return "unknown argument type";
@@ -1129,18 +1167,18 @@ _   (checkStartFunction(i_function->module))
     }
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-    result = (M3Result) RunCode (i_function->compiled, (m3stack_t)(runtime->stack), runtime->memory.mallocated, d_m3OpDefaultArgs, d_m3BaseCstr);
+    result = (M3Result) RunCode(i_function->compiled, (m3stack_t)(runtime->stack), &runtime->memory, d_m3OpDefaultArgs, d_m3BaseCstr);
 # else
-    result = (M3Result) RunCode (i_function->compiled, (m3stack_t)(runtime->stack), runtime->memory.mallocated, d_m3OpDefaultArgs);
+    result = (M3Result) RunCode(i_function->compiled, (m3stack_t)(runtime->stack), &runtime->memory, d_m3OpDefaultArgs);
 # endif
-    ReportNativeStackUsage ();
+    ReportNativeStackUsage();
 
     runtime->lastCalled = result ? NULL : i_function;
 
     _catch: return result;
 }
 
-M3Result  m3_Call  (IM3Function i_function, uint32_t i_argc, const void * i_argptrs[])
+M3Result m3_Call(IM3Function i_function, uint32_t i_argc, const void* i_argptrs[])
 {
     IM3Runtime runtime = i_function->module->runtime;
     IM3FuncType ftype = i_function->funcType;
@@ -1155,14 +1193,14 @@ M3Result  m3_Call  (IM3Function i_function, uint32_t i_argc, const void * i_argp
     }
 
 # if d_m3RecordBacktraces
-    ClearBacktrace (runtime);
+    ClearBacktrace(runtime);
 # endif
 
     m3StackCheckInit();
 
 _   (checkStartFunction(i_function->module))
 
-    s = GetStackPointerForArgs (i_function);
+    s = GetStackPointerForArgs(i_function);
 
     for (u32 i = 0; i < ftype->numArgs; ++i)
     {
@@ -1178,19 +1216,19 @@ _   (checkStartFunction(i_function->module))
     }
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-    result = (M3Result) RunCode (i_function->compiled, (m3stack_t)(runtime->stack), runtime->memory.mallocated, d_m3OpDefaultArgs, d_m3BaseCstr);
+    result = (M3Result) RunCode(i_function->compiled, (m3stack_t)(runtime->stack), &runtime->memory, d_m3OpDefaultArgs, d_m3BaseCstr);
 # else
-    result = (M3Result) RunCode (i_function->compiled, (m3stack_t)(runtime->stack), runtime->memory.mallocated, d_m3OpDefaultArgs);
+    result = (M3Result) RunCode(i_function->compiled, (m3stack_t)(runtime->stack), &runtime->memory, d_m3OpDefaultArgs);
 # endif
 
-    ReportNativeStackUsage ();
+    ReportNativeStackUsage();
 
     runtime->lastCalled = result ? NULL : i_function;
 
     _catch: return result;
 }
 
-M3Result  m3_CallArgv  (IM3Function i_function, uint32_t i_argc, const char * i_argv[])
+M3Result m3_CallArgv(IM3Function i_function, uint32_t i_argc, const char* i_argv[])
 {
     IM3FuncType ftype = i_function->funcType;
     IM3Runtime runtime = i_function->module->runtime;
@@ -1205,14 +1243,14 @@ M3Result  m3_CallArgv  (IM3Function i_function, uint32_t i_argc, const char * i_
     }
 
 # if d_m3RecordBacktraces
-    ClearBacktrace (runtime);
+    ClearBacktrace(runtime);
 # endif
 
     m3StackCheckInit();
 
 _   (checkStartFunction(i_function->module))
 
-    s = GetStackPointerForArgs (i_function);
+    s = GetStackPointerForArgs(i_function);
 
     for (u32 i = 0; i < ftype->numArgs; ++i)
     {
@@ -1220,7 +1258,7 @@ _   (checkStartFunction(i_function->module))
         case c_m3Type_i32:  *(i32*)(s) = strtoul(i_argv[i], NULL, 10);  s += 8; break;
         case c_m3Type_i64:  *(i64*)(s) = strtoull(i_argv[i], NULL, 10); s += 8; break;
 # if d_m3HasFloat
-        case c_m3Type_f32:  *(f32*)(s) = strtod(i_argv[i], NULL);       s += 8; break;  // strtof would be less portable
+        case c_m3Type_f32:  *(f32*)(s) = strtod(i_argv[i], NULL);       s += 8; break;
         case c_m3Type_f64:  *(f64*)(s) = strtod(i_argv[i], NULL);       s += 8; break;
 # endif
         default: return "unknown argument type";
@@ -1228,12 +1266,12 @@ _   (checkStartFunction(i_function->module))
     }
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-    result = (M3Result) RunCode (i_function->compiled, (m3stack_t)(runtime->stack), runtime->memory.mallocated, d_m3OpDefaultArgs, d_m3BaseCstr);
+    result = (M3Result) RunCode(i_function->compiled, (m3stack_t)(runtime->stack), &runtime->memory, d_m3OpDefaultArgs, d_m3BaseCstr);
 # else
-    result = (M3Result) RunCode (i_function->compiled, (m3stack_t)(runtime->stack), runtime->memory.mallocated, d_m3OpDefaultArgs);
+    result = (M3Result) RunCode(i_function->compiled, (m3stack_t)(runtime->stack), &runtime->memory, d_m3OpDefaultArgs);
 # endif
     
-    ReportNativeStackUsage ();
+    ReportNativeStackUsage();
 
     runtime->lastCalled = result ? NULL : i_function;
 
@@ -1442,7 +1480,7 @@ uint8_t *  m3_GetMemory  (IM3Runtime i_runtime, uint32_t * o_memorySizeInBytes, 
 
 uint32_t  m3_GetMemorySize  (IM3Runtime i_runtime)
 {
-    return i_runtime->memory.mallocated->length;
+    return i_runtime->memory.total_size;
 }
 
 
