@@ -61,7 +61,7 @@ static u8* fixedHeapLast = NULL;
 #   define HEAP_ALIGN_PTR(P)
 #endif
 
-void *  m3_Malloc_Impl  (size_t i_size)
+/*void *  m3_Malloc_Impl  (size_t i_size)
 {
     u8 * ptr = fixedHeapPtr;
 
@@ -120,7 +120,7 @@ void *  m3_Realloc_Impl  (void * i_ptr, size_t i_newSize, size_t i_oldSize)
     }
 
     return newPtr;
-}
+}*/
 
 #else
 
@@ -162,7 +162,7 @@ void  m3_Free_Impl  (void * io_ptr)
     heap_caps_free(io_ptr);
 }*/
 
-void* m3_Realloc_Impl_old(void* i_ptr, size_t i_newSize, size_t i_oldSize)
+/*void* m3_Realloc_Impl_old(void* i_ptr, size_t i_newSize, size_t i_oldSize)
 {
     if(DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Realloc_Impl from %d to %d bytes", i_oldSize, i_newSize);
     
@@ -190,7 +190,7 @@ void* m3_Realloc_Impl_old(void* i_ptr, size_t i_newSize, size_t i_oldSize)
         return newPtr;
     }
     return NULL;
-}
+}*/
 
 /*void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize)
 {
@@ -347,6 +347,25 @@ void* m3_Malloc_Impl(size_t i_size) {
 
 void m3_Free_Impl(void* io_ptr) {
     if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Free_Impl");
+    
+    if (!io_ptr) return;
+    
+    // Otteniamo la struttura M3Memory dal puntatore mallocated
+    M3Memory* memory = &((M3MemoryHeader*)io_ptr)->runtime->memory;
+    
+    // Liberiamo prima i segmenti se esistono
+    if (memory->segments) {
+        for (size_t i = 0; i < memory->num_segments; i++) {
+            if (memory->segments[i]) {
+                current_allocator->free(memory->segments[i]);
+            }
+        }
+        current_allocator->free(memory->segments);
+        memory->segments = NULL;
+        memory->num_segments = 0;
+    }
+    
+    // Ora liberiamo mallocated
     current_allocator->free(io_ptr);
 }
 
@@ -358,80 +377,99 @@ void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize) {
         return m3_Malloc_Impl(i_newSize);
     }
     
-    // Gestione della segmentazione
-    M3Memory* mem = (M3Memory*)i_ptr;
-    size_t new_num_segments = (i_newSize + mem->segment_size - 1) / mem->segment_size;
+    // Otteniamo la struttura memory dal runtime
+    M3Memory* memory = &((M3MemoryHeader*)i_ptr)->runtime->memory;
     
-    // Riallocare l'array dei segmenti
-    void** new_segments = current_allocator->realloc(
-        mem->segments, 
-        new_num_segments * sizeof(void*)
-    );
+    // Ricalcola il numero di segmenti necessari
+    size_t new_num_segments = (i_newSize + memory->segment_size - 1) / memory->segment_size;
     
-    if (!new_segments) return NULL;
-    mem->segments = new_segments;
-    
-    // Allocare nuovi segmenti se necessario
-    for (size_t i = mem->num_segments; i < new_num_segments; i++) {
-        size_t segment_size = (i == new_num_segments - 1) ?
-            (i_newSize - (i * mem->segment_size)) : mem->segment_size;
+    // Se abbiamo segmenti, gestiamoli
+    if (memory->segments) {
+        // Riallochiamo l'array dei segmenti se necessario
+        if (new_num_segments != memory->num_segments) {
+            void** new_segments = current_allocator->realloc(
+                memory->segments,
+                new_num_segments * sizeof(void*)
+            );
             
-        mem->segments[i] = current_allocator->malloc(segment_size);
-        if (!mem->segments[i]) {
-            // Pulizia in caso di fallimento
-            for (size_t j = mem->num_segments; j < i; j++) {
-                current_allocator->free(mem->segments[j]);
+            if (!new_segments) return NULL;
+            memory->segments = new_segments;
+            
+            // Allochiamo nuovi segmenti se stiamo crescendo
+            for (size_t i = memory->num_segments; i < new_num_segments; i++) {
+                size_t segment_size = (i == new_num_segments - 1) ?
+                    (i_newSize - (i * memory->segment_size)) :
+                    memory->segment_size;
+                    
+                memory->segments[i] = current_allocator->malloc(segment_size);
+                if (!memory->segments[i]) {
+                    // Cleanup in caso di fallimento
+                    for (size_t j = memory->num_segments; j < i; j++) {
+                        current_allocator->free(memory->segments[j]);
+                    }
+                    return NULL;
+                }
+                memset(memory->segments[i], 0, segment_size);
             }
-            return NULL;
+            
+            // Liberiamo i segmenti in eccesso se stiamo riducendo
+            for (size_t i = new_num_segments; i < memory->num_segments; i++) {
+                current_allocator->free(memory->segments[i]);
+            }
+            
+            memory->num_segments = new_num_segments;
         }
-        // Inizializza il nuovo segmento a zero
-        memset(mem->segments[i], 0, segment_size);
     }
     
-    // Liberare i segmenti in eccesso se stiamo riducendo
-    for (size_t i = new_num_segments; i < mem->num_segments; i++) {
-        current_allocator->free(mem->segments[i]);
-    }
+    // Riallochiamo il blocco principale
+    void* new_ptr = current_allocator->realloc(i_ptr, i_newSize);
+    if (!new_ptr) return NULL;
     
-    mem->num_segments = new_num_segments;
-    return i_ptr;
+    // Aggiorniamo l'header
+    ((M3MemoryHeader*)new_ptr)->length = i_newSize;
+    
+    return new_ptr;
 }
 
 void* m3_CopyMem(const void* i_from, size_t i_size) {
     if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_CopyMem");
     
     void* ptr = m3_Malloc_Impl(i_size);
-    if (ptr) {
-        // Copia considerando la segmentazione
-        size_t remaining = i_size;
-        size_t src_offset = 0;
-        size_t dst_offset = 0;
-        
-        M3Memory* dst_mem = (M3Memory*)ptr;
-        const M3Memory* src_mem = (const M3Memory*)i_from;
+    if (!ptr || !i_from) return ptr;
+    
+    M3MemoryHeader* src_header = (M3MemoryHeader*)i_from;
+    M3MemoryHeader* dst_header = (M3MemoryHeader*)ptr;
+    
+    // Prima copia l'header
+    memcpy(dst_header, src_header, sizeof(M3MemoryHeader));
+    
+    // Se c'è segmentazione, copia segmento per segmento
+    if (src_header->runtime && src_header->runtime->memory.segments) {
+        IM3Runtime runtime = src_header->runtime;
+        size_t remaining = i_size - sizeof(M3MemoryHeader);
+        size_t offset = 0;
         
         while (remaining > 0) {
-            size_t src_seg = src_offset / src_mem->segment_size;
-            size_t dst_seg = dst_offset / dst_mem->segment_size;
-            size_t src_off = src_offset % src_mem->segment_size;
-            size_t dst_off = dst_offset % dst_mem->segment_size;
+            size_t seg_idx = offset / runtime->memory.segment_size;
+            size_t seg_offset = offset % runtime->memory.segment_size;
+            size_t copy_size = M3_MIN(remaining, 
+                                    runtime->memory.segment_size - seg_offset);
+                                    
+            void* dst = (uint8_t*)dst_header + sizeof(M3MemoryHeader) + offset;
+            void* src = runtime->memory.segments[seg_idx] + seg_offset;
             
-            size_t copy_size = min(
-                min(remaining, src_mem->segment_size - src_off),
-                dst_mem->segment_size - dst_off
-            );
-            
-            memcpy(
-                (uint8_t*)dst_mem->segments[dst_seg] + dst_off,
-                (uint8_t*)src_mem->segments[src_seg] + src_off,
-                copy_size
-            );
+            memcpy(dst, src, copy_size);
             
             remaining -= copy_size;
-            src_offset += copy_size;
-            dst_offset += copy_size;
+            offset += copy_size;
         }
+    } else {
+        // Copia diretta dei dati dopo l'header
+        memcpy((uint8_t*)dst_header + sizeof(M3MemoryHeader),
+               (uint8_t*)src_header + sizeof(M3MemoryHeader),
+               i_size - sizeof(M3MemoryHeader));
     }
+    
     return ptr;
 }
 
