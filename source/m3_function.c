@@ -29,8 +29,8 @@ M3Result AllocFuncType (IM3FuncType * o_functionType, u32 i_numTypes)
 bool AreFuncTypesEqual(const IM3FuncType i_typeA, const IM3FuncType i_typeB)
 {
     // Validazione puntatori
-    if (!i_typeA || !i_typeB)
-        return false;
+    //if (!i_typeA || !i_typeB)
+    //    return false;
         
     if (i_typeA->numRets == i_typeB->numRets && i_typeA->numArgs == i_typeB->numArgs)
     {

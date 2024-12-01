@@ -427,7 +427,13 @@ void m3_Free_Impl(void* io_ptr, bool isMemory) {
 void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize) {
     ESP_LOGI("WASM3", "Requesting realloc: old=%zu new=%zu", i_oldSize, i_newSize);
 
-    if (!i_ptr) return m3_Malloc_Impl(i_newSize);
+    if (i_ptr) {
+        uint8_t* bytes = (uint8_t*)i_ptr;
+        ESP_LOGI("WASM3", "First bytes: %02x %02x %02x %02x", 
+                 bytes[0], bytes[1], bytes[2], bytes[3]);
+    }
+
+    //if (!i_ptr) return m3_Malloc_Impl(i_newSize); // this is kinda of stupid
 
     M3Memory* memory = (M3Memory*)i_ptr;
     size_t new_num_segments = (i_newSize + memory->segment_size - 1) / memory->segment_size;
