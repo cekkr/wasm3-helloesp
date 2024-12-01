@@ -498,7 +498,7 @@ void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize) {
                 memory->total_size = i_newSize;
             }
 
-            return i_ptr
+            return i_ptr;
         }
         else {
             current_allocator->free(i_ptr);
