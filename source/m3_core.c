@@ -316,6 +316,60 @@ ptr_check_result_t validate_pointer(const void* ptr, size_t expected_size) {
     return PTR_CHECK_OK;
 }
 
+/**
+ * @brief Verifica se un puntatore può essere liberato in sicurezza
+ * @param ptr Puntatore da verificare
+ * @return true se il puntatore è valido per free(), false altrimenti
+ */
+bool is_ptr_freeable(void* ptr) {
+    // 1. Controllo puntatore NULL
+    if (ptr == NULL) {
+        ESP_LOGW("WASM3", "Null pointer detected");
+        return false;
+    }
+
+    // 2. Verifica allineamento (l'heap ESP32 richiede allineamento a 8 byte)
+    if (((uintptr_t)ptr) % 8 != 0) {
+        ESP_LOGE("WASM3", "Unaligned pointer: %p", ptr);
+        return false;
+    }
+
+    // 3. Verifica che il puntatore sia nell'heap DRAM
+    if (!heap_caps_check_integrity_addr((intptr_t)ptr, true)) {
+        ESP_LOGE("WASM3", "Pointer not in valid heap region: %p", ptr);
+        return false;
+    }
+
+    // 4. Verifica che il blocco di memoria abbia un header valido
+    multi_heap_info_t info;
+    heap_caps_get_info(&info, MALLOC_CAP_8BIT);
+    if ((uintptr_t)ptr < 0 || (uintptr_t)ptr > (info.total_free_bytes + info.total_allocated_bytes)) {
+        ESP_LOGE("WASM3", "Pointer outside heap bounds: %p", ptr);
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * @brief Libera la memoria in modo sicuro
+ * @param ptr Puntatore da liberare
+ * @return true se l'operazione è riuscita, false altrimenti
+ */
+bool safe_free(void** ptr) {
+    if (ptr == NULL) {
+        return false;
+    }
+
+    if (!is_ptr_freeable(*ptr)) {
+        return false;
+    }
+
+    free(*ptr);
+    *ptr = NULL;  // Previene use-after-free
+    return true;
+}
+
 ///
 /// Segmented memory implementation
 ///
@@ -357,6 +411,8 @@ void* default_malloc(size_t size) {
 }
 
 void default_free(void* ptr) {
+    if(!safe_free(&ptr)) return;
+
     if (heap_caps_check_integrity_addr((intptr_t)ptr, false)) {
         heap_caps_free(ptr);
     }
@@ -454,6 +510,10 @@ void m3_Free_Impl(void* io_ptr, bool isMemory) {
             current_allocator->free(memory->segments);
         }
         
+        if(!safe_free(&memory)){
+            ESP_LOGI("WASM3", "m3_Free_Impl: not safe to free memory");
+        }
+
         current_allocator->free(memory);
     } else {
         current_allocator->free(io_ptr);
@@ -501,7 +561,7 @@ void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize) {
             return i_ptr;
         }
         else {
-            current_allocator->free(i_ptr);
+            if(safe_free(&i_ptr)) current_allocator->free(i_ptr);
             return current_allocator->realloc(i_ptr, i_newSize);
         }        
     }
