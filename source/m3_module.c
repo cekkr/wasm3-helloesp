@@ -7,7 +7,7 @@
 
 #include "m3_env.h"
 #include "m3_exception.h"
-
+#include "m3_pointers.h"
 
 void Module_FreeFunctions (IM3Module i_module)
 {
@@ -19,7 +19,7 @@ void Module_FreeFunctions (IM3Module i_module)
 }
 
 
-void  m3_FreeModule  (IM3Module i_module)
+void  m3_Int_FreeModule  (IM3Module i_module)
 {
     if (i_module)
     {
@@ -28,24 +28,24 @@ void  m3_FreeModule  (IM3Module i_module)
 
         Module_FreeFunctions (i_module);
 
-        m3_Free (i_module->functions);
-        //m3_Free (i_module->imports);
-        m3_Free (i_module->funcTypes);
-        m3_Free (i_module->dataSegments);
-        m3_Free (i_module->table0);
+        m3_Int_Free (i_module->functions);
+        //m3_Int_Free (i_module->imports);
+        m3_Int_Free (i_module->funcTypes);
+        m3_Int_Free (i_module->dataSegments);
+        m3_Int_Free (i_module->table0);
 
         for (u32 i = 0; i < i_module->numGlobals; ++i)
         {
-            m3_Free (i_module->globals[i].name);
+            m3_Int_Free (i_module->globals[i].name);
             FreeImportInfo(&(i_module->globals[i].import));
         }
-        m3_Free (i_module->globals);
-        m3_Free (i_module->memoryExportName);
-        m3_Free (i_module->table0ExportName);
+        m3_Int_Free (i_module->globals);
+        m3_Int_Free (i_module->memoryExportName);
+        m3_Int_Free (i_module->table0ExportName);
 
         FreeImportInfo(&i_module->memoryImport);
 
-        m3_Free (i_module);
+        m3_Int_Free (i_module);
     }
 }
 
@@ -54,7 +54,7 @@ M3Result  Module_AddGlobal  (IM3Module io_module, IM3Global * o_global, u8 i_typ
 {
 _try {
     u32 index = io_module->numGlobals++;
-    io_module->globals = m3_ReallocArray (M3Global, io_module->globals, io_module->numGlobals, index);
+    io_module->globals = m3_Int_ReallocArray (M3Global, io_module->globals, io_module->numGlobals, index);
     _throwifnull (io_module->globals);
     M3Global * global = & io_module->globals [index];
 
@@ -73,7 +73,7 @@ M3Result  Module_PreallocFunctions  (IM3Module io_module, u32 i_totalFunctions)
 {
 _try {
     if (i_totalFunctions > io_module->allFunctions) {
-        io_module->functions = m3_ReallocArray (M3Function, io_module->functions, i_totalFunctions, io_module->allFunctions);
+        io_module->functions = m3_Int_ReallocArray (M3Function, io_module->functions, i_totalFunctions, io_module->allFunctions);
         io_module->allFunctions = i_totalFunctions;
         _throwifnull (io_module->functions);
     }
@@ -121,7 +121,7 @@ void  Module_GenerateNames  (IM3Module i_module)
 
         if (func->numNames == 0)
         {
-            char* buff = m3_AllocArray(char, 16);
+            char* buff = m3_Int_AllocArray(char, 16);
             snprintf(buff, 16, "$func%d", i);
             func->names[0] = buff;
             func->numNames = 1;
@@ -133,7 +133,7 @@ void  Module_GenerateNames  (IM3Module i_module)
 
         if (global->name == NULL)
         {
-            char* buff = m3_AllocArray(char, 16);
+            char* buff = m3_Int_AllocArray(char, 16);
             snprintf(buff, 16, "$global%d", i);
             global->name = buff;
         }
