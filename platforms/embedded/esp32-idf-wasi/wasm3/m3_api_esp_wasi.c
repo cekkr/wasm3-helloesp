@@ -535,7 +535,7 @@ m3_wasi_context_t* m3_GetWasiContext()
 }
 
 
-M3Result  m3_LinkEspWASI  (IM3Module module)
+M3Result  m3_LinkEspWASI_old  (IM3Module module)
 {
     M3Result result = m3Err_none;
 
@@ -614,3 +614,32 @@ _catch:
 
 #endif // ESP32
 
+M3Result m3_LinkEspWASI(IM3Module module)
+{
+    M3Result result = m3Err_none;
+
+    if (!wasi_context) {
+        wasi_context = (m3_wasi_context_t*)malloc(sizeof(m3_wasi_context_t));
+        if (!wasi_context) return m3Err_mallocFailed;
+        wasi_context->exit_code = 0;
+        wasi_context->argc = 0;
+        wasi_context->argv = 0;
+    }
+
+    // Linko solo le funzioni essenziali che ci servono
+    const char* wasi = "wasi_snapshot_preview1";
+
+    // Funzioni di base per I/O
+    _(SuppressLookupFailure(m3_LinkRawFunction(module, wasi, "fd_write", "i(i*i*)", &m3_wasi_generic_fd_write)));
+    _(SuppressLookupFailure(m3_LinkRawFunction(module, wasi, "fd_close", "i(i)", &m3_wasi_generic_fd_close)));
+    
+    // Funzione di uscita
+    _(SuppressLookupFailure(m3_LinkRawFunctionEx(module, wasi, "proc_exit", "v(i)", &m3_wasi_generic_proc_exit, wasi_context)));
+
+    // Se usiamo args
+    _(SuppressLookupFailure(m3_LinkRawFunctionEx(module, wasi, "args_get", "i(**)", &m3_wasi_generic_args_get, wasi_context)));
+    _(SuppressLookupFailure(m3_LinkRawFunctionEx(module, wasi, "args_sizes_get", "i(**)", &m3_wasi_generic_args_sizes_get, wasi_context)));
+
+_catch:
+    return result;
+}
