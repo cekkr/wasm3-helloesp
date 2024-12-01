@@ -423,6 +423,10 @@ void default_free(void* ptr) {
 }
 
 void* default_realloc(void* ptr, size_t new_size) {
+    if(!safe_free(&ptr)){
+        return default_malloc(new_size);
+    }
+
     void* new_ptr = WASM_ENABLE_SPI_MEM ? heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
     if (new_ptr == NULL) {
         new_ptr = heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
@@ -495,7 +499,7 @@ void* m3_Malloc_Impl(size_t i_size) {
 void m3_Free_Impl(void* io_ptr, bool isMemory) {
     if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Free_Impl");
 
-    if (!io_ptr) return;
+    if (!safe_free(&io_ptr) || io_ptr == NULL) return;
 
     if (isMemory) {
         M3Memory* memory = (M3Memory*)io_ptr;
@@ -504,10 +508,13 @@ void m3_Free_Impl(void* io_ptr, bool isMemory) {
             // Libera solo i segmenti effettivamente allocati
             for (size_t i = 0; i < memory->num_segments; i++) {
                 if (memory->segments[i].is_allocated && memory->segments[i].data) {
-                    current_allocator->free(memory->segments[i].data);
+                    if(safe_free(&memory->segments[i].data))
+                        current_allocator->free(memory->segments[i].data);
                 }
             }
-            current_allocator->free(memory->segments);
+
+            if(safe_free(&memory->segments))
+                current_allocator->free(memory->segments);
         }
         
         if(!safe_free(&memory)){
