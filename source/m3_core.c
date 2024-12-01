@@ -124,7 +124,7 @@ void *  m3_Realloc_Impl  (void * i_ptr, size_t i_newSize, size_t i_oldSize)
 
 #else
 
-#define DEBUG_MEMORY 0
+#define DEBUG_MEMORY 1
 
 void* m3_Malloc_Impl(size_t i_size)
 {
@@ -132,7 +132,14 @@ void* m3_Malloc_Impl(size_t i_size)
     return heap_caps_calloc(1, i_size, MALLOC_CAP_8BIT);
 
     // Usa MALLOC_CAP_8BIT per memoria generale
-    void* ptr = heap_caps_malloc(i_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+    // Prima prova con PSRAM se disponibile
+    void* ptr = heap_caps_malloc(i_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+    
+    if (!ptr) {
+        ESP_LOGW("WASM3", "SPIRAM realloc failed, trying internal memory");
+        ptr = heap_caps_malloc(i_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+    }
+
     if (ptr) {
         // Stessa pulizia incrementale
         const size_t block_size = 1024;
@@ -155,22 +162,95 @@ void  m3_Free_Impl  (void * io_ptr)
     heap_caps_free(io_ptr);
 }
 
-void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize)
+void* m3_Realloc_Impl_old(void* i_ptr, size_t i_newSize, size_t i_oldSize)
 {
     if(DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Realloc_Impl from %d to %d bytes", i_oldSize, i_newSize);
     
     if (M3_UNLIKELY(i_newSize == i_oldSize)) return i_ptr;
 
-    void* newPtr = heap_caps_realloc(i_ptr, i_newSize, MALLOC_CAP_8BIT);
+    // Usa gli stessi flag di allocazione del malloc
+    void* newPtr = heap_caps_realloc(i_ptr, i_newSize, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
 
     if (M3_LIKELY(newPtr))
     {
         if (i_newSize > i_oldSize) {
-            memset((u8*)newPtr + i_oldSize, 0x0, i_newSize - i_oldSize);
+            // Pulizia incrementale per blocchi grandi
+            const size_t remainingSize = i_newSize - i_oldSize;
+            const size_t block_size = 1024;
+            uint8_t* p = (uint8_t*)newPtr + i_oldSize;
+            size_t remaining = remainingSize;
+            
+            while (remaining > 0) {
+                size_t to_clear = (remaining < block_size) ? remaining : block_size;
+                memset(p, 0, to_clear);
+                p += to_clear;
+                remaining -= to_clear;
+            }
         }
         return newPtr;
     }
     return NULL;
+}
+
+void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize)
+{
+    ESP_LOGI("WASM3", "Requesting realloc: old=%d new=%d", i_oldSize, i_newSize);
+    
+    // Dimensione massima di un segmento
+    const size_t MAX_SEGMENT_SIZE = 32*1024; // 32KB
+    
+    // Se la richiesta è più piccola di un segmento, usa realloc normale
+    if (i_newSize <= MAX_SEGMENT_SIZE) {
+        return heap_caps_realloc(i_ptr, i_newSize, MALLOC_CAP_INTERNAL);
+    }
+    
+    // Calcola quanti segmenti servono
+    size_t num_segments = (i_newSize + MAX_SEGMENT_SIZE - 1) / MAX_SEGMENT_SIZE;
+    
+    // Alloca array di segmenti
+    void** segments = heap_caps_malloc(sizeof(void*) * num_segments, MALLOC_CAP_INTERNAL);
+    if (!segments) return NULL;
+    
+    bool success = true;
+    for (size_t i = 0; i < num_segments && success; i++) {
+        size_t segment_size = (i == num_segments-1) ? 
+            (i_newSize - (i * MAX_SEGMENT_SIZE)) : MAX_SEGMENT_SIZE;
+            
+        segments[i] = heap_caps_malloc(segment_size, MALLOC_CAP_INTERNAL);
+        success = (segments[i] != NULL);
+    }
+    
+    if (!success) {
+        // Cleanup in caso di fallimento
+        for (size_t i = 0; i < num_segments; i++) {
+            if (segments[i]) heap_caps_free(segments[i]);
+        }
+        heap_caps_free(segments);
+        return NULL;
+    }
+    
+    // Copia i dati vecchi se necessario
+    if (i_ptr) {
+        size_t remaining = i_oldSize;
+        size_t offset = 0;
+        
+        while (remaining > 0) {
+            size_t seg_idx = offset / MAX_SEGMENT_SIZE;
+            size_t copy_size = (remaining > MAX_SEGMENT_SIZE) ? 
+                MAX_SEGMENT_SIZE : remaining;
+                
+            memcpy(segments[seg_idx], 
+                   (uint8_t*)i_ptr + offset, 
+                   copy_size);
+                   
+            remaining -= copy_size;
+            offset += copy_size;
+        }
+        
+        heap_caps_free(i_ptr);
+    }
+    
+    return segments[0];  // Ritorna il primo segmento
 }
 
 #endif

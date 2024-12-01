@@ -15,6 +15,30 @@
 
 #define _DEBUG_MEMORY 1
 
+////////////////////////////////////////////////////////////////
+// Segmented memory management
+
+static inline void* GetMemorySegment(IM3Memory memory, u32 offset)
+{
+    size_t segment_index = offset / memory->segment_size;
+    size_t segment_offset = offset % memory->segment_size;
+    return (u8*)memory->segments[segment_index] + segment_offset;
+}
+
+static inline i32 m3_LoadInt(IM3Memory memory, u32 offset)
+{
+    void* ptr = GetMemorySegment(memory, offset);
+    return *(i32*)ptr;
+}
+
+static inline void m3_StoreInt(IM3Memory memory, u32 offset, i32 value)
+{
+    void* ptr = GetMemorySegment(memory, offset);
+    *(i32*)ptr = value;
+}
+
+////////////////////////////////////////////////////////////////
+
 IM3Environment  m3_NewEnvironment  ()
 {
     IM3Environment env = m3_AllocStruct (M3Environment);

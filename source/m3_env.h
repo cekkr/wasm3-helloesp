@@ -33,6 +33,11 @@ typedef struct M3Memory
     u32                     numPages;
     u32                     maxPages;
     u32                     pageSize;
+
+    // Add segmentation support
+    void**                  segments;
+    size_t                  num_segments;
+    size_t                  segment_size;
 }
 M3Memory;
 
