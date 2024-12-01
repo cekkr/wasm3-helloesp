@@ -477,118 +477,121 @@ M3Result  ResizeMemory  (IM3Runtime io_runtime, u32 i_numPages)
 //#include <stdlib.h> // For malloc, realloc, free
 //#include <string.h> // For memcpy
 
-M3Result  InitMemory  (IM3Runtime io_runtime, IM3Module i_module)
-{
+M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) {
     if (i_module->memoryInfo.pageSize == 0) {
-        i_module->memoryInfo.pageSize = 65536;  // Standard page size
+        i_module->memoryInfo.pageSize = 65536; 
         ESP_LOGI("WASM3", "InitMemory - Fixed pageSize to standard 64KB");
     }
 
-    #ifdef _DEBUG_MEMORY
-    ESP_LOGI("WASM3", "InitMemory - Module memory info: initial pages: %lu, max pages: %lu", 
-            (unsigned long)i_module->memoryInfo.initPages,
-            (unsigned long)i_module->memoryInfo.maxPages);
-
-    ESP_LOGI("WASM3", "InitMemory - Page size: %lu bytes", 
-            (unsigned long)i_module->memoryInfo.pageSize);
-    #endif
-
-    size_t alloc_size = (size_t)i_module->memoryInfo.initPages * i_module->memoryInfo.pageSize; // Corrected overflow check handled in ResizeMemory
-
     M3Result result = m3Err_none;
 
-    if (not i_module->memoryImported)
-    {
-        u32 maxPages = i_module->memoryInfo.maxPages;
-        io_runtime->memory.maxPages = maxPages ? maxPages : 65536;
-        io_runtime->memory.pageSize = i_module->memoryInfo.pageSize; // Use module's pageSize
+    if (!i_module->memoryImported) {
+        io_runtime->memory.maxPages = i_module->memoryInfo.maxPages ? i_module->memoryInfo.maxPages : 65536;
+        io_runtime->memory.pageSize = i_module->memoryInfo.pageSize;
+        io_runtime->memory.segment_size = 65536; // Imposta una dimensione di segmento ragionevole. 
 
-        ESP_LOGI("WASM3", "InitMemory - ResizeMemory"); 
-        result = ResizeMemory (io_runtime, i_module->memoryInfo.initPages);
+        result = ResizeMemory(io_runtime, i_module->memoryInfo.initPages);
     }
-
-    #ifdef _DEBUG_MEMORY
-    ESP_LOGI("WASM3", "InitMemory - Calculated allocation size: %lu bytes", 
-            (unsigned long)alloc_size);
-    #endif
 
     return result;
 }
 
 
-M3Result  ResizeMemory  (IM3Runtime io_runtime, u32 i_numPages)
-{
-    M3Result result = m3Err_none;
-    M3Memory * memory = & io_runtime->memory;
+M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
+    M3Memory * memory = &io_runtime->memory;
 
-    if (i_numPages <= memory->maxPages)
-    {
-        size_t numPageBytes = (size_t)i_numPages * memory->pageSize;  // Use memory->pageSize
+    if (i_numPages <= memory->maxPages) {
+        size_t numPageBytes = (size_t)i_numPages * memory->pageSize;
 
-        // Overflow check
         if (numPageBytes / memory->pageSize != i_numPages) {
             ESP_LOGE("WASM3", "Memory size calculation overflow!");
-            return m3Err_mallocFailed; // Or a more specific error code
+            return m3Err_mallocFailed;
         }
 
-
-#if d_m3MaxLinearMemoryPages > 0
+        #if d_m3MaxLinearMemoryPages > 0
         if (i_numPages > d_m3MaxLinearMemoryPages) {
             ESP_LOGE("WASM3", "linear memory limitation exceeded");
             return m3Err_mallocFailed;
         }
-#endif
+        #endif
 
         if (io_runtime->memoryLimit && numPageBytes > io_runtime->memoryLimit) {
             numPageBytes = io_runtime->memoryLimit;
-            // Calculate the actual number of pages we can allocate
             i_numPages = numPageBytes / memory->pageSize;
         }
 
+         // Calcola il numero di segmenti
+        size_t num_segments = (numPageBytes + memory->segment_size - 1) / memory->segment_size;
 
-        size_t numBytes = numPageBytes; // No header needed anymore
 
-        if (memory->wasmPages) {  // Realloc if memory already exists
-            void* newMem = realloc(memory->wasmPages, numBytes);
-            if (!newMem) {
-                ESP_LOGE("WASM3", "Memory reallocation failed");
-                return m3Err_mallocFailed;
-            }
-            memory->wasmPages = newMem;
-            // Zero-initialize any newly allocated memory
-            if (numBytes > memory->numPages * memory->pageSize) {
-                memset((uint8_t*)memory->wasmPages + memory->numPages * memory->pageSize, 0, numBytes - memory->numPages * memory->pageSize);
-            }
-
-        } else { // Malloc if memory doesn't exist yet
-            memory->wasmPages = malloc(numBytes);
-             if (!memory->wasmPages) {
-                ESP_LOGE("WASM3", "Memory allocation failed");
-                return m3Err_mallocFailed;
-            }
-            memset(memory->wasmPages, 0, numBytes); // Initialize to zero
+        // Gestisci i segmenti
+        if (!memory->segments) { // Alloca iniziale dei segmenti se non esistono
+            memory->segments = m3_Malloc_Impl(num_segments * sizeof(void*));
+            if (!memory->segments) return m3Err_mallocFailed;
+            memory->num_segments = 0;  // Inizializza a zero prima di allocare i singoli segmenti
+        } else if (num_segments != memory->num_segments) { // Rialloca se il numero di segmenti cambia
+             memory->segments = m3_Realloc_Impl(memory->segments, num_segments * sizeof(void*), memory->num_segments * sizeof(void*));
+            if (!memory->segments) return m3Err_mallocFailed;
         }
 
+
+       for (size_t i = 0; i < num_segments; ++i) {
+             size_t segment_bytes = (i == num_segments - 1) ? (numPageBytes - (i * memory->segment_size)) : memory->segment_size;
+
+
+            if (i < memory->num_segments) { // Rialloca segmento esistente
+                memory->segments[i] = m3_Realloc_Impl(memory->segments[i], segment_bytes, (i == memory->num_segments - 1) ? (memory->numPages * memory->pageSize - (i * memory->segment_size)) : memory->segment_size);
+                 if (!memory->segments[i]) return m3Err_mallocFailed;
+            } else { // Alloca un nuovo segmento
+                memory->segments[i] = m3_Malloc_Impl(segment_bytes);
+                 if (!memory->segments[i]) return m3Err_mallocFailed;
+            }
+
+        }
+        // Libera segmenti in eccesso se stiamo riducendo
+        for (size_t i = num_segments; i < memory->num_segments; i++) {
+            m3_Free_Impl(memory->segments[i]);
+        }
+
+
+        memory->num_segments = num_segments;
         memory->numPages = i_numPages;
-        // Remove mallocated entirely. It's no longer needed.
 
+       
+        if (memory->mallocated) {
+            m3_Free_Impl(memory->mallocated); // Libera la vecchia memoria
+            memory->mallocated = NULL;
+        }
+       
 
-# if d_m3LogRuntime
-        m3log (runtime, "resized mem: %p; length: %zu; pages: %d", memory->wasmPages, numBytes, memory->numPages);
-# endif
+    } else {
+        return m3Err_wasmMemoryOverflow;
     }
-    else result = m3Err_wasmMemoryOverflow;
 
-    return result;
+    return m3Err_none;
 }
 
-// uhm, does it exists?
+
+
 void FreeMemory(IM3Runtime io_runtime) {
-  if (io_runtime->memory.wasmPages) {
-    free(io_runtime->memory.wasmPages);
-    io_runtime->memory.wasmPages = NULL;
-    io_runtime->memory.numPages = 0;
-  }
+     M3Memory * memory = &io_runtime->memory;
+
+    if (memory->segments) {
+        for (size_t i = 0; i < memory->num_segments; i++) {
+            m3_Free_Impl(memory->segments[i]);
+        }
+        m3_Free_Impl(memory->segments);
+        memory->segments = NULL;
+        memory->num_segments = 0;
+    }
+
+    if (memory->mallocated) {
+         m3_Free_Impl(memory->mallocated);
+        memory->mallocated = NULL;
+    }
+    
+    memory->numPages = 0;
+    memory->maxPages = 0;
 }
 
 ///
