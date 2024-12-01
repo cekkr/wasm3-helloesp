@@ -13,6 +13,7 @@
 #include "m3_env.h"
 
 #include "esp_debug_helpers.h"
+#include "esp_heap_caps.h"
 
 void m3_Abort(const char* message) {
 #ifdef DEBUG
@@ -283,6 +284,8 @@ int max(int a, int b) {
 /// Segmented memory implementation
 ///
 
+static const int CHECK_MEMORY_AVAILABLE = 1;
+
 // Struttura per le operazioni di memoria personalizzabili
 typedef struct {
     void* (*malloc)(size_t size);
@@ -292,6 +295,25 @@ typedef struct {
 
 // Allocatore di default che usa heap_caps
 static void* default_malloc(size_t size) {
+    if(CHECK_MEMORY_AVAILABLE){
+        // Ottenere memoria libera totale e più grande blocco contiguo
+        size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
+        size_t largest_block = heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT);
+
+        printf("Memoria totale libera: %d bytes\n", free_heap);
+        printf("Blocco contiguo più grande: %d bytes\n", largest_block);
+
+        // Per memoria interna (IRAM)
+        size_t free_internal = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        printf("Memoria interna libera: %d bytes\n", free_internal);
+
+        // Per vedere la frammentazione
+        multi_heap_info_t info;
+        heap_caps_get_info(&info, MALLOC_CAP_DEFAULT);
+        printf("Totale blocchi liberi: %d\n", info.total_free_bytes);
+        printf("Minima memoria libera: %d bytes\n", info.minimum_free_bytes);
+    }
+
     void* ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
     if (!ptr) {
         ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
@@ -300,12 +322,12 @@ static void* default_malloc(size_t size) {
 }
 
 static void default_free(void* ptr) {
-    if (heap_caps_check_integrity_addr((intptr_t)ptr, true)) {
+    if (heap_caps_check_integrity_addr((intptr_t)ptr, false)) {
         heap_caps_free(ptr);
     }
     else {
         ESP_LOGW("WASM3", "Trying to free a memory outside heap limits");
-        esp_backtrace_print(10); // #include "esp_debug_helpers.h"
+        //esp_backtrace_print(4); // #include "esp_debug_helpers.h"
     }
     
 }
