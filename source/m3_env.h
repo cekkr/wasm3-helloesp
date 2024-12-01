@@ -28,6 +28,7 @@ typedef struct M3MemoryInfo
 M3MemoryInfo;
 
 
+/* // Old M3Memory implementation
 typedef struct M3Memory
 {
     M3MemoryHeader *        mallocated;
@@ -44,6 +45,26 @@ typedef struct M3Memory
 M3Memory;
 
 typedef M3Memory *          IM3Memory;
+*/
+
+typedef struct MemorySegment {
+    void* data;           // Puntatore ai dati effettivi
+    bool is_allocated;    // Flag per indicare se il segmento è stato allocato
+    size_t size;         // Dimensione del segmento
+} MemorySegment;
+
+typedef struct {
+    void* (*malloc)(size_t size);
+    void  (*free)(void* ptr);
+    void* (*realloc)(void* ptr, size_t new_size);
+} MemoryAllocator;
+
+typedef struct {
+    MemorySegment* segments;    // Array di segmenti
+    size_t num_segments;        // Numero totale di segmenti
+    size_t segment_size;        // Dimensione di ogni segmento
+    size_t total_size;          // Dimensione totale richiesta
+} M3Memory;
 
 
 //---------------------------------------------------------------------------------------------------------------------------------

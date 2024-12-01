@@ -284,35 +284,33 @@ int max(int a, int b) {
 /// Segmented memory implementation
 ///
 
+void print_memory_info(){
+    // Ottenere memoria libera totale e più grande blocco contiguo
+    size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
+    size_t largest_block = heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT);
+
+    ESP_LOGI("WASM3", "Memoria totale libera: %d bytes\n", free_heap);
+    ESP_LOGI("WASM3", "Blocco contiguo più grande: %d bytes\n", largest_block);
+
+    // Per memoria interna (IRAM)
+    size_t free_internal = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    ESP_LOGI("WASM3", "Memoria interna libera: %d bytes\n", free_internal);
+
+    // Per vedere la frammentazione
+    multi_heap_info_t info;
+    heap_caps_get_info(&info, MALLOC_CAP_DEFAULT);
+    ESP_LOGI("WASM3", "Totale blocchi liberi: %d\n", info.total_free_bytes);
+    ESP_LOGI("WASM3", "Minima memoria libera: %d bytes\n", info.minimum_free_bytes);  
+}
+
 static const int CHECK_MEMORY_AVAILABLE = 0;
 static const int WASM_ENABLE_SPI_MEM = 0;
 
-// Struttura per le operazioni di memoria personalizzabili
-typedef struct {
-    void* (*malloc)(size_t size);
-    void  (*free)(void* ptr);
-    void* (*realloc)(void* ptr, size_t new_size);
-} MemoryAllocator;
 
 // Allocatore di default che usa heap_caps
 static void* default_malloc(size_t size) {
     if(CHECK_MEMORY_AVAILABLE){
-        // Ottenere memoria libera totale e più grande blocco contiguo
-        size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
-        size_t largest_block = heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT);
-
-        ESP_LOGI("WASM3", "Memoria totale libera: %d bytes\n", free_heap);
-        ESP_LOGI("WASM3", "Blocco contiguo più grande: %d bytes\n", largest_block);
-
-        // Per memoria interna (IRAM)
-        size_t free_internal = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-        ESP_LOGI("WASM3", "Memoria interna libera: %d bytes\n", free_internal);
-
-        // Per vedere la frammentazione
-        multi_heap_info_t info;
-        heap_caps_get_info(&info, MALLOC_CAP_DEFAULT);
-        ESP_LOGI("WASM3", "Totale blocchi liberi: %d\n", info.total_free_bytes);
-        ESP_LOGI("WASM3", "Minima memoria libera: %d bytes\n", info.minimum_free_bytes);    
+        print_memory_info();
     }
 
     void* ptr = WASM_ENABLE_SPI_MEM ? heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
@@ -328,9 +326,7 @@ static void default_free(void* ptr) {
     }
     else {
         ESP_LOGW("WASM3", "Trying to free a memory outside heap limits");
-        //esp_backtrace_print(4); // #include "esp_debug_helpers.h"
     }
-    
 }
 
 static void* default_realloc(void* ptr, size_t new_size) {
@@ -341,192 +337,166 @@ static void* default_realloc(void* ptr, size_t new_size) {
     return new_ptr;
 }
 
-// Allocatore di default
 static MemoryAllocator default_allocator = {
     .malloc = default_malloc,
     .free = default_free,
     .realloc = default_realloc
 };
 
-// Allocatore corrente
 static MemoryAllocator* current_allocator = &default_allocator;
 
-// Funzione per impostare un allocatore personalizzato
 void m3_SetMemoryAllocator(MemoryAllocator* allocator) {
     current_allocator = allocator ? allocator : &default_allocator;
 }
 
-// Funzioni principali di gestione memoria
+// Funzione per allocare un segmento specifico
+static bool allocate_segment(M3Memory* memory, size_t segment_index) {
+    if (segment_index >= memory->num_segments || 
+        memory->segments[segment_index].is_allocated) {
+        return false;
+    }
+
+    size_t segment_size = (segment_index == memory->num_segments - 1) ?
+        (memory->total_size - (segment_index * memory->segment_size)) :
+        memory->segment_size;
+
+    void* data = current_allocator->malloc(segment_size);
+    if (!data) return false;
+
+    memory->segments[segment_index].data = data;
+    memory->segments[segment_index].is_allocated = true;
+    memory->segments[segment_index].size = segment_size;
+    memset(data, 0, segment_size);
+
+    return true;
+}
+
 void* m3_Malloc_Impl(size_t i_size) {
     if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Malloc_Impl of size %zu", i_size);
 
-    // Alloca spazio per la struttura M3Memory
     M3Memory* memory = (M3Memory*)current_allocator->malloc(sizeof(M3Memory));
     if (!memory) return NULL;
 
-    memset(memory, 0, sizeof(M3Memory));
+    memory->segment_size = WASM_SEGMENT_SIZE;
+    memory->total_size = i_size;
+    memory->num_segments = (i_size + memory->segment_size - 1) / memory->segment_size;
 
-    if(memory->segment_size == 0){
-        memory->segment_size = WASM_SEGMENT_SIZE;  // Default segment size (4 KB)
-    }
-
-    size_t num_segments = (i_size + memory->segment_size - 1) / memory->segment_size;
-    memory->segments = (void**)current_allocator->malloc(num_segments * sizeof(void*));
-   if (!memory->segments) {
+    // Alloca array di strutture MemorySegment
+    memory->segments = (MemorySegment*)current_allocator->malloc(
+        memory->num_segments * sizeof(MemorySegment)
+    );
+    
+    if (!memory->segments) {
         current_allocator->free(memory);
         return NULL;
     }
-    memory->num_segments = num_segments;
 
-    for (size_t i = 0; i < num_segments; ++i) {
-        size_t segment_bytes = (i == num_segments - 1) ? (i_size - (i * memory->segment_size)) : memory->segment_size;
-        memory->segments[i] = current_allocator->malloc(segment_bytes);
-        if (!memory->segments[i]) {
-            // Gestione errori: libera la memoria allocata finora
-            for (size_t j = 0; j < i; ++j) {
-                current_allocator->free(memory->segments[j]);
-            }
-            current_allocator->free(memory->segments);
-            current_allocator->free(memory);
-            return NULL;
-        }
-        memset(memory->segments[i], 0, segment_bytes); // Azzera la memoria del segmento
+    // Inizializza tutti i segmenti come non allocati
+    for (size_t i = 0; i < memory->num_segments; i++) {
+        memory->segments[i].data = NULL;
+        memory->segments[i].is_allocated = false;
+        memory->segments[i].size = 0;
     }
 
     return memory;
 }
 
 void m3_Free_Impl(void* io_ptr, bool isMemory) {
-    if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Free_Impl");        
+    if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Free_Impl");
 
     if (!io_ptr) return;
-    
-    if(isMemory){
-        // Otteniamo la struttura M3Memory dal puntatore mallocated
+
+    if (isMemory) {
         M3Memory* memory = (M3Memory*)io_ptr;
         
-        // Liberiamo prima i segmenti se esistono
         if (memory->segments) {
+            // Libera solo i segmenti effettivamente allocati
             for (size_t i = 0; i < memory->num_segments; i++) {
-                if (memory->segments[i]) {
-                    current_allocator->free(memory->segments[i]);
+                if (memory->segments[i].is_allocated && memory->segments[i].data) {
+                    current_allocator->free(memory->segments[i].data);
                 }
             }
             current_allocator->free(memory->segments);
-            memory->segments = NULL;
-            memory->num_segments = 0;
         }
         
-        // Ora liberiamo mallocated
-        current_allocator->free(io_ptr);
-    }
-    else {
+        current_allocator->free(memory);
+    } else {
         current_allocator->free(io_ptr);
     }
 }
 
 void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize) {
     ESP_LOGI("WASM3", "Requesting realloc: old=%zu new=%zu", i_oldSize, i_newSize);
-    
-    // Se non c'è memoria precedente, è una semplice allocazione
-    if (!i_ptr) {
-        return m3_Malloc_Impl(i_newSize);
-    }
-    
-    // Otteniamo la struttura memory dal runtime
+
+    if (!i_ptr) return m3_Malloc_Impl(i_newSize);
+
     M3Memory* memory = (M3Memory*)i_ptr;
-    
-    // Ricalcola il numero di segmenti necessari
     size_t new_num_segments = (i_newSize + memory->segment_size - 1) / memory->segment_size;
-    
-    // Se abbiamo segmenti, gestiamoli
-    if (memory->segments) {
-        // Riallochiamo l'array dei segmenti se necessario
-        if (new_num_segments != memory->num_segments) {
-            void** new_segments = current_allocator->realloc(
-                memory->segments,
-                new_num_segments * sizeof(void*)
-            );
-            
-            if (!new_segments) return NULL;
-            memory->segments = new_segments;
-            
-            // Allochiamo nuovi segmenti se stiamo crescendo
-            for (size_t i = memory->num_segments; i < new_num_segments; i++) {
-                size_t segment_size = (i == new_num_segments - 1) ?
-                    (i_newSize - (i * memory->segment_size)) :
-                    memory->segment_size;
-                    
-                memory->segments[i] = current_allocator->malloc(segment_size);
-                if (!memory->segments[i]) {
-                    // Cleanup in caso di fallimento
-                    for (size_t j = memory->num_segments; j < i; j++) {
-                        current_allocator->free(memory->segments[j]);
-                    }
-                    return NULL;
-                }
-                memset(memory->segments[i], 0, segment_size);
-            }
-            
-            // Liberiamo i segmenti in eccesso se stiamo riducendo
-            for (size_t i = new_num_segments; i < memory->num_segments; i++) {
-                current_allocator->free(memory->segments[i]);
-            }
-            
-            memory->num_segments = new_num_segments;
+
+    // Riallocare l'array dei segmenti se necessario
+    if (new_num_segments != memory->num_segments) {
+        MemorySegment* new_segments = current_allocator->realloc(
+            memory->segments,
+            new_num_segments * sizeof(MemorySegment)
+        );
+
+        if (!new_segments) return NULL;
+        
+        // Inizializza i nuovi segmenti se stiamo crescendo
+        for (size_t i = memory->num_segments; i < new_num_segments; i++) {
+            new_segments[i].data = NULL;
+            new_segments[i].is_allocated = false;
+            new_segments[i].size = 0;
         }
+
+        // Libera i segmenti in eccesso se stiamo riducendo
+        for (size_t i = new_num_segments; i < memory->num_segments; i++) {
+            if (new_segments[i].is_allocated && new_segments[i].data) {
+                current_allocator->free(new_segments[i].data);
+            }
+        }
+
+        memory->segments = new_segments;
+        memory->num_segments = new_num_segments;
+        memory->total_size = i_newSize;
     }
-    
-    // Riallochiamo il blocco principale
-    void* new_ptr = current_allocator->realloc(i_ptr, i_newSize);
+
+    void* new_ptr = current_allocator->realloc(i_ptr, sizeof(M3Memory));
     if (!new_ptr) return NULL;
-    
-    // Aggiorniamo l'header
-    ((M3MemoryHeader*)new_ptr)->length = i_newSize;
-    
+
     return new_ptr;
 }
 
 void* m3_CopyMem(const void* i_from, size_t i_size) {
     if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_CopyMem");
+    if (!i_from) return NULL;
+
+    M3Memory* src_memory = (M3Memory*)i_from;
+    M3Memory* dst_memory = (M3Memory*)m3_Malloc_Impl(i_size);
     
-    void* ptr = m3_Malloc_Impl(i_size);
-    if (!ptr || !i_from) return ptr;
-    
-    M3MemoryHeader* src_header = (M3MemoryHeader*)i_from;
-    M3MemoryHeader* dst_header = (M3MemoryHeader*)ptr;
-    
-    // Prima copia l'header
-    memcpy(dst_header, src_header, sizeof(M3MemoryHeader));
-    
-    // Se c'è segmentazione, copia segmento per segmento
-    if (src_header->runtime && src_header->runtime->memory.segments) {
-        IM3Runtime runtime = src_header->runtime;
-        size_t remaining = i_size - sizeof(M3MemoryHeader);
-        size_t offset = 0;
-        
-        while (remaining > 0) {
-            size_t seg_idx = offset / runtime->memory.segment_size;
-            size_t seg_offset = offset % runtime->memory.segment_size;
-            size_t copy_size = M3_MIN(remaining, 
-                                    runtime->memory.segment_size - seg_offset);
-                                    
-            void* dst = (uint8_t*)dst_header + sizeof(M3MemoryHeader) + offset;
-            void* src = runtime->memory.segments[seg_idx] + seg_offset;
-            
-            memcpy(dst, src, copy_size);
-            
-            remaining -= copy_size;
-            offset += copy_size;
+    if (!dst_memory) return NULL;
+
+    // Copia i metadati
+    dst_memory->segment_size = src_memory->segment_size;
+    dst_memory->total_size = i_size;
+
+    // Copia solo i segmenti che sono effettivamente allocati
+    for (size_t i = 0; i < src_memory->num_segments && i < dst_memory->num_segments; i++) {
+        if (src_memory->segments[i].is_allocated) {
+            // Alloca e copia il segmento
+            if (allocate_segment(dst_memory, i)) {
+                size_t copy_size = M3_MIN(
+                    src_memory->segments[i].size,
+                    dst_memory->segments[i].size
+                );
+                memcpy(dst_memory->segments[i].data,
+                       src_memory->segments[i].data,
+                       copy_size);
+            }
         }
-    } else {
-        // Copia diretta dei dati dopo l'header
-        memcpy((uint8_t*)dst_header + sizeof(M3MemoryHeader),
-               (uint8_t*)src_header + sizeof(M3MemoryHeader),
-               i_size - sizeof(M3MemoryHeader));
     }
-    
-    return ptr;
+
+    return dst_memory;
 }
 
 //--------------------------------------------------------------------------------------------
