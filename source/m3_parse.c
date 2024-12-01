@@ -9,6 +9,7 @@
 #include "m3_compile.h"
 #include "m3_exception.h"
 #include "m3_info.h"
+#include "m3_pointers.h"
 
 
 M3Result  ParseType_Table  (IM3Module io_module, bytes_t i_bytes, cbytes_t i_end)
@@ -613,7 +614,7 @@ M3Result  m3_ParseModule  (IM3Environment i_environment, IM3Module * o_module, c
 {
     IM3Module module;                                                               m3log (parse, "load module: %d bytes", i_numBytes);
 _try {
-    module = m3_AllocStruct (M3Module);
+    module = m3_AllocStruct(M3Module);
     _throwifnull (module);
     module->name = ".unnamed";                                                      m3log (parse, "load module: %d bytes", i_numBytes);
     module->startFunction = -1;
