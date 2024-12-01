@@ -480,6 +480,8 @@ M3Result  ResizeMemory  (IM3Runtime io_runtime, u32 i_numPages)
 static const int DEBUG_TOP_MEMORY = 1;
 
 M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) {
+    if(DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "InitMemory called");
+
     if (i_module->memoryInfo.pageSize == 0) {
         i_module->memoryInfo.pageSize = 65536; 
         ESP_LOGI("WASM3", "InitMemory - Fixed pageSize to standard 64KB");
@@ -490,9 +492,14 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) {
     if (!i_module->memoryImported) {
         io_runtime->memory.maxPages = i_module->memoryInfo.maxPages ? i_module->memoryInfo.maxPages : 65536;
         io_runtime->memory.pageSize = i_module->memoryInfo.pageSize;
-        io_runtime->memory.segment_size = 65536; // Imposta una dimensione di segmento ragionevole. 
+        io_runtime->memory.segment_size = WASM_SEGMENT_SIZE; // Imposta una dimensione di segmento ragionevole. 
 
         result = ResizeMemory(io_runtime, i_module->memoryInfo.initPages);
+    }
+    else {
+        if(io_runtime->memory.segment_size == 0){
+            io_runtime->memory.segment_size = WASM_SEGMENT_SIZE;
+        }
     }
 
     return result;
@@ -500,6 +507,8 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) {
 
 
 M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
+    if(DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "ResizeMemory called");
+
     M3Memory * memory = &io_runtime->memory;
 
     if (i_numPages <= memory->maxPages) {
@@ -552,7 +561,7 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
         }
         // Libera segmenti in eccesso se stiamo riducendo
         for (size_t i = num_segments; i < memory->num_segments; i++) {
-            m3_Free_Impl(memory->segments[i]);
+            m3_Free_Impl(memory->segments[i], false);
         }
 
 
@@ -561,7 +570,7 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
 
        
         if (memory->mallocated) {
-            m3_Free_Impl(memory->mallocated); // Libera la vecchia memoria
+            m3_Free_Impl(memory->mallocated, false); // Libera la vecchia memoria
             memory->mallocated = NULL;
         }
        
@@ -580,15 +589,15 @@ void FreeMemory(IM3Runtime io_runtime) {
 
     if (memory->segments) {
         for (size_t i = 0; i < memory->num_segments; i++) {
-            m3_Free_Impl(memory->segments[i]);
+            m3_Free_Impl(memory->segments[i], false);
         }
-        m3_Free_Impl(memory->segments);
+        m3_Free_Impl(memory->segments, false);
         memory->segments = NULL;
         memory->num_segments = 0;
     }
 
     if (memory->mallocated) {
-         m3_Free_Impl(memory->mallocated);
+        m3_Free_Impl(memory->mallocated, false);
         memory->mallocated = NULL;
     }
     

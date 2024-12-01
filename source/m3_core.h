@@ -219,7 +219,7 @@ uint64_t    m3_GetTimestamp         ();
 void        m3_Abort                (const char* message);
 void *      m3_Malloc_Impl          (size_t i_size);
 void *      m3_Realloc_Impl         (void * i_ptr, size_t i_newSize, size_t i_oldSize);
-void        m3_Free_Impl            (void * i_ptr);
+void        m3_Free_Impl            (void * i_ptr, bool isMemory);
 void *      m3_CopyMem              (const void * i_from, size_t i_size);
 
 #if d_m3LogHeapOps
@@ -267,7 +267,9 @@ static inline void * m3_Realloc (ccstr_t name, void * i_ptr, size_t i_newSize, s
 #define     m3_AllocStruct(STRUCT)                  (STRUCT *)m3_Malloc_Impl (sizeof (STRUCT))
 #define     m3_AllocArray(STRUCT, NUM)              (STRUCT *)m3_Malloc_Impl (sizeof (STRUCT) * (NUM))
 #define     m3_ReallocArray(STRUCT, PTR, NEW, OLD)  (STRUCT *)m3_Realloc_Impl ((void *)(PTR), sizeof (STRUCT) * (NEW), sizeof (STRUCT) * (OLD))
-#define     m3_Free(P)                              do { m3_Free_Impl ((void*)(P)); (P) = NULL; } while(0)
+//#define     m3_Free(P)                              do { m3_Free_Impl ((void*)(P)); (P) = NULL; } while(0)
+#define     m3_Free(P)                              do { m3_Free_Impl((void*)(P), false); (P) = NULL; } while(0)
+#define     m3_FreeMemory(P)                        do { m3_Free_Impl((void*)(P), true); (P) = NULL; } while(0)
 #endif
 
 M3Result    NormalizeType           (u8 * o_type, i8 i_convolutedWasmType);

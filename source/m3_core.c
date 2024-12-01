@@ -334,6 +334,10 @@ void* m3_Malloc_Impl(size_t i_size) {
 
     memset(memory, 0, sizeof(M3Memory));
 
+    if(memory->segment_size == 0){
+        memory->segment_size = WASM_SEGMENT_SIZE;  // Default segment size (4 KB)
+    }
+
     size_t num_segments = (i_size + memory->segment_size - 1) / memory->segment_size;
     memory->segments = (void**)current_allocator->malloc(num_segments * sizeof(void*));
    if (!memory->segments) {
@@ -360,28 +364,33 @@ void* m3_Malloc_Impl(size_t i_size) {
     return memory;
 }
 
-void m3_Free_Impl(void* io_ptr) {
+void m3_Free_Impl(void* io_ptr, bool isMemory) {
     if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Free_Impl");
     
     if (!io_ptr) return;
     
-    // Otteniamo la struttura M3Memory dal puntatore mallocated
-    M3Memory* memory = (M3Memory*)io_ptr;
-    
-    // Liberiamo prima i segmenti se esistono
-    if (memory->segments) {
-        for (size_t i = 0; i < memory->num_segments; i++) {
-            if (memory->segments[i]) {
-                current_allocator->free(memory->segments[i]);
+    if(isMemory){
+        // Otteniamo la struttura M3Memory dal puntatore mallocated
+        M3Memory* memory = (M3Memory*)io_ptr;
+        
+        // Liberiamo prima i segmenti se esistono
+        if (memory->segments) {
+            for (size_t i = 0; i < memory->num_segments; i++) {
+                if (memory->segments[i]) {
+                    current_allocator->free(memory->segments[i]);
+                }
             }
+            current_allocator->free(memory->segments);
+            memory->segments = NULL;
+            memory->num_segments = 0;
         }
-        current_allocator->free(memory->segments);
-        memory->segments = NULL;
-        memory->num_segments = 0;
+        
+        // Ora liberiamo mallocated
+        current_allocator->free(io_ptr);
     }
-    
-    // Ora liberiamo mallocated
-    current_allocator->free(io_ptr);
+    else {
+        current_allocator->free(io_ptr);
+    }
 }
 
 void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize) {
@@ -393,7 +402,7 @@ void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize) {
     }
     
     // Otteniamo la struttura memory dal runtime
-    M3Memory* memory = (M3Memory*)io_ptr;
+    M3Memory* memory = (M3Memory*)i_ptr;
     
     // Ricalcola il numero di segmenti necessari
     size_t new_num_segments = (i_newSize + memory->segment_size - 1) / memory->segment_size;

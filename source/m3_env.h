@@ -12,6 +12,8 @@
 #include "m3_code.h"
 #include "m3_compile.h"
 
+#define WASM_SEGMENT_SIZE 4096
+
 d_m3BeginExternC
 
 
