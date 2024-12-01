@@ -284,7 +284,8 @@ int max(int a, int b) {
 /// Segmented memory implementation
 ///
 
-static const int CHECK_MEMORY_AVAILABLE = 1;
+static const int CHECK_MEMORY_AVAILABLE = 0;
+static const int WASM_ENABLE_SPI_MEM = 0;
 
 // Struttura per le operazioni di memoria personalizzabili
 typedef struct {
@@ -300,21 +301,21 @@ static void* default_malloc(size_t size) {
         size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
         size_t largest_block = heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT);
 
-        printf("Memoria totale libera: %d bytes\n", free_heap);
-        printf("Blocco contiguo più grande: %d bytes\n", largest_block);
+        ESP_LOGI("WASM3", "Memoria totale libera: %d bytes\n", free_heap);
+        ESP_LOGI("WASM3", "Blocco contiguo più grande: %d bytes\n", largest_block);
 
         // Per memoria interna (IRAM)
         size_t free_internal = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-        printf("Memoria interna libera: %d bytes\n", free_internal);
+        ESP_LOGI("WASM3", "Memoria interna libera: %d bytes\n", free_internal);
 
         // Per vedere la frammentazione
         multi_heap_info_t info;
         heap_caps_get_info(&info, MALLOC_CAP_DEFAULT);
-        printf("Totale blocchi liberi: %d\n", info.total_free_bytes);
-        printf("Minima memoria libera: %d bytes\n", info.minimum_free_bytes);
+        ESP_LOGI("WASM3", "Totale blocchi liberi: %d\n", info.total_free_bytes);
+        ESP_LOGI("WASM3", "Minima memoria libera: %d bytes\n", info.minimum_free_bytes);    
     }
 
-    void* ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+    void* ptr = WASM_ENABLE_SPI_MEM ? heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
     if (!ptr) {
         ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
     }
@@ -333,7 +334,7 @@ static void default_free(void* ptr) {
 }
 
 static void* default_realloc(void* ptr, size_t new_size) {
-    void* new_ptr = heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+    void* new_ptr = WASM_ENABLE_SPI_MEM ? heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
     if (!new_ptr) {
         new_ptr = heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
     }
