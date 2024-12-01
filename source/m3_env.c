@@ -91,9 +91,13 @@ static inline void m3_StoreInt(IM3Memory memory, u32 offset, i32 value)
 
 ////////////////////////////////////////////////////////////////
 
+static const int WASM_DEBUG_NEW_ENV = 1;
+
 IM3Environment  m3_NewEnvironment  ()
 {
+    if(WASM_DEBUG_NEW_ENV) ESP_LOGI("WASM3", "m3_NewEnvironment called");
     IM3Environment env = m3_AllocStruct (M3Environment);
+    if(WASM_DEBUG_NEW_ENV) ESP_LOGI("WASM3", "env allocated");
 
     if (env)
     {
@@ -113,8 +117,12 @@ _               (AllocFuncType (& ftype, 1));
 
                 d_m3Assert (t < 5);
                 env->retFuncTypes [t] = ftype;
+
+                if(WASM_DEBUG_NEW_ENV) ESP_LOGI("WASM3", "Ended an Environment_AddFuncType");
             }
         }
+
+        if(WASM_DEBUG_NEW_ENV) ESP_LOGI("WASM3", "m3_NewEnvironment done.");
 
         _catch:
         if (result)
@@ -160,9 +168,13 @@ void m3_SetCustomSectionHandler  (IM3Environment i_environment, M3SectionHandler
 }
 
 
+static const int WASM_DEBUG_ADDFUNC = 1;
+
 // returns the same io_funcType or replaces it with an equivalent that's already in the type linked list
 void  Environment_AddFuncType  (IM3Environment i_environment, IM3FuncType * io_funcType)
 {
+    if(WASM_DEBUG_ADDFUNC) ESP_LOGI("WASM3", "Called Environment_AddFuncType");
+
     IM3FuncType addType = * io_funcType;
     IM3FuncType newType = i_environment->funcTypes;
 
@@ -185,6 +197,8 @@ void  Environment_AddFuncType  (IM3Environment i_environment, IM3FuncType * io_f
     }
 
     * io_funcType = newType;
+
+    if(WASM_DEBUG_ADDFUNC) ESP_LOGI("WASM3", "End of Environment_AddFuncType call");
 }
 
 

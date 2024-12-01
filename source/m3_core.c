@@ -395,7 +395,7 @@ void* m3_Malloc_Impl(size_t i_size) {
     }
 
     if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Returning memory pointer");
-    esp_backtrace_print(100); 
+    //esp_backtrace_print(100); 
 
     return memory;
 }
