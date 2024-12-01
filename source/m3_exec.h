@@ -4,9 +4,10 @@
 //  Created by Steven Massey on 4/17/19.
 //  Copyright © 2019 Steven Massey. All rights reserved.
 
-
 #ifndef m3_exec_h
 #define m3_exec_h
+
+#include "esp_log.h"
 
 // TODO: all these functions could move over to the .c at some point. normally, I'd say screw it,
 // but it might prove useful to be able to compile m3_exec alone w/ optimizations while the remaining
@@ -1369,7 +1370,8 @@ d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_s)                 \
 ///
 static inline u8* m3SegmentedMemAccess(IM3Memory mem, u64 offset, size_t size) 
 {
-    if (offset + size > mem->length) return NULL;
+    ESP_LOGI("WASM3", "m3SegmentedMemAccess call");
+    if (offset + size > mem->mallocated->length) return NULL;
 
     size_t segment_size = 32 * 1024;  // 32KB per segmento
     size_t segment_index = offset / segment_size;

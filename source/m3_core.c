@@ -126,7 +126,7 @@ void *  m3_Realloc_Impl  (void * i_ptr, size_t i_newSize, size_t i_oldSize)
 
 #define DEBUG_MEMORY 1
 
-void* m3_Malloc_Impl(size_t i_size)
+/*void* m3_Malloc_Impl(size_t i_size)
 {
     if(DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Malloc_Impl of size %d", i_size);
     return heap_caps_calloc(1, i_size, MALLOC_CAP_8BIT);
@@ -160,7 +160,7 @@ void  m3_Free_Impl  (void * io_ptr)
 {
     if(DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Free_Impl");
     heap_caps_free(io_ptr);
-}
+}*/
 
 void* m3_Realloc_Impl_old(void* i_ptr, size_t i_newSize, size_t i_oldSize)
 {
@@ -192,7 +192,7 @@ void* m3_Realloc_Impl_old(void* i_ptr, size_t i_newSize, size_t i_oldSize)
     return NULL;
 }
 
-void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize)
+/*void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize)
 {
     ESP_LOGI("WASM3", "Requesting realloc: old=%d new=%d", i_oldSize, i_newSize);
     
@@ -251,16 +251,178 @@ void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize)
     }
     
     return segments[0];  // Ritorna il primo segmento
-}
+}*/
 
 #endif
 
-void *  m3_CopyMem  (const void * i_from, size_t i_size)
+/*void *  m3_CopyMem  (const void * i_from, size_t i_size)
 {
     if(DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_CopyMem");
     void * ptr = m3_Malloc("CopyMem", i_size);
     if (ptr) {
         memcpy (ptr, i_from, i_size);
+    }
+    return ptr;
+}*/
+
+///
+/// Segmented memory implementation
+///
+
+// Struttura per le operazioni di memoria personalizzabili
+typedef struct {
+    void* (*malloc)(size_t size);
+    void  (*free)(void* ptr);
+    void* (*realloc)(void* ptr, size_t new_size);
+} MemoryAllocator;
+
+// Allocatore di default che usa heap_caps
+static void* default_malloc(size_t size) {
+    void* ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+    if (!ptr) {
+        ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+    }
+    return ptr;
+}
+
+static void default_free(void* ptr) {
+    heap_caps_free(ptr);
+}
+
+static void* default_realloc(void* ptr, size_t new_size) {
+    void* new_ptr = heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+    if (!new_ptr) {
+        new_ptr = heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+    }
+    return new_ptr;
+}
+
+// Allocatore di default
+static MemoryAllocator default_allocator = {
+    .malloc = default_malloc,
+    .free = default_free,
+    .realloc = default_realloc
+};
+
+// Allocatore corrente
+static MemoryAllocator* current_allocator = &default_allocator;
+
+// Funzione per impostare un allocatore personalizzato
+void m3_SetMemoryAllocator(MemoryAllocator* allocator) {
+    current_allocator = allocator ? allocator : &default_allocator;
+}
+
+// Funzioni principali di gestione memoria
+void* m3_Malloc_Impl(size_t i_size) {
+    if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Malloc_Impl of size %zu", i_size);
+    
+    void* ptr = current_allocator->malloc(i_size);
+    if (ptr) {
+        // Pulizia incrementale della memoria
+        const size_t block_size = 1024;
+        uint8_t* p = (uint8_t*)ptr;
+        size_t remaining = i_size;
+        
+        while (remaining > 0) {
+            size_t to_clear = (remaining < block_size) ? remaining : block_size;
+            memset(p, 0, to_clear);
+            p += to_clear;
+            remaining -= to_clear;
+        }
+    }
+    return ptr;
+}
+
+void m3_Free_Impl(void* io_ptr) {
+    if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Free_Impl");
+    current_allocator->free(io_ptr);
+}
+
+void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize) {
+    ESP_LOGI("WASM3", "Requesting realloc: old=%zu new=%zu", i_oldSize, i_newSize);
+    
+    // Se non c'è memoria precedente, è una semplice allocazione
+    if (!i_ptr) {
+        return m3_Malloc_Impl(i_newSize);
+    }
+    
+    // Gestione della segmentazione
+    M3Memory* mem = (M3Memory*)i_ptr;
+    size_t new_num_segments = (i_newSize + mem->segment_size - 1) / mem->segment_size;
+    
+    // Riallocare l'array dei segmenti se necessario
+    if (new_num_segments != mem->num_segments) {
+        void** new_segments = current_allocator->realloc(
+            mem->segments, 
+            new_num_segments * sizeof(void*),
+            mem->num_segments * sizeof(void*)
+        );
+        
+        if (!new_segments) return NULL;
+        mem->segments = new_segments;
+        
+        // Allocare nuovi segmenti se necessario
+        for (size_t i = mem->num_segments; i < new_num_segments; i++) {
+            size_t segment_size = (i == new_num_segments - 1) ?
+                (i_newSize - (i * mem->segment_size)) : mem->segment_size;
+                
+            mem->segments[i] = current_allocator->malloc(segment_size);
+            if (!mem->segments[i]) {
+                // Pulizia in caso di fallimento
+                for (size_t j = mem->num_segments; j < i; j++) {
+                    current_allocator->free(mem->segments[j]);
+                }
+                return NULL;
+            }
+            // Inizializza il nuovo segmento a zero
+            memset(mem->segments[i], 0, segment_size);
+        }
+        
+        // Liberare i segmenti in eccesso se stiamo riducendo
+        for (size_t i = new_num_segments; i < mem->num_segments; i++) {
+            current_allocator->free(mem->segments[i]);
+        }
+        
+        mem->num_segments = new_num_segments;
+    }
+    
+    return i_ptr;
+}
+
+void* m3_CopyMem(const void* i_from, size_t i_size) {
+    if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_CopyMem");
+    
+    void* ptr = m3_Malloc_Impl(i_size);
+    if (ptr) {
+        // Copia considerando la segmentazione
+        size_t remaining = i_size;
+        size_t src_offset = 0;
+        size_t dst_offset = 0;
+        
+        M3Memory* dst_mem = (M3Memory*)ptr;
+        const M3Memory* src_mem = (const M3Memory*)i_from;
+        
+        while (remaining > 0) {
+            size_t src_seg = src_offset / src_mem->segment_size;
+            size_t dst_seg = dst_offset / dst_mem->segment_size;
+            size_t src_off = src_offset % src_mem->segment_size;
+            size_t dst_off = dst_offset % dst_mem->segment_size;
+            
+            size_t copy_size = min(
+                min(remaining, src_mem->segment_size - src_off),
+                dst_mem->segment_size - dst_off
+            );
+            
+            memcpy(
+                (uint8_t*)dst_mem->segments[dst_seg] + dst_off,
+                (uint8_t*)src_mem->segments[src_seg] + src_off,
+                copy_size
+            );
+            
+            remaining -= copy_size;
+            src_offset += copy_size;
+            dst_offset += copy_size;
+        }
     }
     return ptr;
 }
