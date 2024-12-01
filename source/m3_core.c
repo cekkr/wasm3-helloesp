@@ -12,7 +12,7 @@
 #include "m3_core.h"
 #include "m3_env.h"
 
-#include "esp_system.h"
+#include "esp_debug_helpers.h"
 
 void m3_Abort(const char* message) {
 #ifdef DEBUG
@@ -305,7 +305,7 @@ static void default_free(void* ptr) {
     }
     else {
         ESP_LOGW("WASM3", "Trying to free a memory outside heap limits");
-        esp_backtrace_print(10); // #include "esp_system.h"
+        esp_backtrace_print(10); // #include "esp_debug_helpers.h"
     }
     
 }
