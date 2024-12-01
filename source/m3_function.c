@@ -16,11 +16,32 @@ M3Result AllocFuncType (IM3FuncType * o_functionType, u32 i_numTypes)
 }
 
 
-bool  AreFuncTypesEqual  (const IM3FuncType i_typeA, const IM3FuncType i_typeB)
+/*bool  AreFuncTypesEqual  (const IM3FuncType i_typeA, const IM3FuncType i_typeB)
 {
     if (i_typeA->numRets == i_typeB->numRets && i_typeA->numArgs == i_typeB->numArgs)
     {
         return (memcmp (i_typeA->types, i_typeB->types, i_typeA->numRets + i_typeA->numArgs) == 0);
+    }
+
+    return false;
+}*/
+
+bool AreFuncTypesEqual(const IM3FuncType i_typeA, const IM3FuncType i_typeB)
+{
+    // Validazione puntatori
+    if (!i_typeA || !i_typeB)
+        return false;
+        
+    if (i_typeA->numRets == i_typeB->numRets && i_typeA->numArgs == i_typeB->numArgs)
+    {
+        size_t size = i_typeA->numRets + i_typeA->numArgs;
+        
+        // Confronto byte per byte invece di memcmp
+        for (size_t i = 0; i < size; i++) {
+            if (i_typeA->types[i] != i_typeB->types[i])
+                return false;
+        }
+        return true;
     }
 
     return false;
