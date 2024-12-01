@@ -13,6 +13,7 @@
 #include "m3_exception.h"
 #include "m3_info.h"
 
+#define _DEBUG_MEMORY 1
 
 IM3Environment  m3_NewEnvironment  ()
 {
@@ -339,7 +340,7 @@ M3Result  InitMemory  (IM3Runtime io_runtime, IM3Module i_module)
         ESP_LOGI("WASM3", "InitMemory - Fixed pageSize to standard 64KB");
     }
 
-    #ifdef DEBUG_MEMORY
+    #ifdef _DEBUG_MEMORY
      // Prima del calcolo
     ESP_LOGI("WASM3", "InitMemory - Module memory info: initial pages: %lu, max pages: %lu", 
             (unsigned long)i_module->memoryInfo.initPages,
@@ -370,10 +371,11 @@ M3Result  InitMemory  (IM3Runtime io_runtime, IM3Module i_module)
         io_runtime->memory.maxPages = maxPages ? maxPages : 65536;
         io_runtime->memory.pageSize = pageSize ? pageSize : d_m3DefaultMemPageSize;
 
+        ESP_LOGI("WASM3", "InitMemory - ResizeMemory"); 
         result = ResizeMemory (io_runtime, i_module->memoryInfo.initPages);
     }
 
-    #ifdef DEBUG_MEMORY
+    #ifdef _DEBUG_MEMORY
     ESP_LOGI("WASM3", "InitMemory - Calculated allocation size: %lu bytes", 
             (unsigned long)alloc_size);
     #endif

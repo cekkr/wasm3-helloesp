@@ -9,6 +9,7 @@
 #include "m3_exception.h"
 #include "m3_info.h"
 
+#include "esp_log.h"
 
 u8  ConvertTypeCharToTypeId (char i_code)
 {
@@ -95,6 +96,56 @@ _   (AllocFuncType (& funcType, (u32) maxNumTypes));
     return result;
 }
 
+////////////////////////////////////////////////////////////////
+// Log signature
+
+char* m3_type_to_signature(const M3FuncType* type) {
+    if (!type) return NULL;
+    
+    // Calcoliamo la dimensione necessaria per la stringa
+    // 'v' + '(' + ')' + '\0' + numArgs + numRets caratteri per i tipi
+    size_t size = 3 + type->numArgs + type->numRets;
+    char* signature = (char*)malloc(size);
+    if (!signature) return NULL;
+    
+    char* curr = signature;
+    
+    // Se non ci sono return values, mettiamo 'v'
+    if (type->numRets == 0) {
+        *curr++ = 'v';
+    } else {
+        // Altrimenti inseriamo i tipi di ritorno
+        for (int i = 0; i < type->numRets; i++) {
+            switch (type->types[i]) {
+                case 0x7f: *curr++ = 'i'; break;  // i32
+                case 0x7e: *curr++ = 'I'; break;  // i64
+                case 0x7d: *curr++ = 'f'; break;  // f32
+                case 0x7c: *curr++ = 'F'; break;  // f64
+                default: *curr++ = '?'; break;
+            }
+        }
+    }
+    
+    *curr++ = '(';
+    
+    // Inseriamo i tipi degli argomenti
+    for (int i = 0; i < type->numArgs; i++) {
+        switch (type->types[type->numRets + i]) {
+            case 0x7f: *curr++ = 'i'; break;  // i32
+            case 0x7e: *curr++ = 'I'; break;  // i64
+            case 0x7d: *curr++ = 'f'; break;  // f32
+            case 0x7c: *curr++ = 'F'; break;  // f64
+            default: *curr++ = '?'; break;
+        }
+    }
+    
+    *curr++ = ')';
+    *curr = '\0';
+    
+    return signature;
+}
+
+////////////////////////////////////////////////////////////////
 
 static
 M3Result  ValidateSignature  (IM3Function i_function, ccstr_t i_linkingSignature)
@@ -108,6 +159,9 @@ _   (SignatureToFuncType (& ftype, i_linkingSignature));
     {
         m3log (module, "expected: %s", SPrintFuncTypeSignature (ftype));
         m3log (module, "   found: %s", SPrintFuncTypeSignature (i_function->funcType));
+        
+        ESP_LOGE("WASM3", "Signature excepted: %s", m3_type_to_signature (ftype));
+        ESP_LOGE("WASM3", "Signature found: %s", m3_type_to_signature (i_function->funcType));
 
         _throw ("function signature mismatch");
     }
