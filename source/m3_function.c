@@ -8,6 +8,7 @@
 #include "m3_function.h"
 #include "m3_env.h"
 
+#include "m3_pointers.h"
 
 M3Result AllocFuncType (IM3FuncType * o_functionType, u32 i_numTypes)
 {
@@ -104,6 +105,8 @@ void FreeImportInfo (M3ImportInfo * i_info)
 
 void  Function_Release  (IM3Function i_function)
 {
+    if(!safe_free(&i_function)) return;
+
     m3_Free (i_function->constants);
 
     for (int i = 0; i < i_function->numNames; i++)
