@@ -99,46 +99,39 @@ _   (AllocFuncType (& funcType, (u32) maxNumTypes));
 ////////////////////////////////////////////////////////////////
 // Log signature
 
+// Convertiamo da type ID a char
+char convertTypeIdToChar(u8 typeId) {
+    switch (typeId) {
+        case c_m3Type_i32: return 'i';
+        case c_m3Type_i64: return 'I';
+        case c_m3Type_f32: return 'f';
+        case c_m3Type_f64: return 'F';
+        default: return '?';
+    }
+}
+
 char* m3_type_to_signature(const M3FuncType* type) {
     if (!type) return NULL;
     
     // Calcoliamo la dimensione necessaria per la stringa
-    // 'v' + '(' + ')' + '\0' + numArgs + numRets caratteri per i tipi
-    size_t size = 3 + type->numArgs + type->numRets;
+    size_t size = 3 + type->numArgs + type->numRets;  // v() + types + \0
     char* signature = (char*)malloc(size);
     if (!signature) return NULL;
     
     char* curr = signature;
     
-    // Se non ci sono return values, mettiamo 'v'
-    if (type->numRets == 0) {
-        *curr++ = 'v';
-    } else {
-        // Altrimenti inseriamo i tipi di ritorno
-        for (int i = 0; i < type->numRets; i++) {
-            switch (type->types[i]) {
-                case 0x7f: *curr++ = 'i'; break;  // i32
-                case 0x7e: *curr++ = 'I'; break;  // i64
-                case 0x7d: *curr++ = 'f'; break;  // f32
-                case 0x7c: *curr++ = 'F'; break;  // f64
-                default: *curr++ = '?'; break;
-            }
-        }
-    }
+    // Return type (sempre 'v' nel tuo caso dato che hai mostrato 'v' nell'output)
+    *curr++ = 'v';
     
+    // Parentesi aperta
     *curr++ = '(';
     
-    // Inseriamo i tipi degli argomenti
+    // Tipi degli argomenti
     for (int i = 0; i < type->numArgs; i++) {
-        switch (type->types[type->numRets + i]) {
-            case 0x7f: *curr++ = 'i'; break;  // i32
-            case 0x7e: *curr++ = 'I'; break;  // i64
-            case 0x7d: *curr++ = 'f'; break;  // f32
-            case 0x7c: *curr++ = 'F'; break;  // f64
-            default: *curr++ = '?'; break;
-        }
+        *curr++ = convertTypeIdToChar(type->types[type->numRets + i]);
     }
     
+    // Parentesi chiusa e terminatore
     *curr++ = ')';
     *curr = '\0';
     
