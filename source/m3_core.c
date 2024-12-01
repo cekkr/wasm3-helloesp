@@ -326,6 +326,7 @@ void default_free(void* ptr) {
     }
     else {
         ESP_LOGW("WASM3", "Trying to free a memory outside heap limits");
+        // esp_backtrace_print(100); #include "esp_debug_helpers.h"
     }
 }
 
@@ -367,7 +368,10 @@ void* m3_Malloc_Impl(size_t i_size) {
     if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Malloc_Impl of size %zu", i_size);
 
     M3Memory* memory = (M3Memory*)current_allocator->malloc(sizeof(M3Memory));
-    if (!memory) return NULL;
+    if (!memory) {
+        ESP_LOGE("WASM3", "Null M3Memory pointer");
+        return NULL;
+    }
 
     memory->segment_size = WASM_SEGMENT_SIZE;
     memory->total_size = i_size;
@@ -389,6 +393,9 @@ void* m3_Malloc_Impl(size_t i_size) {
         memory->segments[i].is_allocated = false;
         memory->segments[i].size = 0;
     }
+
+    if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Returning memory pointer");
+    esp_backtrace_print(100); 
 
     return memory;
 }

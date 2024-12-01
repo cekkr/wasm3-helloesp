@@ -249,6 +249,8 @@ void  Environment_ReleaseCodePages  (IM3Environment i_environment, IM3CodePage i
 
 IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes, void * i_userdata)
 {
+    ESP_LOGI("WASM3", "m3_NewRuntime called");
+
     IM3Runtime runtime = m3_AllocStruct (M3Runtime);
 
     if (runtime)
