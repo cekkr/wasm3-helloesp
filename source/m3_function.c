@@ -105,7 +105,7 @@ void FreeImportInfo (M3ImportInfo * i_info)
 
 void  Function_Release  (IM3Function i_function)
 {
-    if(!safe_free(&i_function)) return;
+    //if(!safe_free(&i_function)) return; // nosense: it's not a pointer
 
     m3_Int_Free (i_function->constants);
 

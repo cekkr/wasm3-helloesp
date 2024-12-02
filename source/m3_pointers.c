@@ -5,8 +5,8 @@
 
 #include "m3_pointers.h"
 
-static const bool WASM_DEBUG_POINTERS = true;
-static const bool WASM_DEBUG_POINTERS_BACKTRACE = true;
+static const bool WASM_DEBUG_POINTERS = false;
+static const bool WASM_DEBUG_POINTERS_BACKTRACE = false;
 static const bool WASM_DEBUG_POINTERS_IGNORE_OUTSIDE_HEAP = false; 
 static const bool WASM_POINTERS_CHECK_BOUNDS = false;
 
