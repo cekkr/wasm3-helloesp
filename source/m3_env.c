@@ -186,6 +186,18 @@ void  Environment_AddFuncType  (IM3Environment i_environment, IM3FuncType * io_f
             m3_Int_Free (addType);
             break;
         }
+        else {
+            if(!ultra_safe_ptr_valid(addType)){
+                ESP_LOGE("WASM3", "Invalid addType pointer in Environment_AddFuncType");
+                return;
+            }
+
+            if(!ultra_safe_ptr_valid(newType)){
+                ESP_LOGE("WASM3", "Invalid newType pointer in Environment_AddFuncType");
+                m3_Int_Free (addType);
+                return;
+            }
+        }
 
         newType = newType->next;
     }

@@ -206,10 +206,10 @@ bool ultra_safe_ptr_valid(const void* ptr) {
     uintptr_t addr = (uintptr_t)ptr;
     
     // Verifica allineamento (assumendo architettura 32-bit)
-    if (addr & 0x3) {
+    /*if (addr & 0x3) {
         ESP_LOGW("WASM3", "Pointer %p is not aligned", ptr);
         return false;
-    }
+    }*/
 
     /*if(!heap_caps_check_integrity_addr(addr, false)) { // useless: it crashes
         ESP_LOGW("WASM3", "Pointer %p: no integrity", ptr);
