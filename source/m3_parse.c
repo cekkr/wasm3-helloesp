@@ -150,6 +150,7 @@ _       (Module_AddFunction (io_module, funcTypeIndex, NULL /* import info */));
 }
 
 
+static const bool WASM_DEBUG_PARSE_SECTION = true;
 M3Result  ParseSection_Import  (IM3Module io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
