@@ -279,32 +279,36 @@ u32  GetFunctionNumArgsAndLocals (IM3Function i_function)
 /// Register function name
 ///
 
+static const bool WASM_DEBUG_ADD_FUNCTION_NAME = true;
 M3Result addFunctionToModule(IM3Module module, const char* functionName) {
+    if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "addFunctionToModule called");
+
     if (!module || !functionName) {
         return "Invalid parameters";
     }
 
     // Alloca spazio per il nuovo nome della funzione
+    if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "m3_Int_AllocArray function name");
     char* nameCopy = m3_Int_AllocArray(char, strlen(functionName) + 1);
     if (!nameCopy) {
         return "Memory allocation failed";
     }
     strcpy(nameCopy, functionName);
 
-    // Crea una nuova entry nella function table
+    // Crea una nuova entry nella function table   
     u32 index = module->allFunctions++;
-    Module_PreallocFunctions(module, module->allFunctions);
-    IM3Function function = Module_GetFunction (module, index);
-    
-    /*IM3Function function = NULL; // to trash (manual instance)
-    function = m3_Int_AllocStruct(M3Function);
-    if (!function) {
-        m3_Free(nameCopy);
-        return "Memory allocation failed";
-    }*/
 
-    // Inizializza la funzione
+     if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "Module_PreallocFunctions");
+    Module_PreallocFunctions(module, module->allFunctions);
+
+    if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "Module_GetFunction");
+    IM3Function function = Module_GetFunction (module, index);
+
+    if (!function) {
+        return "Module_GetFunction failed";
+    }
     
+    if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "Setting function parameters");
     function->import.fieldUtf8 = nameCopy;
     function->names[0] = function->import.fieldUtf8;
     function->numNames++;
@@ -343,6 +347,7 @@ M3Result RegisterWasmFunctions(IM3Module module, const WasmFunctionEntry* entrie
     
     for (size_t i = 0; i < count; i++) {
         result = RegisterWasmFunction(module, &entries[i]);
+        ESP_LOGI("WASM3", "Registered native function: %s\n", entries[i].name);
         if (result) {
             return result; // Ritorna al primo errore
         }
