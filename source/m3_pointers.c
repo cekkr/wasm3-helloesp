@@ -238,6 +238,7 @@ bool ultra_safe_ptr_valid(const void* ptr) {
 #include <stdint.h>
 
 #define SAFE_TAG "SafeFree"
+static const bool WASM_DEBUG_SAFE_TAG = false;
 
 // Struttura per memorizzare informazioni sui blocchi liberati
 #define MAX_TRACKED_PTRS 64
@@ -277,25 +278,25 @@ ptr_status_t validate_ptr_for_free(const void* ptr) {
 
     // Verifica allineamento (32-bit)
     if (((uintptr_t)ptr & 0x3) != 0) {
-        ESP_LOGW(SAFE_TAG, "Unaligned pointer: %p", ptr);
+        if(WASM_DEBUG_SAFE_TAG) ESP_LOGW(SAFE_TAG, "Unaligned pointer: %p", ptr);
         return PTR_UNALIGNED;
     }
 
     // Verifica range DRAM
     if (!is_in_dram_range(ptr)) {
-        ESP_LOGW(SAFE_TAG, "Pointer outside DRAM: %p", ptr);
+        if(WASM_DEBUG_SAFE_TAG) ESP_LOGW(SAFE_TAG, "Pointer outside DRAM: %p", ptr);
         return PTR_OUT_OF_BOUNDS;
     }
 
     // Verifica se già liberato
     if (was_previously_freed(ptr)) {
-        ESP_LOGW(SAFE_TAG, "Pointer already freed: %p", ptr);
+        if(WASM_DEBUG_SAFE_TAG) ESP_LOGW(SAFE_TAG, "Pointer already freed: %p", ptr);
         return PTR_ALREADY_FREED;
     }
 
     // Verifica integrità del blocco heap
     if (!heap_caps_check_integrity_addr(ptr, true)) {
-        ESP_LOGW(SAFE_TAG, "Corrupted heap block: %p", ptr);
+        if(WASM_DEBUG_SAFE_TAG) ESP_LOGW(SAFE_TAG, "Corrupted heap block: %p", ptr);
         return PTR_CORRUPTED;
     }
 
@@ -311,7 +312,7 @@ bool ultra_safe_free(void** ptr) {
     ptr_status_t status = validate_ptr_for_free(original);
     
     if (status != PTR_OK) {
-        ESP_LOGW(SAFE_TAG, "Invalid free attempt for %p (status: %d)", original, status);
+        if(WASM_DEBUG_SAFE_TAG) ESP_LOGW(SAFE_TAG, "Invalid free attempt for %p (status: %d)", original, status);
         *ptr = NULL; // Previene ulteriori tentativi di free
         return false;
     }
