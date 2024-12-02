@@ -473,7 +473,7 @@ void m3_Free_Impl(void* io_ptr, bool isMemory) {
             ESP_LOGI("WASM3", "m3_Free_Impl: not safe to free memory");
         }
 
-        current_allocator->free(memory);
+        //current_allocator->free(memory); // DON'T do it (why?)
     } else {
         current_allocator->free(io_ptr);
     }
