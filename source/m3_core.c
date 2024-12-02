@@ -326,7 +326,11 @@ void* default_malloc(size_t size) {
 
     void* ptr = WASM_ENABLE_SPI_MEM ? heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
     if (ptr == NULL) {
-        ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT); // | MALLOC_CAP_INTERNAL
+        ptr = heap_caps_malloc(size + 4, MALLOC_CAP_8BIT); // | MALLOC_CAP_INTERNAL
+
+        if (ptr) {
+            memset(ptr, 0, size + 4);  // Zero-fill con padding
+        }
     }
 
     if(ptr == NULL){
@@ -361,7 +365,7 @@ void default_free(void* ptr) {
 }
 
 void* default_realloc(void* ptr, size_t new_size) {
-    if(!ptr || !safe_free(&ptr)){
+    if(!ptr || !ultra_safe_ptr_valid(ptr)){
         return default_malloc(new_size);
     }
 
