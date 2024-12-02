@@ -537,7 +537,7 @@ m3_wasi_context_t* m3_GetWasiContext()
 }
 
 
-M3Result  m3_LinkEspWASI_old  (IM3Module module)
+M3Result  m3_LinkEspWASI  (IM3Module module)
 {
     M3Result result = m3Err_none;
 
@@ -616,7 +616,7 @@ _catch:
 
 #endif // ESP32
 
-M3Result m3_LinkEspWASI(IM3Module module)
+M3Result m3_LinkEspWASI_partial(IM3Module module)
 {
     M3Result result = m3Err_none;
 
