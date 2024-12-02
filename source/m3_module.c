@@ -92,11 +92,13 @@ _try {
         }
 
         io_module->functions = m3_Int_ReallocArray (M3Function, io_module->functions, i_totalFunctions, io_module->allFunctions);
-
         io_module->allFunctions = i_totalFunctions;
+
+         if(WASM_DEBUG_PREALLOCFUNCTIONS) ESP_LOGI("WASM", "PreallocFunctions: allFunctions updated to %d", io_module->allFunctions);
         _throwifnull (io_module->functions);
     }
 } _catch:
+    ESP_LOGE("WASM", "PreallocFunctions error: %s", result);
     return result;
 }
 

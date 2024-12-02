@@ -183,7 +183,7 @@ _try {
 
     result = m3Err_functionLookupFailed;
 
-    for (u32 i = 0; i < io_module->numFunctions; i++) // should be ++i (pay attention in case of problems)
+    for (u32 i = 0; i < io_module->numFunctions; ++i) // should be ++i (pay attention in case of problems)
     {
         const IM3Function f = & io_module->functions [i];
 
