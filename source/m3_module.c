@@ -8,6 +8,8 @@
 #include "m3_env.h"
 #include "m3_exception.h"
 #include "m3_pointers.h"
+#include "m3_function.h"
+
 #include "esp_log.h"
 #include "esp_debug_helpers.h"
 
@@ -85,6 +87,7 @@ _try {
     if (i_totalFunctions > io_module->allFunctions) {
         if(WASM_DEBUG_PREALLOCFUNCTIONS) ESP_LOGI("WASM", "PreallocFunctions: m3_Int_ReallocArray");
         io_module->functions = m3_Int_ReallocArray (M3Function, io_module->functions, i_totalFunctions, io_module->allFunctions);
+
         io_module->allFunctions = i_totalFunctions;
         _throwifnull (io_module->functions);
     }
@@ -104,10 +107,9 @@ _   (Module_PreallocFunctions(io_module, io_module->numFunctions));
     IM3FuncType ft = io_module->funcTypes [i_typeIndex];
 
     IM3Function func = Module_GetFunction (io_module, index);
-
-    //*func = m3_Int_AllocStruct(M3Function);
+    
     if(func == NULL){
-        ESP_LOGE("WASM3", "Module_AddFunction: Given func is NULL\n");
+        func = m3_Int_AllocStruct(M3Function);
     }
 
     func->funcType = ft;
@@ -165,12 +167,12 @@ IM3Function  Module_GetFunction  (IM3Module i_module, u32 i_functionIndex)
 
     if (i_functionIndex < i_module->numFunctions)
     {
-        if(safe_free(&i_module->functions [i_functionIndex]))
+        if(safe_free(& i_module->functions [i_functionIndex]))
         {
             func = & i_module->functions [i_functionIndex];
             //func->module = i_module;
-        }
-    }
+        }        
+    }    
 
     return func;
 }
