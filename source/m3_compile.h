@@ -12,6 +12,8 @@
 #include "m3_exec_defs.h"
 #include "m3_function.h"
 
+#include "m3_segmented_memory.h"
+
 d_m3BeginExternC
 
 enum

@@ -8,6 +8,7 @@
 #include "m3_env.h"
 #include "m3_exception.h"
 #include "m3_info.h"
+#include "pointers.h"
 
 #include "esp_log.h"
 
@@ -89,7 +90,7 @@ _   (AllocFuncType (& funcType, (u32) maxNumTypes));
 } _catch:
 
     if (result)
-        m3_Free (funcType);
+        m3_Int_Free (funcType);
 
     * o_functionType = funcType;
 
@@ -161,7 +162,7 @@ _   (SignatureToFuncType (& ftype, i_linkingSignature));
 
     _catch:
 
-    m3_Free (ftype);
+    m3_Int_Free (ftype);
 
     return result;
 }

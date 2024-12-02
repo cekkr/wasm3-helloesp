@@ -384,6 +384,7 @@ void* m3_Malloc_Impl(size_t i_size) {
     memory->segment_size = WASM_SEGMENT_SIZE;
     memory->total_size = i_size;
     memory->num_segments = (i_size + memory->segment_size - 1) / memory->segment_size;
+    memory->point = 0;
 
     // Alloca array di strutture MemorySegment
     memory->segments = (MemorySegment*)current_allocator->malloc(
@@ -926,7 +927,7 @@ void  PushBacktraceFrame  (IM3Runtime io_runtime, pc_t i_pc)
     if (M3_UNLIKELY (io_runtime->backtrace.lastFrame == M3_BACKTRACE_TRUNCATED))
         return;
 
-    M3BacktraceFrame * newFrame = m3_AllocStruct(M3BacktraceFrame);
+    M3BacktraceFrame * newFrame = m3_Int_AllocStruct(M3BacktraceFrame);
 
     if (!newFrame)
     {

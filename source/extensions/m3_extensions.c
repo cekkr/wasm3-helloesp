@@ -83,7 +83,7 @@ _       (Module_AddFunction (i_module, funcTypeIndex, NULL));
     function->compiled = NULL;
 
     if (function->ownsWasmCode)
-        m3_Free (function->wasm);
+        m3_Int_Free (function->wasm);
 
     size_t numBytes = end - i_wasmBytes;
     function->wasm = m3_CopyMem (i_wasmBytes, numBytes);

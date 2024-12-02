@@ -21,6 +21,9 @@ typedef struct M3Memory_t {
     size_t num_segments;        // Numero totale di segmenti
     size_t segment_size;        // Dimensione di ogni segmento
     size_t total_size;          // Dimensione totale richiesta
+
+    // Pointer
+    size_t point;
 } M3Memory;
 
 typedef M3Memory *          IM3Memory;

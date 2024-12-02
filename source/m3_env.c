@@ -12,6 +12,7 @@
 #include "m3_compile.h"
 #include "m3_exception.h"
 #include "m3_info.h"
+#include "m3_pointers.h"
 
 #define _DEBUG_MEMORY 1
 
@@ -96,7 +97,7 @@ static const int WASM_DEBUG_NEW_ENV = 1;
 IM3Environment  m3_NewEnvironment  ()
 {
     if(WASM_DEBUG_NEW_ENV) ESP_LOGI("WASM3", "m3_NewEnvironment called");
-    IM3Environment env = m3_AllocStruct (M3Environment);
+    IM3Environment env = m3_Int_AllocStruct (M3Environment);
     if(WASM_DEBUG_NEW_ENV) ESP_LOGI("WASM3", "env allocated");
 
     if (env)
@@ -143,7 +144,7 @@ void  Environment_Release  (IM3Environment i_environment)
     while (ftype)
     {
         IM3FuncType next = ftype->next;
-        m3_Free (ftype);
+        m3_Int_Free (ftype);
         ftype = next;
     }
 
@@ -157,7 +158,7 @@ void  m3_FreeEnvironment  (IM3Environment i_environment)
     if (i_environment)
     {
         Environment_Release (i_environment);
-        m3_Free (i_environment);
+        m3_Int_Free (i_environment);
     }
 }
 
@@ -182,7 +183,7 @@ void  Environment_AddFuncType  (IM3Environment i_environment, IM3FuncType * io_f
     {
         if (AreFuncTypesEqual (newType, addType))
         {
-            m3_Free (addType);
+            m3_Int_Free (addType);
             break;
         }
 
@@ -265,7 +266,7 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
 {
     ESP_LOGI("WASM3", "m3_NewRuntime called");
 
-    IM3Runtime runtime = m3_AllocStruct (M3Runtime);
+    IM3Runtime runtime = m3_Int_AllocStruct (M3Runtime);
 
     if (runtime)
     {
@@ -281,7 +282,7 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
             runtime->stack = runtime->originStack;
             runtime->numStackSlots = i_stackSizeInBytes / sizeof (m3slot_t);         m3log (runtime, "new stack: %p", runtime->originStack);
         }
-        else m3_Free (runtime);
+        else m3_Int_Free (runtime);
     }
 
     return runtime;
@@ -327,7 +328,7 @@ void  Runtime_Release  (IM3Runtime i_runtime)
     Environment_ReleaseCodePages (i_runtime->environment, i_runtime->pagesOpen);
     Environment_ReleaseCodePages (i_runtime->environment, i_runtime->pagesFull);
 
-    m3_Free (i_runtime->originStack);
+    m3_Int_Free (i_runtime->originStack);
 
     void* memory_ptr = &i_runtime->memory;
     m3_FreeMemory (memory_ptr);
@@ -341,7 +342,7 @@ void  m3_FreeRuntime  (IM3Runtime i_runtime)
         m3_PrintProfilerInfo ();
 
         Runtime_Release (i_runtime);
-        m3_Free (i_runtime);
+        m3_Int_Free (i_runtime);
     }
 }
 
@@ -826,7 +827,7 @@ _           (ReadLEB_u32 (& numElements, & bytes, end));
             // make sure the table isn't shrunk.
             if (endElement > io_module->table0Size)
             {
-                io_module->table0 = m3_ReallocArray (IM3Function, io_module->table0, endElement, io_module->table0Size);
+                io_module->table0 = m3_Int_ReallocArray (IM3Function, io_module->table0, endElement, io_module->table0Size);
                 io_module->table0Size = (u32) endElement;
             }
             _throwifnull(io_module->table0);
