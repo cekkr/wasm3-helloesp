@@ -12,6 +12,7 @@
 #include "m3_pointers.h"
 #include "m3_env.h"
 
+static const bool WASM_DEBUG_PARSE = true;
 
 M3Result  ParseType_Table  (IM3Module io_module, bytes_t i_bytes, cbytes_t i_end)
 {
@@ -663,6 +664,21 @@ _       (ParseModuleSection (module, section, pos, sectionLength));
 
     if (result)
     {
+        if(WASM_DEBUG_PARSE){
+            const char* error_type;
+            if (result == m3Err_wasmMalformed) {
+                error_type = "WASM malformato";
+            } else if (result == m3Err_incompatibleWasmVersion) {
+                error_type = "Versione WASM incompatibile";
+            } else if (result == m3Err_misorderedWasmSection) {
+                error_type = "Sezioni WASM in ordine errato";
+            } else {
+                error_type = "Errore sconosciuto";
+            }
+            
+            ESP_LOGE("WASM3", "Errore nel parsing del modulo: %s (%s)", result, error_type);
+        }
+
         m3_FreeModule (module);
         module = NULL;
     }
