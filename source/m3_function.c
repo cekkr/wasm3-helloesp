@@ -433,9 +433,16 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName, const c
     if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "m3_Int_AllocArray function name");
     char* nameCopy = m3_Int_AllocArray(char, strlen(functionName) + 1);
     if (!nameCopy) {
-        return "Memory allocation failed";
+        return "nameCopy memory allocation failed";
     }
     strcpy(nameCopy, functionName);
+
+    // Signature copy
+    char* signatureCopy = m3_Int_AllocArray(char, strlen(functionName) + 1);
+    if (!signatureCopy) {
+        return "signatureCopy memory allocation failed";
+    }
+    strcpy(signatureCopy, functionName);
 
     // Crea una nuova entry nella function table   
     u32 index = module->numFunctions++;
@@ -454,7 +461,7 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName, const c
     
     if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "Setting function parameters");
     function->import.fieldUtf8 = nameCopy;
-    function->import.moduleUtf8 = strdup(module->name);  
+    function->import.moduleUtf8 = module->name; //strdup(module->name);  
     function->names[0] = function->import.moduleUtf8;
     function->numNames++;
     function->module = module;
