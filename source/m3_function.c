@@ -310,6 +310,7 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName) {
     
     if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "Setting function parameters");
     function->import.fieldUtf8 = nameCopy;
+    function->import.moduleUtf8 = module->name; // to copy: function->import.moduleUtf8 = strdup(module->name);    
     function->names[0] = function->import.fieldUtf8;
     function->numNames++;
     function->module = module;
