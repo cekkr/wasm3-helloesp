@@ -279,6 +279,48 @@ u32  GetFunctionNumArgsAndLocals (IM3Function i_function)
 /// Register function name
 ///
 
+M3Result addFunctionToModule(IM3Module module, const char* functionName) {
+    if (!module || !functionName) {
+        return "Invalid parameters";
+    }
+
+    // Alloca spazio per il nuovo nome della funzione
+    char* nameCopy = m3_AllocArray(module->runtime->environment, char, strlen(functionName) + 1);
+    if (!nameCopy) {
+        return "Memory allocation failed";
+    }
+    strcpy(nameCopy, functionName);
+
+    // Crea una nuova entry nella function table
+    IM3Function function = NULL;
+    function = m3_AllocStruct(module->runtime->environment, M3Function);
+    if (!function) {
+        m3_Free(nameCopy);
+        return "Memory allocation failed";
+    }
+
+    // Inizializza la funzione
+    function->name = nameCopy;
+    function->module = module;
+    function->compiled = NULL;  // Non compilata
+    function->funcType = NULL;  // Tipo non definito
+    
+    // Aggiungi la funzione alla tabella del modulo
+    if (!module->functions) {
+        module->functions = function;
+    } else {
+        // Aggiungi in coda alla lista di funzioni
+        IM3Function current = module->functions;
+        while (current->next) {
+            current = current->next;
+        }
+        current->next = function;
+    }
+    module->numFunctions++;
+
+    return m3Err_none;
+}
+
 // Funzione helper per registrare una funzione nel modulo
 M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry) {
     M3Result result = m3Err_none;
@@ -286,6 +328,8 @@ M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry) 
     if (!module || !entry || !entry->name || !entry->func) {
         return "Invalid parameters";
     }
+
+    addFunctionToModule(module, entry->name);
     
     // Linkare la funzione nel modulo
     result = m3_LinkRawFunction(
@@ -330,3 +374,4 @@ const WasmFunctionEntry functionTable[] = {
 // Registrazione delle funzioni
 M3Result result = RegisterWasmFunctions(module, functionTable, sizeof(functionTable)/sizeof(functionTable[0]));
 */
+

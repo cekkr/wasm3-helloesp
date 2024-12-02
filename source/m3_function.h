@@ -104,6 +104,7 @@ typedef struct {
     const char* signature;  // Firma della funzione in formato WASM
 } WasmFunctionEntry;
 
+M3Result addFunctionToModule(IM3Module module, const char* functionName);
 M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry);
 M3Result RegisterWasmFunctions(IM3Module module, const WasmFunctionEntry* entries, size_t count);
 
