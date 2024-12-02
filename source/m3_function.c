@@ -284,6 +284,7 @@ u32  GetFunctionNumArgsAndLocals (IM3Function i_function)
 /// Function signature
 ///
 
+static const bool WASM_DEBUG_PARSE_FUNCTION_SIGNATURE = true;
 M3FuncType* ParseFunctionSignature(const char* signature) {
     if (!signature) return NULL;
     
@@ -347,6 +348,7 @@ M3FuncType* ParseFunctionSignature(const char* signature) {
                     types[typeIndex++] = M3_TYPE_F64;
                     break;
                 default:
+                    ESP_LOGE("WASM3", "ParseFunctionSignature: Unknown signature[%d] = %c", i, signature[i]);
                     default_allocator.free(funcType);
                     return NULL;
             }
@@ -372,6 +374,7 @@ M3FuncType* ParseFunctionSignature(const char* signature) {
                     types[typeIndex++] = M3_TYPE_F64;
                     break;
                 default:
+                    ESP_LOGE("WASM3", "ParseFunctionSignature: Unknown signature[%d] (2) = %c", i, signature[i]);
                     default_allocator.free(funcType);
                     return NULL;
             }
