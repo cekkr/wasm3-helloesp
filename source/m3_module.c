@@ -181,14 +181,16 @@ IM3Function  Module_GetFunction  (IM3Module i_module, u32 i_functionIndex)
 
     if (i_functionIndex < i_module->numFunctions)
     {
-        if(is_ptr_valid(& i_module->functions [i_functionIndex]))
+        /*if(is_ptr_valid(& i_module->functions [i_functionIndex]))
         {
             func = & i_module->functions [i_functionIndex];
             //func->module = i_module;
         }
         else {
             ESP_LOGE("WASM", "Module_GetFunction: invalid function pointer");
-        }        
+        }*/
+
+       func = i_module->functions [i_functionIndex];        
     }  
     else {
         ESP_LOGE("WASM", "Module_GetFunction: i_functionIndex >= i_module->numFunctions (%lu, %lu)", i_functionIndex, i_module->numFunctions );
