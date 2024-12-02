@@ -12,7 +12,7 @@
 
 M3Result AllocFuncType (IM3FuncType * o_functionType, u32 i_numTypes)
 {
-    *o_functionType = (IM3FuncType) m3_Int_Malloc ("M3FuncType", sizeof (M3FuncType) + i_numTypes);
+    *o_functionType = (IM3FuncType) m3_Int_Malloc ("M3FuncType", sizeof (M3FuncType)); // + i_numTypes
 
     if(!(*o_functionType)){
         ESP_LOGE("WASM3", "AllocFuncType allocation failed");
