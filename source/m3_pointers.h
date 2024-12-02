@@ -17,7 +17,13 @@ typedef enum {
 
 ptr_check_result_t validate_pointer(const void* ptr, size_t expected_size);
 bool is_ptr_freeable(void* ptr);
-bool safe_free(void** ptr);
+bool safe_free(void* ptr);
+
+bool safe_function_release(IM3Function* i_function);
+bool safe_m3_int_free(void** ptr);
+bool safe_free_with_check(void** ptr);
+bool is_ptr_valid(const void* ptr);
+
 
 ///
 /// Internal

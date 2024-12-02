@@ -338,8 +338,8 @@ void default_free(void* ptr) {
     // Logging del puntatore prima della free
     if(WASM_DEBUG_DEFAULT_FREE) ESP_LOGD("WASM3", "Attempting to free memory at %p", ptr);
     
-    if (!safe_free(&ptr)) {
-        ESP_LOGW("WASM3", "safe_free check failed for pointer %p", ptr);
+    if (!safe_free(ptr)) {
+        ESP_LOGW("WASM3", "safe_free check failed for pointer");
         return;
     }
 
