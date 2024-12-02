@@ -285,37 +285,68 @@ u32  GetFunctionNumArgsAndLocals (IM3Function i_function)
 ///
 
 static const bool WASM_DEBUG_PARSE_FUNCTION_SIGNATURE = true;
+
 M3FuncType* ParseFunctionSignature(const char* signature) {
-    if (!signature) return NULL;
+    if (!signature) {
+        ESP_LOGW("WASM3", "ParseFunctionSignature: returns NULL (null signature)");
+        return NULL;
+    }
     
-    // Count returns and arguments
     size_t len = strlen(signature);
     u16 numRets = 0;
     u16 numArgs = 0;
+    size_t i = 0;
     
-    // First character should be '('
-    if (signature[0] != '(') return NULL;
+    // Process return type (before the parenthesis)
+    if (signature[i] == 'v') {
+        numRets = 0;
+    } else {
+        switch (signature[i]) {
+            case 'i':
+                numRets = 1;
+                break;
+            case 'I':
+                numRets = 1;
+                break;
+            case 'f':
+                numRets = 1;
+                break;
+            case 'F':
+                numRets = 1;
+                break;
+            default:
+                ESP_LOGW("WASM3", "ParseFunctionSignature: Invalid return type %c", signature[i]);
+                return NULL;
+        }
+    }
+    
+    // Find opening parenthesis
+    while (i < len && signature[i] != '(') i++;
+    if (i >= len) {
+        ESP_LOGW("WASM3", "ParseFunctionSignature: Missing opening parenthesis");
+        return NULL;
+    }
+    i++; // Skip '('
     
     // Count arguments until ')'
-    size_t i = 1;
+    size_t args_start = i;
     while (i < len && signature[i] != ')') {
         if (signature[i] != ' ') numArgs++;
         i++;
     }
     
-    if (i >= len || signature[i] != ')') return NULL;
-    i++; // Skip ')'
-    
-    // Count returns
-    while (i < len) {
-        if (signature[i] != ' ') numRets++;
-        i++;
+    if (i >= len || signature[i] != ')') {
+        ESP_LOGW("WASM3", "ParseFunctionSignature: Missing closing parenthesis");
+        return NULL;
     }
     
     // Allocate memory for the structure plus the types array
     size_t totalSize = sizeof(M3FuncType) + (numRets + numArgs) * sizeof(u8);
     M3FuncType* funcType = (M3FuncType*)default_allocator.malloc(totalSize);
-    if (!funcType) return NULL;
+    if (!funcType) {
+        ESP_LOGW("WASM3", "ParseFunctionSignature: Memory allocation failed");
+        return NULL;
+    }
     
     // Initialize the structure
     funcType->next = NULL;
@@ -326,39 +357,29 @@ M3FuncType* ParseFunctionSignature(const char* signature) {
     u8* types = funcType->types;
     size_t typeIndex = 0;
     
-    // First process returns (what comes after the ')')
-    i = 0;
-    while (signature[i] != ')') i++;
-    i++; // Skip ')'
-    
-    // Process return types
-    while (i < len) {
-        if (signature[i] != ' ') {
-            switch (signature[i]) {
-                case 'i':
-                    types[typeIndex++] = M3_TYPE_I32;
-                    break;
-                case 'I':
-                    types[typeIndex++] = M3_TYPE_I64;
-                    break;
-                case 'f':
-                    types[typeIndex++] = M3_TYPE_F32;
-                    break;
-                case 'F':
-                    types[typeIndex++] = M3_TYPE_F64;
-                    break;
-                default:
-                    ESP_LOGE("WASM3", "ParseFunctionSignature: Unknown signature[%d] = %c", i, signature[i]);
-                    default_allocator.free(funcType);
-                    return NULL;
-            }
+    // First process return type (if any)
+    if (numRets > 0) {
+        switch (signature[0]) {
+            case 'i':
+                types[typeIndex++] = M3_TYPE_I32;
+                break;
+            case 'I':
+                types[typeIndex++] = M3_TYPE_I64;
+                break;
+            case 'f':
+                types[typeIndex++] = M3_TYPE_F32;
+                break;
+            case 'F':
+                types[typeIndex++] = M3_TYPE_F64;
+                break;
+            default:
+                types[typeIndex++] = M3_TYPE_NONE;
+                break;
         }
-        i++;
     }
     
-    // Now process arguments (what's between the parentheses)
-    i = 1; // Skip initial '('
-    while (signature[i] != ')') {
+    // Process arguments
+    for (i = args_start; signature[i] != ')'; i++) {
         if (signature[i] != ' ') {
             switch (signature[i]) {
                 case 'i':
@@ -374,12 +395,16 @@ M3FuncType* ParseFunctionSignature(const char* signature) {
                     types[typeIndex++] = M3_TYPE_F64;
                     break;
                 default:
-                    ESP_LOGE("WASM3", "ParseFunctionSignature: Unknown signature[%d] (2) = %c", i, signature[i]);
+                    ESP_LOGE("WASM3", "ParseFunctionSignature: Unknown argument type %c at position %d", signature[i], i);
                     default_allocator.free(funcType);
                     return NULL;
             }
         }
-        i++;
+    }
+
+    if (WASM_DEBUG_PARSE_FUNCTION_SIGNATURE) {
+        ESP_LOGI("WASM3", "ParseFunctionSignature: Successfully parsed signature '%s' (returns: %d, args: %d)", 
+                 signature, numRets, numArgs);
     }
     
     return funcType;
