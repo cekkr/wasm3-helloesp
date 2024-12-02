@@ -576,13 +576,13 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) {
         io_runtime->memory.maxPages = i_module->memoryInfo.maxPages ? 
                                     i_module->memoryInfo.maxPages : 65536;
         io_runtime->memory.pageSize = i_module->memoryInfo.pageSize;
-        io_runtime->memory.segment_size = io_runtime->memory.pageSize;  // Usa la page size come segment size
+        io_runtime->memory.segment_size = WASM_SEGMENT_SIZE;  // Usa la page size come segment size
         
         result = ResizeMemory(io_runtime, i_module->memoryInfo.initPages);
     }
     else {
         if(io_runtime->memory.segment_size == 0) {
-            io_runtime->memory.segment_size = io_runtime->memory.pageSize;
+            io_runtime->memory.segment_size = WASM_SEGMENT_SIZE;
         }
     }
 
