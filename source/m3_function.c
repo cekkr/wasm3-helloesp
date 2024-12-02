@@ -275,3 +275,58 @@ u32  GetFunctionNumArgsAndLocals (IM3Function i_function)
         return 0;
 }
 
+///
+/// Register function name
+///
+
+// Funzione helper per registrare una funzione nel modulo
+M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry) {
+    M3Result result = m3Err_none;
+    
+    if (!module || !entry || !entry->name || !entry->func) {
+        return "Invalid parameters";
+    }
+    
+    // Linkare la funzione nel modulo
+    result = m3_LinkRawFunction(
+        module,              // Modulo WASM
+        "*",                 // Namespace (wildcard)
+        entry->name,         // Nome della funzione
+        entry->signature,    // Firma della funzione
+        entry->func         // Puntatore alla funzione
+    );
+    
+    return result;
+}
+
+// Funzione per registrare multiple funzioni da un array
+M3Result RegisterWasmFunctions(IM3Module module, const WasmFunctionEntry* entries, size_t count) {
+    M3Result result = m3Err_none;
+    
+    for (size_t i = 0; i < count; i++) {
+        result = RegisterWasmFunction(module, &entries[i]);
+        if (result) {
+            return result; // Ritorna al primo errore
+        }
+    }
+    
+    return result;
+}
+
+// Esempio di utilizzo:
+/*
+// Definizione delle funzioni native
+m3_ret_t add(IM3Runtime runtime, IM3ImportContext _ctx, uint64_t* _sp, void* _mem) {
+    // Implementazione della funzione
+    return m3Err_none;
+}
+
+// Creazione del lookup table
+const WasmFunctionEntry functionTable[] = {
+    { "add", add, "i(ii)" },  // Funzione che accetta due interi e ritorna un intero
+    // Aggiungi altre funzioni qui...
+};
+
+// Registrazione delle funzioni
+M3Result result = RegisterWasmFunctions(module, functionTable, sizeof(functionTable)/sizeof(functionTable[0]));
+*/
