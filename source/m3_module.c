@@ -74,6 +74,7 @@ _try {
 }
 
 static const bool WASM_DEBUG_PREALLOCFUNCTIONS = true;
+static const int PreallocFunctions_PageSize = 8;
 M3Result  Module_PreallocFunctions  (IM3Module io_module, u32 i_totalFunctions)
 {
     if(WASM_DEBUG_PREALLOCFUNCTIONS && false){
@@ -83,6 +84,9 @@ M3Result  Module_PreallocFunctions  (IM3Module io_module, u32 i_totalFunctions)
     }
 
 _try {
+
+    i_totalFunctions = ((i_totalFunctions/PreallocFunctions_PageSize) + 1) * PreallocFunctions_PageSize;
+
     if(WASM_DEBUG_PREALLOCFUNCTIONS) ESP_LOGI("WASM", "PreallocFunctions: (Total Funcs: %lu, All Funcs: %lu)", i_totalFunctions, io_module->allFunctions);
     if (i_totalFunctions > io_module->allFunctions) {
         if(WASM_DEBUG_PREALLOCFUNCTIONS) ESP_LOGI("WASM", "PreallocFunctions: m3_Int_ReallocArray");
@@ -95,10 +99,11 @@ _try {
         io_module->allFunctions = i_totalFunctions;
 
         if(WASM_DEBUG_PREALLOCFUNCTIONS) ESP_LOGI("WASM", "PreallocFunctions: allFunctions updated to %lu", io_module->allFunctions);
-        _throwifnull (io_module->functions);
+        
+        _throwifnull (& io_module->functions);
     }
 } _catch:
-    ESP_LOGE("WASM", "PreallocFunctions error: %s", result);
+    ESP_LOGE("WASM", "PreallocFunctions error");
     return result;
 }
 

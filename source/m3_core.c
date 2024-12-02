@@ -328,7 +328,7 @@ void* default_malloc(size_t size) {
 
     void* ptr = WASM_ENABLE_SPI_MEM ? heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
     if (ptr == NULL) {
-        ptr = heap_caps_malloc(size + ALLOC_SHIFT_OF, MALLOC_CAP_8BIT); // | MALLOC_CAP_INTERNAL
+        ptr = heap_caps_malloc(size + ALLOC_SHIFT_OF, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL); // | MALLOC_CAP_INTERNAL
 
         if (ptr) {
             memset(ptr, 0, size + ALLOC_SHIFT_OF);  // Zero-fill con padding
@@ -372,6 +372,7 @@ void default_free(void* ptr) {
     }
 }
 
+static const bool REALLOC_USE_MALLOC_IF_NEW = false;
 void* default_realloc(void* ptr, size_t new_size) {
     if(!ptr || !ultra_safe_ptr_valid(ptr)){
         return default_malloc(new_size);
@@ -379,12 +380,23 @@ void* default_realloc(void* ptr, size_t new_size) {
 
     void* new_ptr = WASM_ENABLE_SPI_MEM ? heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
     if (new_ptr == NULL) {
-        new_ptr = heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT); //  | MALLOC_CAP_INTERNAL
+        if(REALLOC_USE_MALLOC_IF_NEW && ptr == NULL){
+            new_ptr = default_malloc(new_size);
+        }
+        else {
+            new_ptr = heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL); //  
+        }
 
         if(new_ptr) {
             memset(new_ptr, 0, new_size);
         }
     }
+
+    if (new_ptr == NULL){
+        ESP_LOGE("WASM3", "Failed to reallocate memory of size %zu", new_size);
+        //esp_backtrace_print(100);
+    }
+
     return new_ptr;
 }
 
