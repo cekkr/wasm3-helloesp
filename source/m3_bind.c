@@ -168,6 +168,7 @@ _   (SignatureToFuncType (& ftype, i_linkingSignature));
 }
 
 
+static const bool WASM_DEBUG_FIND_LINK_FUNC = true;
 M3Result  FindAndLinkFunction      (IM3Module       io_module,
                                     ccstr_t         i_moduleName,
                                     ccstr_t         i_functionName,
@@ -188,7 +189,7 @@ _try {
 
         if (f->import.moduleUtf8 and f->import.fieldUtf8)
         {
-            ESP_LOGI("WASM3", "Listing function: %s\n", f->import.fieldUtf8);
+            if(WASM_DEBUG_FIND_LINK_FUNC) ESP_LOGI("WASM3", "Listing function: %s\n", f->import.fieldUtf8);
 
             if (strcmp (f->import.fieldUtf8, i_functionName) == 0 and
                (wildcardModule or strcmp (f->import.moduleUtf8, i_moduleName) == 0))

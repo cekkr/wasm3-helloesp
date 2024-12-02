@@ -285,38 +285,32 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName) {
     }
 
     // Alloca spazio per il nuovo nome della funzione
-    char* nameCopy = m3_AllocArray(module->runtime->environment, char, strlen(functionName) + 1);
+    char* nameCopy = m3_Int_AllocArray(char, strlen(functionName) + 1);
     if (!nameCopy) {
         return "Memory allocation failed";
     }
     strcpy(nameCopy, functionName);
 
     // Crea una nuova entry nella function table
-    IM3Function function = NULL;
-    function = m3_AllocStruct(module->runtime->environment, M3Function);
+    u32 index = module->allFunctions++;
+    Module_PreallocFunctions(module, module->allFunctions);
+    IM3Function function = Module_GetFunction (module, index);
+    
+    /*IM3Function function = NULL; // to trash (manual instance)
+    function = m3_Int_AllocStruct(M3Function);
     if (!function) {
         m3_Free(nameCopy);
         return "Memory allocation failed";
-    }
+    }*/
 
     // Inizializza la funzione
-    function->name = nameCopy;
+    
+    function->import.fieldUtf8 = nameCopy;
+    function->names[0] = function->import.fieldUtf8;
+    function->numNames++;
     function->module = module;
     function->compiled = NULL;  // Non compilata
-    function->funcType = NULL;  // Tipo non definito
-    
-    // Aggiungi la funzione alla tabella del modulo
-    if (!module->functions) {
-        module->functions = function;
-    } else {
-        // Aggiungi in coda alla lista di funzioni
-        IM3Function current = module->functions;
-        while (current->next) {
-            current = current->next;
-        }
-        current->next = function;
-    }
-    module->numFunctions++;
+    function->funcType = NULL;  // Tipo non definito    
 
     return m3Err_none;
 }
