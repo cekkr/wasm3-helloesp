@@ -633,7 +633,7 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
             for (size_t i = 0; i < num_segments; i++) {
                 memory->segments[i].data = NULL;
                 memory->segments[i].is_allocated = false;
-                memory->segment_size = memory->pageSize;
+                //memory->segment_size = memory->pageSize; // FUCK ME
             }
         }
         else if (num_segments != memory->num_segments) {
@@ -654,7 +654,7 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
                 for (size_t i = memory->num_segments; i < num_segments; i++) {
                     memory->segments[i].data = NULL;
                     memory->segments[i].is_allocated = false;
-                    memory->segment_size = memory->pageSize;
+                    //memory->segment_size = memory->pageSize;
                 }
             }
             else {

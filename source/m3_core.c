@@ -426,10 +426,12 @@ void* m3_Malloc_Impl(size_t i_size) {
         return NULL;
     }
 
-    memory->segment_size = WASM_SEGMENT_SIZE;
+    memory->segment_size = WASM_SEGMENT_SIZE;    
     memory->total_size = i_size;
     memory->num_segments = (i_size + memory->segment_size - 1) / memory->segment_size;
     memory->point = 0;
+
+    ESP_LOGI("WASM3", "m3_Malloc_Imp memory->segment_size = %zu", memory->segment_size);
 
     // Alloca array di strutture MemorySegment
     memory->segments = (MemorySegment*)current_allocator->malloc(
