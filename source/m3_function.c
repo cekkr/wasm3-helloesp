@@ -12,7 +12,12 @@
 
 M3Result AllocFuncType (IM3FuncType * o_functionType, u32 i_numTypes)
 {
-    *o_functionType = (IM3FuncType) m3_Malloc ("M3FuncType", sizeof (M3FuncType) + i_numTypes);
+    *o_functionType = (IM3FuncType) m3_Int_Malloc ("M3FuncType", sizeof (M3FuncType) + i_numTypes);
+
+    if(!(*o_functionType)){
+        ESP_LOGE("WASM3", "AllocFuncType allocation failed");
+    }
+
     return (*o_functionType) ? m3Err_none : m3Err_mallocFailed;
 }
 
@@ -109,7 +114,7 @@ void  Function_Release  (IM3Function i_function)
     //if(!safe_free(&i_function)) return; // nosense: it's not a pointer
 
     if(WASM_DEBUG_FUNCTION_RELEASE) ESP_LOGI("WASM3", "Function_Release called");
-    m3_Int_Free (i_function->constants);
+    //m3_Int_Free (i_function->constants);
 
     for (int i = 0; i < i_function->numNames; i++)
     {
@@ -136,7 +141,11 @@ void  Function_Release  (IM3Function i_function)
         m3_Int_Free (i_function->codePageRefs);
         i_function->numCodePageRefs = 0;
     }
+
+   
 #   endif
+
+    m3_Int_Free (i_function);
 }
 
 

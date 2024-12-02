@@ -24,7 +24,9 @@ bool safe_free(void** ptr);
 ///
 
 #define     m3_Int_Malloc(NAME, SIZE)                   default_malloc(SIZE)
+//#define     m3_Int_Malloc(SIZE)                         default_malloc(SIZE)
 #define     m3_Int_Realloc(NAME, PTR, NEW, OLD)         default_realloc(PTR, NEW, OLD)
+//#define     m3_Int_Realloc(PTR, NEW, OLD)               default_realloc(PTR, NEW, OLD)
 #define     m3_Int_AllocStruct(STRUCT)                  (STRUCT *)default_malloc (sizeof (STRUCT))
 #define     m3_Int_AllocArray(STRUCT, NUM)              (STRUCT *)default_malloc (sizeof (STRUCT) * (NUM))
 #define     m3_Int_ReallocArray(STRUCT, PTR, NEW, OLD)  (STRUCT *)default_realloc ((void *)(PTR), sizeof (STRUCT) * (NEW)) // , sizeof (STRUCT) * (OLD)

@@ -325,7 +325,7 @@ void* default_malloc(size_t size) {
 void default_free(void* ptr) {
     if(!safe_free(&ptr)) return;
 
-    if (heap_caps_check_integrity_addr((intptr_t)ptr, false)) {
+    if (heap_caps_check_integrity_addr(&ptr, false)) { // (intptr_t)
         heap_caps_free(ptr);
     }
     else {
@@ -372,7 +372,10 @@ void m3_SetMemoryAllocator(MemoryAllocator* allocator) {
     return true;
 }*/
 
+static const bool WASM_DEBUG_MALLOC_IMPL_BACKTRACE = true;
 void* m3_Malloc_Impl(size_t i_size) {
+    if(WASM_DEBUG_MALLOC_IMPL_BACKTRACE) esp_backtrace_print(100);
+
     if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Malloc_Impl of size %zu", i_size);
 
     M3Memory* memory = (M3Memory*)current_allocator->malloc(sizeof(M3Memory));
@@ -858,7 +861,7 @@ M3Result  Read_utf8  (cstr_t * o_utf8, bytes_t * io_bytes, cbytes_t i_end)
 
             if (end <= i_end)
             {
-                char * utf8 = (char *)m3_Malloc ("UTF8", utf8Length + 1);
+                char * utf8 = (char *)m3_Int_Malloc ("UTF8", utf8Length + 1);
 
                 if (utf8)
                 {

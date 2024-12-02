@@ -613,7 +613,10 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
             memory->segments = current_allocator->malloc(
                 num_segments * sizeof(MemorySegment)
             );
-            if (!memory->segments) return m3Err_mallocFailed;
+            if (!memory->segments){ 
+                ESP_LOGE("WASM3", "Failed memory->segment allocation");
+                return m3Err_mallocFailed;
+            }
             
             // Inizializza tutte le strutture dei segmenti
             for (size_t i = 0; i < num_segments; i++) {
@@ -628,7 +631,10 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
                 memory->segments,
                 num_segments * sizeof(MemorySegment)
             );
-            if (!new_segments) return m3Err_mallocFailed;
+            if (!new_segments){
+                ESP_LOGE("WASM3", "Failed new_segments allocation");
+                return m3Err_mallocFailed;
+            }
             
             memory->segments = new_segments;
 
