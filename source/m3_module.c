@@ -99,8 +99,10 @@ _try {
         io_module->allFunctions = i_totalFunctions;
 
         if(WASM_DEBUG_PREALLOCFUNCTIONS) ESP_LOGI("WASM", "PreallocFunctions: allFunctions updated to %lu", io_module->allFunctions);
-        
-        _throwifnull (& io_module->functions);
+
+        if(io_module->functions) return NULL; // ...
+
+        _throwifnull (io_module->functions);
     }
 } _catch:
     ESP_LOGE("WASM", "PreallocFunctions error");
