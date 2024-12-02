@@ -308,6 +308,15 @@ void print_memory_info(){
 static const int CHECK_MEMORY_AVAILABLE = 0;
 //static const int WASM_ENABLE_SPI_MEM = 0;
 
+void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
+{
+    if(DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_CopyMem");
+    void * ptr = m3_Malloc("CopyMem", i_size);
+    if (ptr) {
+        memcpy (ptr, i_from, i_size);
+    }
+    return ptr;
+}
 
 // Allocatore di default che usa heap_caps
 void* default_malloc(size_t size) {

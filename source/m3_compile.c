@@ -14,6 +14,7 @@
 #include "m3_exec_defs.h"
 #include "m3_exception.h"
 #include "m3_info.h"
+#include "m3_core.h"
 
 //----- EMIT --------------------------------------------------------------------------------------------------------------
 
@@ -2920,7 +2921,7 @@ _   (CompileBlockStatements (o));
 
     if (numConstantSlots)
     {
-        io_function->constants = m3_CopyMem (o->constants, io_function->numConstantBytes);
+        io_function->constants = m3_Int_CopyMem (o->constants, io_function->numConstantBytes);
         _throwifnull(io_function->constants);
     }
 

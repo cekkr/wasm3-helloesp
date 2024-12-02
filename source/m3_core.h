@@ -310,6 +310,8 @@ void        FillBacktraceFunctionInfo  (IM3Runtime io_runtime, IM3Function i_fun
 void        ClearBacktrace             (IM3Runtime io_runtime);
 # endif
 
+void *  m3_Int_CopyMem  (const void * i_from, size_t i_size);
+
 void* default_malloc(size_t size);
 void default_free(void* ptr);
 void* default_realloc(void* ptr, size_t new_size);
