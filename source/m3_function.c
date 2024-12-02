@@ -305,6 +305,7 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName) {
     IM3Function function = Module_GetFunction (module, index);
 
     if (!function) {
+        ESP_LOGE("WASM3", "addFunctionToModule: Module_GetFunction failed");
         return "Module_GetFunction failed";
     }
     
