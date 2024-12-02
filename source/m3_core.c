@@ -353,7 +353,7 @@ void default_free(void* ptr) {
         return;
     }
 
-    if (heap_caps_check_integrity_all(true)) {  // Check completo dell'heap
+    /*if (heap_caps_check_integrity_all(true)) {  // Check completo dell'heap
         if (heap_caps_check_integrity_addr(ptr, true)) {  // Check dettagliato
             heap_caps_free(ptr);
         } else {
@@ -361,6 +361,12 @@ void default_free(void* ptr) {
         }
     } else {
         ESP_LOGW("WASM3", "Global heap corruption detected before free");
+    }*/
+
+    void* temp = ptr;
+    if (!ultra_safe_free(&temp)) {
+        ESP_LOGW("WASM3", "Skipped unsafe free operation");
+        return;
     }
 }
 

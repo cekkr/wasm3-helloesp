@@ -3,6 +3,7 @@
 #define m3_pointers_h
 
 #include "m3_core.h"
+#include "m3_pointers.h"
 
 ///
 /// Pointer validation
@@ -27,6 +28,26 @@ bool is_ptr_valid(const void* ptr);
 static inline bool is_address_in_range(uintptr_t addr);
 bool ultra_safe_ptr_valid(const void* ptr);
 
+////////////////////////////////////////////////////////////////
+
+typedef struct {
+    void* ptr;
+    size_t size;
+    const char* allocation_point;
+} safe_ptr_t;
+
+typedef enum {
+    PTR_OK = 0,
+    PTR_NULL,
+    PTR_UNALIGNED,
+    PTR_OUT_OF_BOUNDS,
+    PTR_ALREADY_FREED,
+    PTR_CORRUPTED,
+    PTR_INVALID_BLOCK
+} ptr_status_t;
+
+bool ultra_safe_free(void** ptr);
+ptr_status_t validate_ptr_for_free(const void* ptr);
 
 ///
 /// Internal

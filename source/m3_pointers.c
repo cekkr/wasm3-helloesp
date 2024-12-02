@@ -104,12 +104,6 @@ bool safe_free(void* ptr) {
 ///
 ///
 
-typedef struct {
-    void* ptr;
-    size_t size;
-    const char* allocation_point;
-} safe_ptr_t;
-
 // Verifica se un puntatore è valido per le operazioni di memoria
 bool is_ptr_valid(const void* ptr) {
     if (!ptr) {
@@ -232,5 +226,100 @@ bool ultra_safe_ptr_valid(const void* ptr) {
         }
     }*/
 
+    return true;
+}
+
+///
+///
+///
+
+#include "esp_heap_caps.h"
+#include "esp_log.h"
+#include <stdint.h>
+
+#define SAFE_TAG "SafeFree"
+
+// Struttura per memorizzare informazioni sui blocchi liberati
+#define MAX_TRACKED_PTRS 64
+static struct {
+    void* ptrs[MAX_TRACKED_PTRS];
+    int count;
+} freed_ptrs = {0};
+
+static inline bool is_in_dram_range(const void* ptr) {
+    // Uso uint32_t come nel file originale
+    extern uint32_t _heap_start, _heap_end;
+    
+    uintptr_t addr = (uintptr_t)ptr;
+    uintptr_t start = (uintptr_t)&_heap_start;
+    uintptr_t end = (uintptr_t)&_heap_end;
+    
+    return (addr >= start && addr < end);
+}
+
+static bool was_previously_freed(const void* ptr) {
+    for (int i = 0; i < freed_ptrs.count; i++) {
+        if (freed_ptrs.ptrs[i] == ptr) return true;
+    }
+    return false;
+}
+
+static void track_freed_ptr(const void* ptr) {
+    if (freed_ptrs.count < MAX_TRACKED_PTRS) {
+        freed_ptrs.ptrs[freed_ptrs.count++] = (void*)ptr;
+    }
+}
+
+ptr_status_t validate_ptr_for_free(const void* ptr) {
+    if (!ptr) {
+        return PTR_NULL;
+    }
+
+    // Verifica allineamento (32-bit)
+    if (((uintptr_t)ptr & 0x3) != 0) {
+        ESP_LOGW(SAFE_TAG, "Unaligned pointer: %p", ptr);
+        return PTR_UNALIGNED;
+    }
+
+    // Verifica range DRAM
+    if (!is_in_dram_range(ptr)) {
+        ESP_LOGW(SAFE_TAG, "Pointer outside DRAM: %p", ptr);
+        return PTR_OUT_OF_BOUNDS;
+    }
+
+    // Verifica se già liberato
+    if (was_previously_freed(ptr)) {
+        ESP_LOGW(SAFE_TAG, "Pointer already freed: %p", ptr);
+        return PTR_ALREADY_FREED;
+    }
+
+    // Verifica integrità del blocco heap
+    if (!heap_caps_check_integrity_addr(ptr, true)) {
+        ESP_LOGW(SAFE_TAG, "Corrupted heap block: %p", ptr);
+        return PTR_CORRUPTED;
+    }
+
+    return PTR_OK;
+}
+
+bool ultra_safe_free(void** ptr) {
+    if (!ptr || !(*ptr)) {
+        return false;
+    }
+
+    void* original = *ptr;
+    ptr_status_t status = validate_ptr_for_free(original);
+    
+    if (status != PTR_OK) {
+        ESP_LOGW(SAFE_TAG, "Invalid free attempt for %p (status: %d)", original, status);
+        *ptr = NULL; // Previene ulteriori tentativi di free
+        return false;
+    }
+
+    // Free sicura con tracking
+    heap_caps_free(original);
+    track_freed_ptr(original);
+    *ptr = NULL;
+    
     return true;
 }
