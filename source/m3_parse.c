@@ -611,12 +611,14 @@ M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_
     return result;
 }
 
-
+static const bool WASM_DEBUG_PARSE_MODULE = true;
 M3Result  m3_ParseModule  (IM3Environment i_environment, IM3Module * o_module, cbytes_t i_bytes, u32 i_numBytes)
 {
     IM3Module module;                                                               m3log (parse, "load module: %d bytes", i_numBytes);
 _try {
+    if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule start");
     module = m3_Int_AllocStruct(M3Module);
+    if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: module allocated");
     _throwifnull (module);
     module->name = ".unnamed";                                                      m3log (parse, "load module: %d bytes", i_numBytes);
     module->startFunction = -1;
@@ -639,8 +641,10 @@ _   (Read_u32 (& version, & pos, end));
     static const u8 sectionsOrder[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 10, 11, 0 }; // 0 is a placeholder
     u8 expectedSection = 0;
 
+    if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: cycling...");
     while (pos < end)
     {
+        if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: cycle: ReadLEB_u7");
         u8 section;
 _       (ReadLEB_u7 (& section, & pos, end));
 
@@ -651,10 +655,12 @@ _       (ReadLEB_u7 (& section, & pos, end));
             }
         }
 
+        if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: cycle: ReadLEB_u32");
         u32 sectionLength;
 _       (ReadLEB_u32 (& sectionLength, & pos, end));
         _throwif(m3Err_wasmMalformed, pos + sectionLength > end);
 
+        if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: cycle: ParseModuleSection");
 _       (ParseModuleSection (module, section, pos, sectionLength));
 
         pos += sectionLength;

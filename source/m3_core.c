@@ -323,7 +323,7 @@ void* default_malloc(size_t size) {
 }
 
 void default_free(void* ptr) {
-    if(!safe_free(&ptr)) return;
+    if(!ptr || !safe_free(&ptr)) return;
 
     if (heap_caps_check_integrity_addr(&ptr, false)) { // (intptr_t)
         heap_caps_free(ptr);
