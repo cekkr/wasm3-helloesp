@@ -319,6 +319,8 @@ void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
 }
 
 // Allocatore di default che usa heap_caps
+static const int ALLOC_SHIFT_OF = 0; // 4
+
 void* default_malloc(size_t size) {
     if(CHECK_MEMORY_AVAILABLE){
         print_memory_info();
@@ -326,10 +328,10 @@ void* default_malloc(size_t size) {
 
     void* ptr = WASM_ENABLE_SPI_MEM ? heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
     if (ptr == NULL) {
-        ptr = heap_caps_malloc(size + 4, MALLOC_CAP_8BIT); // | MALLOC_CAP_INTERNAL
+        ptr = heap_caps_malloc(size + ALLOC_SHIFT_OF, MALLOC_CAP_8BIT); // | MALLOC_CAP_INTERNAL
 
         if (ptr) {
-            memset(ptr, 0, size + 4);  // Zero-fill con padding
+            memset(ptr, 0, size + ALLOC_SHIFT_OF);  // Zero-fill con padding
         }
     }
 
@@ -378,6 +380,10 @@ void* default_realloc(void* ptr, size_t new_size) {
     void* new_ptr = WASM_ENABLE_SPI_MEM ? heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
     if (new_ptr == NULL) {
         new_ptr = heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT); //  | MALLOC_CAP_INTERNAL
+
+        if(new_ptr) {
+            memset(new_ptr, 0, new_size);
+        }
     }
     return new_ptr;
 }
@@ -439,7 +445,7 @@ void* m3_Malloc_Impl(size_t i_size) {
     for (size_t i = 0; i < memory->num_segments; i++) {
         memory->segments[i].data = NULL;
         memory->segments[i].is_allocated = false;
-        memory->segments[i].size = 0;
+        memory->segment_size = 0;
     }
 
     if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Returning memory pointer");
@@ -502,7 +508,7 @@ void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize) {
                 for (size_t i = memory->num_segments; i < new_num_segments; i++) {
                     new_segments[i].data = NULL;
                     new_segments[i].is_allocated = false;
-                    new_segments[i].size = 0;
+                    //new_segments[i].size = 0;
                 }
 
                 // Libera i segmenti in eccesso se stiamo riducendo
@@ -547,8 +553,8 @@ void* m3_CopyMem(const void* i_from, size_t i_size) {
             // Alloca e copia il segmento
             if (allocate_segment(dst_memory, i)) {
                 size_t copy_size = M3_MIN(
-                    src_memory->segments[i].size,
-                    dst_memory->segments[i].size
+                    src_memory->segment_size,
+                    dst_memory->segment_size
                 );
                 memcpy(dst_memory->segments[i].data,
                        src_memory->segments[i].data,

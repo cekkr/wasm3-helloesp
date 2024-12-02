@@ -31,18 +31,17 @@ bool allocate_segment(M3Memory* memory, size_t segment_index) {
 
     if (_DEBUG_MEMORY) {
         ESP_LOGI("WASM3", "Allocating segment %zu of size %zu", 
-                 segment_index, memory->segments[segment_index].size);
+                 segment_index, memory->segment_size);
     }
 
     // Prima prova ad allocare in SPIRAM se abilitata
     void* ptr = WASM_ENABLE_SPI_MEM ? 
-                heap_caps_malloc(memory->segments[segment_index].size, 
-                               MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : 
+                heap_caps_malloc(memory->segment_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : 
                 NULL;
 
     // Se l'allocazione in SPIRAM fallisce o non è disponibile, prova la memoria interna
     if (!ptr) {
-        ptr = heap_caps_malloc(memory->segments[segment_index].size, 
+        ptr = heap_caps_malloc(memory->segment_size, 
                              MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
         
         if (_DEBUG_MEMORY && !ptr) {
@@ -55,7 +54,7 @@ bool allocate_segment(M3Memory* memory, size_t segment_index) {
 
     if (ptr) {
         // Inizializza il segmento con zeri
-        memset(ptr, 0, memory->segments[segment_index].size);
+        memset(ptr, 0, memory->segment_size);
         
         memory->segments[segment_index].data = ptr;
         memory->segments[segment_index].is_allocated = true;
@@ -634,7 +633,7 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
             for (size_t i = 0; i < num_segments; i++) {
                 memory->segments[i].data = NULL;
                 memory->segments[i].is_allocated = false;
-                memory->segments[i].size = memory->pageSize;
+                memory->segment_size = memory->pageSize;
             }
         }
         else if (num_segments != memory->num_segments) {
@@ -655,7 +654,7 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
                 for (size_t i = memory->num_segments; i < num_segments; i++) {
                     memory->segments[i].data = NULL;
                     memory->segments[i].is_allocated = false;
-                    memory->segments[i].size = memory->pageSize;
+                    memory->segment_size = memory->pageSize;
                 }
             }
             else {
@@ -1584,10 +1583,9 @@ uint8_t* m3_GetMemory(IM3Runtime i_runtime, uint32_t* o_memorySizeInBytes, uint3
                     // Alloca il segmento se non è già allocato
                     if (!i_runtime->memory.segments[i].is_allocated)
                     {
-                        size_t seg_size = (i == i_runtime->memory.num_segments - 1) ? 
-                            (size - (i * i_runtime->memory.segment_size)) : 
-                            i_runtime->memory.segment_size;
-                            
+                        //size_t seg_size = (i == i_runtime->memory.num_segments - 1) ? (size - (i * i_runtime->memory.segment_size)) :  i_runtime->memory.segment_size;
+                        size_t seg_size = i_runtime->memory.segment_size;
+
                         i_runtime->memory.segments[i].data = current_allocator->malloc(seg_size);
                         if (!i_runtime->memory.segments[i].data)
                         {
@@ -1599,7 +1597,7 @@ uint8_t* m3_GetMemory(IM3Runtime i_runtime, uint32_t* o_memorySizeInBytes, uint3
                             return NULL;
                         }
                         i_runtime->memory.segments[i].is_allocated = true;
-                        i_runtime->memory.segments[i].size = seg_size;
+                        //i_runtime->memory.segments[i].size = seg_size;
                         memset(i_runtime->memory.segments[i].data, 0, seg_size);
                     }
                     
@@ -1607,7 +1605,7 @@ uint8_t* m3_GetMemory(IM3Runtime i_runtime, uint32_t* o_memorySizeInBytes, uint3
                     size_t offset = i * i_runtime->memory.segment_size;
                     memcpy(memory + offset, 
                            i_runtime->memory.segments[i].data,
-                           i_runtime->memory.segments[i].size);
+                           i_runtime->memory.segment_size);
                 }
             }
         }

@@ -701,7 +701,7 @@ d_m3Op (MemGrow)
                 for (size_t i = currentSegments; i < newNumSegments; i++) {
                     newSegments[i].data = NULL;
                     newSegments[i].is_allocated = false;
-                    newSegments[i].size = 0;
+                    //newSegments[i].size = 0;
                 }
                 
                 // Aggiorna la struttura della memoria

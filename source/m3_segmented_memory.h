@@ -8,7 +8,7 @@
 typedef struct MemorySegment {    
     void* data;           // Puntatore ai dati effettivi
     bool is_allocated;    // Flag per indicare se il segmento è stato allocato
-    size_t size;         // Dimensione del segmento
+    //size_t size;         // Dimensione del segmento
 } MemorySegment;
 
 typedef struct M3Memory_t {
