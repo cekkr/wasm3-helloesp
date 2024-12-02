@@ -130,6 +130,7 @@ d_m3ErrorConst  (mallocFailed,                  "memory allocation failed")
 // parse errors
 d_m3ErrorConst  (incompatibleWasmVersion,       "incompatible Wasm binary version")
 d_m3ErrorConst  (wasmMalformed,                 "malformed Wasm binary")
+d_m3ErrorConst  (m3Err_malformedUtf8,             "malformed UTF-8")
 d_m3ErrorConst  (misorderedWasmSection,         "out of order Wasm section")
 d_m3ErrorConst  (wasmUnderrun,                  "underrun while parsing Wasm binary")
 d_m3ErrorConst  (wasmOverrun,                   "overrun while parsing Wasm binary")
