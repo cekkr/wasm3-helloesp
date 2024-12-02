@@ -73,10 +73,10 @@ _try {
     return result;
 }
 
-static const bool WASM_DEBUG_PREALLOCFUNCTIONS = false;
+static const bool WASM_DEBUG_PREALLOCFUNCTIONS = true;
 M3Result  Module_PreallocFunctions  (IM3Module io_module, u32 i_totalFunctions)
 {
-    if(WASM_DEBUG_PREALLOCFUNCTIONS){
+    if(WASM_DEBUG_PREALLOCFUNCTIONS && false){
         if(i_totalFunctions > 10000){
             esp_backtrace_print(100);
         }
@@ -175,7 +175,10 @@ IM3Function  Module_GetFunction  (IM3Module i_module, u32 i_functionIndex)
         else {
             ESP_LOGE("WASM", "Module_GetFunction: invalid function pointer");
         }        
-    }    
+    }  
+    else {
+        ESP_LOGE("WASM", "Module_GetFunction: i_functionIndex >= i_module->numFunctions (%lu, %lu)", i_functionIndex, i_module->numFunctions );
+    }  
 
     return func;
 }

@@ -296,10 +296,11 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName) {
     strcpy(nameCopy, functionName);
 
     // Crea una nuova entry nella function table   
-    u32 index = module->allFunctions++;
+    u32 index = module->allFunctions;
+    //ESP_LOGI("WASM3", "index: %lu, allFunctions: %lu", index, module->allFunctions); // just debug
 
-     if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "Module_PreallocFunctions");
-    Module_PreallocFunctions(module, module->allFunctions);
+    if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "Module_PreallocFunctions");
+    Module_PreallocFunctions(module, index + 1);
 
     if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "Module_GetFunction");
     IM3Function function = Module_GetFunction (module, index);
@@ -311,8 +312,8 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName) {
     
     if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "Setting function parameters");
     function->import.fieldUtf8 = nameCopy;
-    function->import.moduleUtf8 = module->name; // to copy: function->import.moduleUtf8 = strdup(module->name);    
-    function->names[0] = function->import.fieldUtf8;
+    function->import.moduleUtf8 = strdup(module->name);  
+    function->names[0] = function->import.moduleUtf8;
     function->numNames++;
     function->module = module;
     function->compiled = NULL;  // Non compilata
