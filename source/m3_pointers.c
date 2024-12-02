@@ -95,8 +95,8 @@ bool safe_free(void* ptr) {
         return false;
     }
 
-    //free(*ptr);
-    //*ptr = NULL;  // Previene use-after-free
+    free(ptr);
+    ptr = NULL;  // Previene use-after-free
     return true;
 }
 

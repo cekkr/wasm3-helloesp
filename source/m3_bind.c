@@ -187,14 +187,14 @@ _try {
     {
         const IM3Function f = & io_module->functions [i];
 
-        //if(WASM_DEBUG_FIND_LINK_FUNC) ESP_LOGI("WASM3", "Listing function: %s.%s\n", f->import.moduleUtf8, f->import.fieldUtf8); // cause crashes
         if (f->import.moduleUtf8 and f->import.fieldUtf8)
         {
-            if(WASM_DEBUG_FIND_LINK_FUNC) ESP_LOGI("WASM3", "Valid function");
+            if(WASM_DEBUG_FIND_LINK_FUNC) ESP_LOGI("WASM3", "FindAndLinkFunction: Valid function: %s.%s",  f->import.moduleUtf8, f->import.fieldUtf8);
 
             if (strcmp (f->import.fieldUtf8, i_functionName) == 0 and
                (wildcardModule or strcmp (f->import.moduleUtf8, i_moduleName) == 0))
             {
+                ESP_LOGI("WASM3", "FindAndLinkFunction: Function found in module");
                 if (i_signature) {
 _                   (ValidateSignature (f, i_signature));
                 }

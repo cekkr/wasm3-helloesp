@@ -350,7 +350,7 @@ void default_free(void* ptr) {
     // Logging del puntatore prima della free
     if(WASM_DEBUG_DEFAULT_FREE) ESP_LOGD("WASM3", "Attempting to free memory at %p", ptr);
     
-    if (!safe_free(ptr)) {
+    if (false && !is_ptr_freeable(ptr)) {
         ESP_LOGW("WASM3", "safe_free check failed for pointer");
         return;
     }
@@ -471,7 +471,7 @@ void* m3_Malloc_Impl(size_t i_size) {
 void m3_Free_Impl(void* io_ptr, bool isMemory) {
     if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Free_Impl");
 
-    if (!safe_free(&io_ptr) || io_ptr == NULL) return;
+    if (!is_ptr_freeable(&io_ptr) || io_ptr == NULL) return;
 
     if (isMemory) {
         M3Memory* memory = (M3Memory*)io_ptr;
@@ -480,16 +480,16 @@ void m3_Free_Impl(void* io_ptr, bool isMemory) {
             // Libera solo i segmenti effettivamente allocati
             for (size_t i = 0; i < memory->num_segments; i++) {
                 if (memory->segments[i].is_allocated && memory->segments[i].data) {
-                    if(safe_free(&memory->segments[i].data))
+                    if(is_ptr_freeable(&memory->segments[i].data))
                         current_allocator->free(memory->segments[i].data);
                 }
             }
 
-            if(safe_free(&memory->segments))
+            if(is_ptr_freeable(&memory->segments))
                 current_allocator->free(memory->segments);
         }
         
-        if(!safe_free(&memory)){
+        if(!is_ptr_freeable(&memory)){
             ESP_LOGI("WASM3", "m3_Free_Impl: not safe to free memory");
         }
 
@@ -540,7 +540,7 @@ void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize) {
             return i_ptr;
         }
         else {
-            if(safe_free(&i_ptr)) current_allocator->free(i_ptr);
+            if(is_ptr_freeable(i_ptr)) current_allocator->free(i_ptr);
             return current_allocator->realloc(i_ptr, i_newSize);
         }        
     }
