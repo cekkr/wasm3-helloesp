@@ -275,12 +275,13 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
         runtime->environment = i_environment;
         runtime->userdata = i_userdata;
 
-        runtime->originStack = m3_Malloc ("Wasm Stack", i_stackSizeInBytes + 4*sizeof (m3slot_t)); // TODO: more precise stack checks
+        runtime->originStack = m3_Int_Malloc ("Wasm Stack", i_stackSizeInBytes + 4*sizeof (m3slot_t)); // TODO: more precise stack checks
 
         if (runtime->originStack)
         {
             runtime->stack = runtime->originStack;
-            runtime->numStackSlots = i_stackSizeInBytes / sizeof (m3slot_t);         m3log (runtime, "new stack: %p", runtime->originStack);
+            runtime->numStackSlots = i_stackSizeInBytes / sizeof (m3slot_t);         
+            m3log (runtime, "new stack: %p", runtime->originStack);
         }
         else m3_Int_Free (runtime);
     }

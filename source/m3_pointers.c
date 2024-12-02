@@ -6,6 +6,7 @@
 #include "m3_pointers.h"
 
 static const bool WASM_DEBUG_POINTERS = true;
+static const bool WASM_DEBUG_POINTERS_BACKTRACE = false;
 
 ptr_check_result_t validate_pointer(const void* ptr, size_t expected_size) {
     // 1. Controllo NULL pointer
@@ -48,7 +49,7 @@ bool is_ptr_freeable(void* ptr) {
     if (((uintptr_t)ptr) % 8 != 0) {
         if(WASM_DEBUG_POINTERS){
              ESP_LOGE("WASM3", "Unaligned pointer: %p", ptr);
-             esp_backtrace_print(100);
+             if(WASM_DEBUG_POINTERS_BACKTRACE) esp_backtrace_print(100);
         }
         return false;
     }
@@ -57,7 +58,7 @@ bool is_ptr_freeable(void* ptr) {
     if (!heap_caps_check_integrity_addr((intptr_t)ptr, true)) {
         if(WASM_DEBUG_POINTERS) {
             ESP_LOGE("WASM3", "Pointer not in valid heap region: %p", ptr);
-            esp_backtrace_print(100);
+            if(WASM_DEBUG_POINTERS_BACKTRACE) esp_backtrace_print(100);
         }
         return false;
     }

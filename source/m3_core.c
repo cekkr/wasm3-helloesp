@@ -317,7 +317,7 @@ void* default_malloc(size_t size) {
 
     void* ptr = WASM_ENABLE_SPI_MEM ? heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
     if (ptr == NULL) {
-        ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+        ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT); // | MALLOC_CAP_INTERNAL
     }
     return ptr;
 }
@@ -341,7 +341,7 @@ void* default_realloc(void* ptr, size_t new_size) {
 
     void* new_ptr = WASM_ENABLE_SPI_MEM ? heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
     if (new_ptr == NULL) {
-        new_ptr = heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+        new_ptr = heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT); //  | MALLOC_CAP_INTERNAL
     }
     return new_ptr;
 }
@@ -927,7 +927,7 @@ void  PushBacktraceFrame  (IM3Runtime io_runtime, pc_t i_pc)
     if (M3_UNLIKELY (io_runtime->backtrace.lastFrame == M3_BACKTRACE_TRUNCATED))
         return;
 
-    M3BacktraceFrame * newFrame = m3_Int_AllocStruct(M3BacktraceFrame);
+    M3BacktraceFrame * newFrame = m3_AllocStruct(M3BacktraceFrame);
 
     if (!newFrame)
     {
