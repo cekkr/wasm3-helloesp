@@ -5,6 +5,9 @@
 //  Copyright © 2021 Steven Massey. All rights reserved.
 //
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "m3_function.h"
 #include "m3_env.h"
 
@@ -34,8 +37,10 @@ M3Result AllocFuncType (IM3FuncType * o_functionType, u32 i_numTypes)
 
 bool AreFuncTypesEqual(const IM3FuncType i_typeA, const IM3FuncType i_typeB)
 {
-    if(!ultra_safe_ptr_valid(i_typeA) || !ultra_safe_ptr_valid(i_typeB)){
-        ESP_LOGE("WASM3", "Invalid pointer for AreFuncTypesEqual");
+    bool a_valid = ultra_safe_ptr_valid(i_typeA);
+    bool b_valid = ultra_safe_ptr_valid(i_typeB);
+    if(!a_valid || !b_valid){        
+        //ESP_LOGW("WASM3", "Invalid pointer for AreFuncTypesEqual");
         return false;
     }
 
@@ -276,11 +281,118 @@ u32  GetFunctionNumArgsAndLocals (IM3Function i_function)
 }
 
 ///
+/// Function signature
+///
+
+M3FuncType* ParseFunctionSignature(const char* signature) {
+    if (!signature) return NULL;
+    
+    // Count returns and arguments
+    size_t len = strlen(signature);
+    u16 numRets = 0;
+    u16 numArgs = 0;
+    
+    // First character should be '('
+    if (signature[0] != '(') return NULL;
+    
+    // Count arguments until ')'
+    size_t i = 1;
+    while (i < len && signature[i] != ')') {
+        if (signature[i] != ' ') numArgs++;
+        i++;
+    }
+    
+    if (i >= len || signature[i] != ')') return NULL;
+    i++; // Skip ')'
+    
+    // Count returns
+    while (i < len) {
+        if (signature[i] != ' ') numRets++;
+        i++;
+    }
+    
+    // Allocate memory for the structure plus the types array
+    size_t totalSize = sizeof(M3FuncType) + (numRets + numArgs) * sizeof(u8);
+    M3FuncType* funcType = (M3FuncType*)default_allocator.malloc(totalSize);
+    if (!funcType) return NULL;
+    
+    // Initialize the structure
+    funcType->next = NULL;
+    funcType->numRets = numRets;
+    funcType->numArgs = numArgs;
+    
+    // Fill the types array
+    u8* types = funcType->types;
+    size_t typeIndex = 0;
+    
+    // First process returns (what comes after the ')')
+    i = 0;
+    while (signature[i] != ')') i++;
+    i++; // Skip ')'
+    
+    // Process return types
+    while (i < len) {
+        if (signature[i] != ' ') {
+            switch (signature[i]) {
+                case 'i':
+                    types[typeIndex++] = M3_TYPE_I32;
+                    break;
+                case 'I':
+                    types[typeIndex++] = M3_TYPE_I64;
+                    break;
+                case 'f':
+                    types[typeIndex++] = M3_TYPE_F32;
+                    break;
+                case 'F':
+                    types[typeIndex++] = M3_TYPE_F64;
+                    break;
+                default:
+                    default_allocator.free(funcType);
+                    return NULL;
+            }
+        }
+        i++;
+    }
+    
+    // Now process arguments (what's between the parentheses)
+    i = 1; // Skip initial '('
+    while (signature[i] != ')') {
+        if (signature[i] != ' ') {
+            switch (signature[i]) {
+                case 'i':
+                    types[typeIndex++] = M3_TYPE_I32;
+                    break;
+                case 'I':
+                    types[typeIndex++] = M3_TYPE_I64;
+                    break;
+                case 'f':
+                    types[typeIndex++] = M3_TYPE_F32;
+                    break;
+                case 'F':
+                    types[typeIndex++] = M3_TYPE_F64;
+                    break;
+                default:
+                    default_allocator.free(funcType);
+                    return NULL;
+            }
+        }
+        i++;
+    }
+    
+    return funcType;
+}
+
+// Utility function to free the M3FuncType structure
+void FreeFuncType(M3FuncType* funcType) {
+    default_allocator.free(funcType);
+}
+
+///
 /// Register function name
 ///
 
 static const bool WASM_DEBUG_ADD_FUNCTION_NAME = true;
-M3Result addFunctionToModule(IM3Module module, const char* functionName) {
+M3Result addFunctionToModule(IM3Module module, const char* functionName, const char* signature) {
     if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "addFunctionToModule called");
 
     if (!module || !functionName) {
@@ -317,7 +429,7 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName) {
     function->numNames++;
     function->module = module;
     function->compiled = NULL;  // Non compilata
-    function->funcType = NULL;  // Tipo non definito    
+    function->funcType = ParseFunctionSignature(signature);  // Tipo non definito    
 
     return m3Err_none;
 }
@@ -330,7 +442,7 @@ M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry) 
         return "Invalid parameters";
     }
 
-    addFunctionToModule(module, entry->name);
+    addFunctionToModule(module, entry->name, entry->signature);
     
     // Linkare la funzione nel modulo
     result = m3_LinkRawFunction(

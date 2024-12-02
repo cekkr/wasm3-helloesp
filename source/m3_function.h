@@ -97,6 +97,17 @@ cstr_t      SPrintFunctionArgList       (IM3Function i_function, m3stack_t i_sp)
 
 //---------------------------------------------------------------------------------------------------------------------------------
 
+// Function type generation from signature
+
+// Mapping between WebAssembly type characters and WASM3 type values
+#define M3_TYPE_NONE    0
+#define M3_TYPE_I32     1
+#define M3_TYPE_I64     2
+#define M3_TYPE_F32     3
+#define M3_TYPE_F64     4
+
+M3FuncType* ParseFunctionSignature(const char* signature);
+
 // Struttura per memorizzare le informazioni della funzione
 typedef struct {
     const char* name;       // Nome della funzione
@@ -104,7 +115,7 @@ typedef struct {
     const char* signature;  // Firma della funzione in formato WASM
 } WasmFunctionEntry;
 
-M3Result addFunctionToModule(IM3Module module, const char* functionName);
+//M3Result addFunctionToModule(IM3Module module, const char* functionName, const char* signature);
 M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry);
 M3Result RegisterWasmFunctions(IM3Module module, const WasmFunctionEntry* entries, size_t count);
 
