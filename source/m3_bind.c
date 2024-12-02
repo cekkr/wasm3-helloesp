@@ -194,7 +194,7 @@ _try {
             if (strcmp (f->import.fieldUtf8, i_functionName) == 0 and
                (wildcardModule or strcmp (f->import.moduleUtf8, i_moduleName) == 0))
             {
-                ESP_LOGI("WASM3", "FindAndLinkFunction: Function found in module");
+                ESP_LOGI("WASM3", "FindAndLinkFunction: Right function found!");
                 if (i_signature) {
 _                   (ValidateSignature (f, i_signature));
                 }
@@ -203,6 +203,7 @@ _               (CompileRawFunction (io_module, f, i_function, i_userdata));
         }
     }
 } _catch:
+    ESP_LOGE("WASM3", "FindAndLinkFunction error: %s", result);
     return result;
 }
 

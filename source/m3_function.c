@@ -437,13 +437,6 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName, const c
     }
     strcpy(nameCopy, functionName);
 
-    // Signature copy
-    char* signatureCopy = m3_Int_AllocArray(char, strlen(functionName) + 1);
-    if (!signatureCopy) {
-        return "signatureCopy memory allocation failed";
-    }
-    strcpy(signatureCopy, functionName);
-
     // Crea una nuova entry nella function table   
     u32 index = module->numFunctions++;
     //ESP_LOGI("WASM3", "index: %lu, allFunctions: %lu", index, module->allFunctions); // just debug
@@ -479,10 +472,17 @@ M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry) 
         return "Invalid parameters";
     }
 
+    // Verifica dei parametri con log
+    if (!module || !entry || !entry->name || !entry->func) {
+        ESP_LOGE("WASM", "Invalid parameters - module: %p, entry: %p", 
+                 (void*)module, (void*)entry);
+        return "Invalid parameters";
+    }
+
     addFunctionToModule(module, entry->name, entry->signature);
-    
+
     // Linkare la funzione nel modulo
-    result = m3_LinkRawFunction(
+    result = m3_LinkRawFunction( 
         module,              // Modulo WASM
         "*",                 // Namespace (wildcard)
         entry->name,         // Nome della funzione
