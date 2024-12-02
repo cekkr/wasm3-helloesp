@@ -107,7 +107,7 @@ void FreeImportInfo (M3ImportInfo * i_info)
     m3_Int_Free (i_info->fieldUtf8);
 }
 
-static const bool WASM_DEBUG_FUNCTION_RELEASE = true;
+static const bool WASM_DEBUG_FUNCTION_RELEASE = false;
 
 void  Function_Release  (IM3Function i_function)
 {

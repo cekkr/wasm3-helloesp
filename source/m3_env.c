@@ -92,7 +92,7 @@ static inline void m3_StoreInt(IM3Memory memory, u32 offset, i32 value)
 
 ////////////////////////////////////////////////////////////////
 
-static const int WASM_DEBUG_NEW_ENV = 1;
+static const bool WASM_DEBUG_NEW_ENV = false;
 
 IM3Environment  m3_NewEnvironment  ()
 {
@@ -169,7 +169,7 @@ void m3_SetCustomSectionHandler  (IM3Environment i_environment, M3SectionHandler
 }
 
 
-static const int WASM_DEBUG_ADDFUNC = 1;
+static const bool WASM_DEBUG_ADDFUNC = false;
 
 // returns the same io_funcType or replaces it with an equivalent that's already in the type linked list
 void  Environment_AddFuncType  (IM3Environment i_environment, IM3FuncType * io_funcType)

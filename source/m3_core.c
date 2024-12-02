@@ -372,7 +372,7 @@ void m3_SetMemoryAllocator(MemoryAllocator* allocator) {
     return true;
 }*/
 
-static const bool WASM_DEBUG_MALLOC_IMPL_BACKTRACE = true;
+static const bool WASM_DEBUG_MALLOC_IMPL_BACKTRACE = false;
 void* m3_Malloc_Impl(size_t i_size) {
     if(WASM_DEBUG_MALLOC_IMPL_BACKTRACE) esp_backtrace_print(100);
 

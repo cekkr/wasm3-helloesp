@@ -12,7 +12,7 @@
 #include "m3_pointers.h"
 #include "m3_env.h"
 
-static const bool WASM_DEBUG_PARSE = true;
+static const bool WASM_DEBUG_PARSE = false;
 
 M3Result  ParseType_Table  (IM3Module io_module, bytes_t i_bytes, cbytes_t i_end)
 {
@@ -150,7 +150,7 @@ _       (Module_AddFunction (io_module, funcTypeIndex, NULL /* import info */));
 }
 
 
-static const bool WASM_DEBUG_PARSE_SECTION = true;
+static const bool WASM_DEBUG_PARSE_SECTION = false;
 M3Result  ParseSection_Import  (IM3Module io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
@@ -571,7 +571,7 @@ _       (io_module->environment->customSectionHandler(io_module, name, i_bytes, 
 }
 
 
-static const bool WASM_DEBUG_PARSEMODULESECTION = true;
+static const bool WASM_DEBUG_PARSEMODULESECTION = false;
 M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_bytes, u32 i_numBytes)
 {
     if(WASM_DEBUG_PARSEMODULESECTION){
@@ -619,7 +619,7 @@ M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_
     return result;
 }
 
-static const bool WASM_DEBUG_PARSE_MODULE = true;
+static const bool WASM_DEBUG_PARSE_MODULE = false;
 M3Result  m3_ParseModule  (IM3Environment i_environment, IM3Module * o_module, cbytes_t i_bytes, u32 i_numBytes)
 {
     IM3Module module;                                                               m3log (parse, "load module: %d bytes", i_numBytes);

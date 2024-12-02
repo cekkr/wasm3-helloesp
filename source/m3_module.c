@@ -73,7 +73,7 @@ _try {
     return result;
 }
 
-static const bool WASM_DEBUG_PREALLOCFUNCTIONS = true;
+static const bool WASM_DEBUG_PREALLOCFUNCTIONS = false;
 M3Result  Module_PreallocFunctions  (IM3Module io_module, u32 i_totalFunctions)
 {
     if(WASM_DEBUG_PREALLOCFUNCTIONS){
