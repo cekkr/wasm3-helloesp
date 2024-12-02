@@ -297,10 +297,11 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName) {
 
     // Crea una nuova entry nella function table   
     u32 index = module->allFunctions;
+    module->allFunctions++;
     //ESP_LOGI("WASM3", "index: %lu, allFunctions: %lu", index, module->allFunctions); // just debug
 
     if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "Module_PreallocFunctions");
-    Module_PreallocFunctions(module, index + 1);
+    Module_PreallocFunctions(module, module->allFunctions + 1);
 
     if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "Module_GetFunction");
     IM3Function function = Module_GetFunction (module, index);
