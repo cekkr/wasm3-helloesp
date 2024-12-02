@@ -19,7 +19,7 @@ void Module_FreeFunctions (IM3Module i_module)
 }
 
 
-void  m3_Int_FreeModule  (IM3Module i_module)
+void  m3_FreeModule  (IM3Module i_module)
 {
     if (i_module)
     {

@@ -10,6 +10,7 @@
 #include "m3_exception.h"
 #include "m3_info.h"
 #include "m3_pointers.h"
+#include "m3_env.h"
 
 
 M3Result  ParseType_Table  (IM3Module io_module, bytes_t i_bytes, cbytes_t i_end)
@@ -662,7 +663,7 @@ _       (ParseModuleSection (module, section, pos, sectionLength));
 
     if (result)
     {
-        m3_Int_FreeModule (module);
+        m3_FreeModule (module);
         module = NULL;
     }
 

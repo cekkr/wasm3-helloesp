@@ -27,7 +27,7 @@ bool safe_free(void** ptr);
 #define     m3_Int_Realloc(NAME, PTR, NEW, OLD)         default_realloc(PTR, NEW, OLD)
 #define     m3_Int_AllocStruct(STRUCT)                  (STRUCT *)default_malloc (sizeof (STRUCT))
 #define     m3_Int_AllocArray(STRUCT, NUM)              (STRUCT *)default_malloc (sizeof (STRUCT) * (NUM))
-#define     m3_Int_ReallocArray(STRUCT, PTR, NEW, OLD)  (STRUCT *)default_realloc ((void *)(PTR), sizeof (STRUCT) * (NEW), sizeof (STRUCT) * (OLD))
-#define     m3_Int_Free(P)                              do { default_free((void*)(P), false); (P) = NULL; } while(0)
+#define     m3_Int_ReallocArray(STRUCT, PTR, NEW, OLD)  (STRUCT *)default_realloc ((void *)(PTR), sizeof (STRUCT) * (NEW)) // , sizeof (STRUCT) * (OLD)
+#define     m3_Int_Free(P)                              do { default_free((void*)(P)); (P) = NULL; } while(0)
 
 #endif  // m3_pointers_h

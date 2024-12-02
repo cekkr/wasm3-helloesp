@@ -10,6 +10,7 @@
 #include "m3_env.h"
 #include "m3_bind.h"
 #include "m3_exception.h"
+#include "m3_pointers.h"
 
 
 IM3Module  m3_NewModule  (IM3Environment i_environment)
