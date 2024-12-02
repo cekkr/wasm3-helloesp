@@ -328,6 +328,12 @@ void* default_malloc(size_t size) {
     if (ptr == NULL) {
         ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT); // | MALLOC_CAP_INTERNAL
     }
+
+    if(ptr == NULL){
+        ESP_LOGE("WASM3", "Failed to allocate memory of size %d", size);
+        esp_backtrace_print(100);
+    }
+
     return ptr;
 }
 

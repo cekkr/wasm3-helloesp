@@ -24,6 +24,9 @@ bool safe_m3_int_free(void** ptr);
 bool safe_free_with_check(void** ptr);
 bool is_ptr_valid(const void* ptr);
 
+static inline bool is_address_in_range(uintptr_t addr);
+bool ultra_safe_ptr_valid(const void* ptr);
+
 
 ///
 /// Internal

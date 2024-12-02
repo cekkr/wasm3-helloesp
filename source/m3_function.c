@@ -34,6 +34,11 @@ M3Result AllocFuncType (IM3FuncType * o_functionType, u32 i_numTypes)
 
 bool AreFuncTypesEqual(const IM3FuncType i_typeA, const IM3FuncType i_typeB)
 {
+    if(!ultra_safe_ptr_valid(i_typeA) || !ultra_safe_ptr_valid(i_typeB)){
+        ESP_LOGE("WASM3", "Invalid pointer for AreFuncTypesEqual");
+        return false;
+    }
+
     // Validazione puntatori
     //if (!i_typeA || !i_typeB)
     //    return false;

@@ -122,7 +122,7 @@ bool is_ptr_valid(const void* ptr) {
         return false;
     }
     
-    if (!heap_caps_check_integrity_addr(ptr, true)) {
+    if (!heap_caps_check_integrity_addr(ptr, false)) {
         ESP_LOGW("WASM3", "Heap corruption detected at %p", ptr);
         return false;
     }
@@ -181,4 +181,56 @@ bool safe_m3_int_free(void** ptr) {
     }
     
     return false;
+}
+
+///
+///
+///
+
+static inline bool is_address_in_range(uintptr_t ptr) {
+    // Verifica range DRAM per ESP32
+    const uint32_t VALID_HEAP_START = 0x3FFAE000; // Inizio dell'heap (DRAM)
+    const uint32_t VALID_HEAP_END = 0x40000000;   // Fine dell'heap
+
+    uint32_t addr = (uint32_t)ptr;
+    return addr >= VALID_HEAP_START && addr < VALID_HEAP_END;
+}
+
+bool ultra_safe_ptr_valid(const void* ptr) {
+    if (!ptr) {
+        ESP_LOGW("WASM3", "Null pointer detected");
+        return false;
+    }
+    
+    // Cast sicuro a uintptr_t per manipolazione numerica
+    uintptr_t addr = (uintptr_t)ptr;
+    
+    // Verifica allineamento (assumendo architettura 32-bit)
+    if (addr & 0x3) {
+        ESP_LOGW("WASM3", "Pointer %p is not aligned", ptr);
+        return false;
+    }
+
+    /*if(!heap_caps_check_integrity_addr(addr, false)) { // useless: it crashes
+        ESP_LOGW("WASM3", "Pointer %p: no integrity", ptr);
+        return false;
+    }*/
+
+    // Verifica range base
+    if (!is_address_in_range(addr)) {
+        ESP_LOGW("WASM3", "Pointer %p outside valid memory range", ptr);
+        return false;
+    }
+
+    // Opzionale: verifica pattern di corruzione comuni
+    /*uint32_t first_word;
+    if (esp_ptr_in_dram(ptr) && // Verifica extra sicurezza
+        esp_flash_read_safe((void*)&first_word, ptr, sizeof(uint32_t))) {
+        if (first_word == 0xFFFFFFFF || first_word == 0xEEEEEEEE) {
+            ESP_LOGW("WASM3", "Pointer %p shows corruption pattern", ptr);
+            return false;
+        }
+    }*/
+
+    return true;
 }
