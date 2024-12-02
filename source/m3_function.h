@@ -100,7 +100,7 @@ cstr_t      SPrintFunctionArgList       (IM3Function i_function, m3stack_t i_sp)
 // Struttura per memorizzare le informazioni della funzione
 typedef struct {
     const char* name;       // Nome della funzione
-    M3RawFunction func;     // Puntatore alla funzione
+    void* func;     // Puntatore alla funzione
     const char* signature;  // Firma della funzione in formato WASM
 } WasmFunctionEntry;
 
