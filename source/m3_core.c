@@ -322,15 +322,26 @@ void* default_malloc(size_t size) {
     return ptr;
 }
 
+static const bool WASM_DEBUG_DEFAULT_FREE = false;
 void default_free(void* ptr) {
-    if(!ptr || !safe_free(&ptr)) return;
-
-    if (heap_caps_check_integrity_addr(&ptr, false)) { // (intptr_t)
-        heap_caps_free(ptr);
+    if (!ptr) return;
+    
+    // Logging del puntatore prima della free
+    if(WASM_DEBUG_DEFAULT_FREE) ESP_LOGD("WASM3", "Attempting to free memory at %p", ptr);
+    
+    if (!safe_free(&ptr)) {
+        ESP_LOGW("WASM3", "safe_free check failed for pointer %p", ptr);
+        return;
     }
-    else {
-        ESP_LOGW("WASM3", "Trying to free a memory outside heap limits");
-        // esp_backtrace_print(100); #include "esp_debug_helpers.h"
+
+    if (heap_caps_check_integrity_all(true)) {  // Check completo dell'heap
+        if (heap_caps_check_integrity_addr(ptr, true)) {  // Check dettagliato
+            heap_caps_free(ptr);
+        } else {
+            ESP_LOGW("WASM3", "Integrity check failed for specific address %p", ptr);
+        }
+    } else {
+        ESP_LOGW("WASM3", "Global heap corruption detected before free");
     }
 }
 
