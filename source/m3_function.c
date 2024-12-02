@@ -291,6 +291,8 @@ M3FuncType* ParseFunctionSignature(const char* signature) {
         ESP_LOGW("WASM3", "ParseFunctionSignature: returns NULL (null signature)");
         return NULL;
     }
+
+    if(WASM_DEBUG_PARSE_FUNCTION_SIGNATURE) ESP_LOGI("WASM3", "ParseFunctionSignature called with signature: %s", signature);
     
     size_t len = strlen(signature);
     u16 numRets = 0;
