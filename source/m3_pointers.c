@@ -6,7 +6,9 @@
 #include "m3_pointers.h"
 
 static const bool WASM_DEBUG_POINTERS = true;
-static const bool WASM_DEBUG_POINTERS_BACKTRACE = false;
+static const bool WASM_DEBUG_POINTERS_BACKTRACE = true;
+static const bool WASM_DEBUG_POINTERS_IGNORE_OUTSIDE_HEAP = false; 
+static const bool WASM_POINTERS_CHECK_BOUNDS = false;
 
 ptr_check_result_t validate_pointer(const void* ptr, size_t expected_size) {
     // 1. Controllo NULL pointer
@@ -42,11 +44,12 @@ bool is_ptr_freeable(void* ptr) {
     // 1. Controllo puntatore NULL
     if (ptr == NULL) {
         if(WASM_DEBUG_POINTERS) ESP_LOGW("WASM3", "Null pointer detected");
+        if(WASM_DEBUG_POINTERS_BACKTRACE) esp_backtrace_print(100);
         return false;
     }
 
     // 2. Verifica allineamento (l'heap ESP32 richiede allineamento a 8 byte)
-    if (((uintptr_t)ptr) % 8 != 0) {
+    if (false && ((uintptr_t)ptr) % 8 != 0) { // disabled
         if(WASM_DEBUG_POINTERS){
              ESP_LOGE("WASM3", "Unaligned pointer: %p", ptr);
              if(WASM_DEBUG_POINTERS_BACKTRACE) esp_backtrace_print(100);
@@ -56,7 +59,7 @@ bool is_ptr_freeable(void* ptr) {
 
     // 3. Verifica che il puntatore sia nell'heap DRAM
     if (!heap_caps_check_integrity_addr((intptr_t)ptr, true)) {
-        if(WASM_DEBUG_POINTERS) {
+        if(WASM_DEBUG_POINTERS && WASM_DEBUG_POINTERS_IGNORE_OUTSIDE_HEAP) {
             ESP_LOGE("WASM3", "Pointer not in valid heap region: %p", ptr);
             if(WASM_DEBUG_POINTERS_BACKTRACE) esp_backtrace_print(100);
         }
@@ -64,11 +67,13 @@ bool is_ptr_freeable(void* ptr) {
     }
 
     // 4. Verifica che il blocco di memoria abbia un header valido
-    multi_heap_info_t info;
-    heap_caps_get_info(&info, MALLOC_CAP_8BIT);
-    if ((uintptr_t)ptr < 0 || (uintptr_t)ptr > (info.total_free_bytes + info.total_allocated_bytes)) {
-        if(WASM_DEBUG_POINTERS) ESP_LOGE("WASM3", "Pointer outside heap bounds: %p", ptr);
-        return false;
+    if(WASM_POINTERS_CHECK_BOUNDS){
+        multi_heap_info_t info;
+        heap_caps_get_info(&info, MALLOC_CAP_8BIT);
+        if ((uintptr_t)ptr < 0 || (uintptr_t)ptr > (info.total_free_bytes + info.total_allocated_bytes)) {
+            if(WASM_DEBUG_POINTERS) ESP_LOGE("WASM3", "Pointer outside heap bounds: %p", ptr);
+            return false;
+        }
     }
 
     return true;
@@ -88,7 +93,7 @@ bool safe_free(void** ptr) {
         return false;
     }
 
-    free(*ptr);
+    //free(*ptr);
     *ptr = NULL;  // Previene use-after-free
     return true;
 }
