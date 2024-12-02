@@ -102,15 +102,18 @@ void FreeImportInfo (M3ImportInfo * i_info)
     m3_Int_Free (i_info->fieldUtf8);
 }
 
+static const bool WASM_DEBUG_FUNCTION_RELEASE = true;
 
 void  Function_Release  (IM3Function i_function)
 {
     //if(!safe_free(&i_function)) return; // nosense: it's not a pointer
 
+    if(WASM_DEBUG_FUNCTION_RELEASE) ESP_LOGI("WASM3", "Function_Release called");
     m3_Int_Free (i_function->constants);
 
     for (int i = 0; i < i_function->numNames; i++)
     {
+        if(WASM_DEBUG_FUNCTION_RELEASE) ESP_LOGI("WASM3", "freeing i_function->numNames[%d]", i);
         // name can be an alias of fieldUtf8
         if (i_function->names[i] != i_function->import.fieldUtf8)
         {
@@ -118,10 +121,13 @@ void  Function_Release  (IM3Function i_function)
         }
     }
 
+    if(WASM_DEBUG_FUNCTION_RELEASE) ESP_LOGI("WASM3", "FreeImportInfo(..)");
     FreeImportInfo (& i_function->import);
 
-    if (i_function->ownsWasmCode)
+    if (i_function->ownsWasmCode){
+        if(WASM_DEBUG_FUNCTION_RELEASE) ESP_LOGI("WASM3", "free i_function->wasm");
         m3_Int_Free (i_function->wasm);
+    }
 
     // Function_FreeCompiledCode (func);
 
