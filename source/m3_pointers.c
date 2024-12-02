@@ -85,7 +85,7 @@ bool is_ptr_freeable(void* ptr) {
  * @return true se l'operazione è riuscita, false altrimenti
  */
 bool safe_free(void** ptr) {
-    if (!(ptr)) {
+    if (!(*ptr)) {
         return false;
     }
 
@@ -94,6 +94,6 @@ bool safe_free(void** ptr) {
     }
 
     //free(*ptr);
-    *ptr = NULL;  // Previene use-after-free
+    //*ptr = NULL;  // Previene use-after-free
     return true;
 }
