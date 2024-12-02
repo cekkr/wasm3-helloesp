@@ -2,6 +2,8 @@
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_system.h"
+#include "esp_memory_utils.h"
+#include <setjmp.h>
 
 #include "m3_pointers.h"
 
@@ -111,17 +113,17 @@ typedef struct {
 // Verifica se un puntatore è valido per le operazioni di memoria
 bool is_ptr_valid(const void* ptr) {
     if (!ptr) {
-        ESP_LOGW(SAFE_MEM_TAG, "Null pointer detected");
+        ESP_LOGW("WASM3", "Null pointer detected");
         return false;
     }
     
     if (!esp_ptr_in_dram(ptr)) {
-        ESP_LOGW(SAFE_MEM_TAG, "Pointer %p not in DRAM", ptr);
+        ESP_LOGW("WASM3", "Pointer %p not in DRAM", ptr);
         return false;
     }
     
     if (!heap_caps_check_integrity_addr(ptr, true)) {
-        ESP_LOGW(SAFE_MEM_TAG, "Heap corruption detected at %p", ptr);
+        ESP_LOGW("WASM3", "Heap corruption detected at %p", ptr);
         return false;
     }
     
@@ -131,12 +133,12 @@ bool is_ptr_valid(const void* ptr) {
 // Wrapper sicuro per free
 bool safe_free_with_check(void** ptr) {
     if (!ptr || !(*ptr)) {
-        ESP_LOGW(SAFE_MEM_TAG, "Attempting to free null pointer");
+        ESP_LOGW("WASM3", "Attempting to free null pointer");
         return false;
     }
     
     if (!is_ptr_valid(*ptr)) {
-        ESP_LOGW(SAFE_MEM_TAG, "Invalid pointer detected during free");
+        ESP_LOGW("WASM3", "Invalid pointer detected during free");
         *ptr = NULL;
         return false;
     }
@@ -150,9 +152,11 @@ bool safe_free_with_check(void** ptr) {
     // Clear del puntatore dopo la free
     *ptr = NULL;
     
-    ESP_LOGD(SAFE_MEM_TAG, "Successfully freed memory at %p", original_ptr);
+    ESP_LOGD("WASM3", "Successfully freed memory at %p", original_ptr);
     return true;
 }
+
+static jmp_buf g_jmpBuf;
 
 // Wrapper sicuro per m3_Int_Free specifica per WASM3
 bool safe_m3_int_free(void** ptr) {
@@ -169,43 +173,12 @@ bool safe_m3_int_free(void** ptr) {
         if (is_ptr_valid(*ptr)) {
             m3_Int_Free(*ptr);
             *ptr = NULL;
-            ESP_LOGD(SAFE_MEM_TAG, "Successfully freed WASM3 memory at %p", original_ptr);
+            ESP_LOGD("WASM3", "Successfully freed WASM3 memory at %p", original_ptr);
             return true;
         }
     } else {
-        ESP_LOGE(SAFE_MEM_TAG, "Exception during WASM3 free operation at %p", original_ptr);
+        ESP_LOGE("WASM3", "Exception during WASM3 free operation at %p", original_ptr);
     }
     
     return false;
-}
-
-// Wrapper sicuro per Function_Release
-bool safe_function_release(IM3Function* i_function) { // just for example purposes
-    if (!i_function || !(*i_function)) {
-        ESP_LOGW(SAFE_MEM_TAG, "Null function pointer");
-        return false;
-    }
-    
-    // Setup error handler
-    if (setjmp(g_jmpBuf) == 0) {
-        // Verifica validità della struttura funzione
-        if (!is_ptr_valid(*i_function)) {
-            ESP_LOGE(SAFE_MEM_TAG, "Invalid function pointer structure");
-            return false;
-        }
-        
-        // Gestione sicura dei constants
-        if ((*i_function)->constants) {
-            safe_m3_int_free((void**)&((*i_function)->constants));
-        }
-        
-        // Gestione altri membri della struttura...
-        
-        // Free della struttura funzione
-        safe_free_with_check((void**)i_function);
-        return true;
-    } else {
-        ESP_LOGE(SAFE_MEM_TAG, "Exception during function release");
-        return false;
-    }
 }
