@@ -98,8 +98,8 @@ u8  GetFuncTypeResultType  (const IM3FuncType i_funcType, u16 i_index)
 
 void FreeImportInfo (M3ImportInfo * i_info)
 {
-    m3_Free (i_info->moduleUtf8);
-    m3_Free (i_info->fieldUtf8);
+    m3_Int_Free (i_info->moduleUtf8);
+    m3_Int_Free (i_info->fieldUtf8);
 }
 
 
@@ -107,27 +107,27 @@ void  Function_Release  (IM3Function i_function)
 {
     if(!safe_free(&i_function)) return;
 
-    m3_Free (i_function->constants);
+    m3_Int_Free (i_function->constants);
 
     for (int i = 0; i < i_function->numNames; i++)
     {
         // name can be an alias of fieldUtf8
         if (i_function->names[i] != i_function->import.fieldUtf8)
         {
-            m3_Free (i_function->names[i]);
+            m3_Int_Free (i_function->names[i]);
         }
     }
 
     FreeImportInfo (& i_function->import);
 
     if (i_function->ownsWasmCode)
-        m3_Free (i_function->wasm);
+        m3_Int_Free (i_function->wasm);
 
     // Function_FreeCompiledCode (func);
 
 #   if (d_m3EnableCodePageRefCounting)
     {
-        m3_Free (i_function->codePageRefs);
+        m3_Int_Free (i_function->codePageRefs);
         i_function->numCodePageRefs = 0;
     }
 #   endif
@@ -150,7 +150,7 @@ void  Function_FreeCompiledCode (IM3Function i_function)
             }
         }
 
-        m3_Free (i_function->codePageRefs);
+        m3_Int_Free (i_function->codePageRefs);
 
         Runtime_ReleaseCodePages (i_function->module->runtime);
     }
