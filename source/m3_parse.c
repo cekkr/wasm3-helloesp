@@ -570,8 +570,15 @@ _       (io_module->environment->customSectionHandler(io_module, name, i_bytes, 
 }
 
 
+static const bool WASM_DEBUG_PARSEMODULESECTION = true;
 M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_bytes, u32 i_numBytes)
 {
+    if(WASM_DEBUG_PARSEMODULESECTION){
+        ESP_LOGI("WASM3", "ParseModuleSection called");
+        ESP_LOGI("WASM3", "ParseModuleSection: Section Type: %d", i_sectionType);
+        ESP_LOGI("WASM3", "ParseModuleSection: Bytes: %lu", i_numBytes);
+    }
+
     M3Result result = m3Err_none;
 
     typedef M3Result (* M3Parser) (M3Module *, bytes_t, cbytes_t);
