@@ -335,7 +335,7 @@ void default_free(void* ptr) {
 }
 
 void* default_realloc(void* ptr, size_t new_size) {
-    if(!safe_free(&ptr)){
+    if(!ptr || !safe_free(&ptr)){
         return default_malloc(new_size);
     }
 
