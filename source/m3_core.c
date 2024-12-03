@@ -344,11 +344,11 @@ void* default_malloc(size_t size) {
 
         return ptr;
 
-    } CATCH(e) {
+    } CATCH {
         ESP_LOGE("WASM3", "default_malloc: Exception occurred during malloc: %s", esp_err_to_name(last_error));
         return NULL;
     } 
-    END_TRY
+    END_TRY;
 }
 
 static const bool WASM_DEBUG_DEFAULT_FREE = false;
@@ -370,11 +370,11 @@ void default_free(void* ptr) {
             return;
         }
 
-    } CATCH(e) {
+    } CATCH {
         ESP_LOGE("WASM3", "default_free: Exception occurred during free: %s", esp_err_to_name(last_error));
         //return ESP_FAIL;
     }
-    END_TRY
+    END_TRY;
 }
 
 static const bool REALLOC_USE_MALLOC_IF_NEW = false;
@@ -405,11 +405,11 @@ void* default_realloc(void* ptr, size_t new_size) {
 
         return new_ptr;
 
-    } CATCH(e) {
+    } CATCH {
         ESP_LOGE("WASM3", "default_realloc: Exception occurred during realloc: %s", esp_err_to_name(last_error));
         return ptr;
     }
-    END_TRY
+    END_TRY;
 }
 
 void m3_SetMemoryAllocator(MemoryAllocator* allocator) {
