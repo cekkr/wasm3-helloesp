@@ -470,7 +470,9 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName, const c
     function->numNames++;
     function->module = module;
     function->compiled = NULL;  // Non compilata
-    function->funcType = ParseFunctionSignature(signature);  // Tipo non definito    
+
+    //function->funcType = ParseFunctionSignature(signature);  // Tipo non definito    
+    SignatureToFuncType(function->funcType, signature)
 
     return m3Err_none;
 }

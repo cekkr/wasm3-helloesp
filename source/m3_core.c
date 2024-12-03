@@ -359,20 +359,20 @@ void default_free(void* ptr) {
         // Logging del puntatore prima della free
         if(WASM_DEBUG_DEFAULT_FREE) ESP_LOGD("WASM3", "Attempting to free memory at %p", ptr);
         
+        bool notFreeToFree = false;
         if (!is_ptr_freeable(ptr)) {
-            backtrace();
+            //backtrace();
             ESP_LOGW("WASM3", "default_free: is_ptr_freeable check failed for pointer");
-            return;
+            notFreeToFree = true;
+            //return;
         }
 
-        void* temp = ptr;
-        if (!ultra_safe_free(&temp)) {
+        if(notFreeToFree) ESP_LOGW("WASM3", "default_free: theoretically, is_ptr_freeable check failed for pointer");
+
+        if (!ultra_safe_free((void**)&ptr)) {
             ESP_LOGW("WASM3", "Skipped unsafe free operation");
             return;
         }
-
-        ptr = NULL;
-
     } CATCH {
         ESP_LOGE("WASM3", "default_free: Exception occurred during free: %s", esp_err_to_name(last_error));
         //return ESP_FAIL;
@@ -383,8 +383,9 @@ void default_free(void* ptr) {
 static const bool REALLOC_USE_MALLOC_IF_NEW = false;
 void* default_realloc(void* ptr, size_t new_size) {
     TRY {
-        if(!ptr || !ultra_safe_ptr_valid(ptr)){
-            return default_malloc(new_size);
+        if((!ptr) || !ultra_safe_ptr_valid(ptr)){
+            ptr = default_malloc(new_size);
+            return ptr;
         }
 
         void* new_ptr = WASM_ENABLE_SPI_MEM ? heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
@@ -406,6 +407,7 @@ void* default_realloc(void* ptr, size_t new_size) {
             //esp_backtrace_print(100);
         }
 
+        ptr = new_ptr;
         return new_ptr;
 
     } CATCH {
