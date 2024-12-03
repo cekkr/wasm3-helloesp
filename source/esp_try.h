@@ -1,3 +1,6 @@
+#ifndef m3_esp_try_h
+#define m3_esp_try_h
+
 #include <setjmp.h>
 #include "esp_err.h"
 #include "esp_log.h"
@@ -41,3 +44,5 @@ void example_function_trycatch() {
 
     ESP_LOGI(TC_TAG, "Fine della funzione.");
 }
+
+#endif
