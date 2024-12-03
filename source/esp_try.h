@@ -25,6 +25,10 @@ static esp_err_t last_error;
     } \
 } while (0)
 
+void backtrace(){
+    esp_backtrace_print(100);
+}
+
 // Esempio di funzione che restituisce un errore
 esp_err_t faulty_function() {
     return ESP_FAIL; // Simula un errore
