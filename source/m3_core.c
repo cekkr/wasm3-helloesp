@@ -16,7 +16,7 @@
 
 #include "esp_debug_helpers.h"
 #include "esp_heap_caps.h"
-#include "esp_exception.h"
+#include "esp_try.h"
 
 void m3_Abort(const char* message) {
 #ifdef DEBUG
@@ -323,7 +323,7 @@ void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
 static const int ALLOC_SHIFT_OF = 0; // 4
 
 void* default_malloc(size_t size) {
-    esp_try {
+    TRY {
         if(CHECK_MEMORY_AVAILABLE){
             print_memory_info();
         }
@@ -343,16 +343,17 @@ void* default_malloc(size_t size) {
         }
 
         return ptr;
-        
-    } esp_catch(e) {
-        ESP_LOGE("WASM3", "default_malloc: Exception occurred during malloc: %s", esp_err_to_name(e));
+
+    } CATCH(e) {
+        ESP_LOGE("WASM3", "default_malloc: Exception occurred during malloc: %s", esp_err_to_name(last_error));
         return NULL;
-    }
+    } 
+    END_TRY
 }
 
 static const bool WASM_DEBUG_DEFAULT_FREE = false;
 void default_free(void* ptr) {
-    esp_try {
+    TRY {
         if (!ptr) return;
         
         // Logging del puntatore prima della free
@@ -369,15 +370,16 @@ void default_free(void* ptr) {
             return;
         }
 
-    } esp_catch(e) {
-        ESP_LOGE("WASM3", "default_free: Exception occurred during free: %s", esp_err_to_name(e));
+    } CATCH(e) {
+        ESP_LOGE("WASM3", "default_free: Exception occurred during free: %s", esp_err_to_name(last_error));
         //return ESP_FAIL;
     }
+    END_TRY
 }
 
 static const bool REALLOC_USE_MALLOC_IF_NEW = false;
 void* default_realloc(void* ptr, size_t new_size) {
-    esp_try {
+    TRY {
         if(!ptr || !ultra_safe_ptr_valid(ptr)){
             return default_malloc(new_size);
         }
@@ -403,10 +405,11 @@ void* default_realloc(void* ptr, size_t new_size) {
 
         return new_ptr;
 
-    } esp_catch(e) {
-        ESP_LOGE("WASM3", "default_realloc: Exception occurred during realloc: %s", esp_err_to_name(e));
+    } CATCH(e) {
+        ESP_LOGE("WASM3", "default_realloc: Exception occurred during realloc: %s", esp_err_to_name(last_error));
         return ptr;
     }
+    END_TRY
 }
 
 void m3_SetMemoryAllocator(MemoryAllocator* allocator) {
