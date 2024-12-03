@@ -343,12 +343,19 @@ M3FuncType* ParseFunctionSignature(const char* signature) {
     }
     
     // Allocate memory for the structure plus the types array
-    size_t totalSize = sizeof(M3FuncType) + (numRets + numArgs) * sizeof(u8);
-    M3FuncType* funcType = (M3FuncType*)default_allocator.malloc(totalSize);
-    if (!funcType) {
-        ESP_LOGW("WASM3", "ParseFunctionSignature: Memory allocation failed");
+    //size_t totalSize = sizeof(M3FuncType) + ((numRets + numArgs) * sizeof(u8));
+    IM3FuncType funcType = NULL; // (IM3FuncType)m3_Int_Malloc("M3FuncType", totalSize); // or m3_Int_AllocStruct(M3FuncType)
+
+    M3Result result;
+    if((result = AllocFuncType(funcType, numRets + numArgs)) != NULL){
+        ESP_LOGE("WASM3", "ParseFunctionSignature: AllocFuncType error: %s", result);
         return NULL;
     }
+
+    /*if (!funcType) {
+        ESP_LOGW("WASM3", "ParseFunctionSignature: Memory allocation failed");
+        return NULL;
+    }*/
     
     // Initialize the structure
     funcType->next = NULL;
@@ -357,50 +364,54 @@ M3FuncType* ParseFunctionSignature(const char* signature) {
     
     // Fill the types array
     u8* types = funcType->types;
-    size_t typeIndex = 0;
     
     // First process return type (if any)
     if (numRets > 0) {
         switch (signature[0]) {
             case 'i':
-                types[typeIndex++] = M3_TYPE_I32;
+                types = M3_TYPE_I32;
                 break;
             case 'I':
-                types[typeIndex++] = M3_TYPE_I64;
+                types = M3_TYPE_I64;
                 break;
             case 'f':
-                types[typeIndex++] = M3_TYPE_F32;
+                types = M3_TYPE_F32;
                 break;
             case 'F':
-                types[typeIndex++] = M3_TYPE_F64;
+                types = M3_TYPE_F64;
                 break;
             default:
-                types[typeIndex++] = M3_TYPE_NONE;
-                break;
+                ESP_LOGE("WASM3", "ParseFunctionSignature: Invalid return type: %c", signature[i]);
+                default_allocator.free(funcType);
+                return NULL;
         }
     }
+
+    types++;
     
     // Process arguments
     for (i = args_start; signature[i] != ')'; i++) {
         if (signature[i] != ' ') {
             switch (signature[i]) {
                 case 'i':
-                    types[typeIndex++] = M3_TYPE_I32;
+                    types = M3_TYPE_I32;
                     break;
                 case 'I':
-                    types[typeIndex++] = M3_TYPE_I64;
+                    types = M3_TYPE_I64;
                     break;
                 case 'f':
-                    types[typeIndex++] = M3_TYPE_F32;
+                    types = M3_TYPE_F32;
                     break;
                 case 'F':
-                    types[typeIndex++] = M3_TYPE_F64;
+                    types = M3_TYPE_F64;
                     break;
                 default:
                     ESP_LOGE("WASM3", "ParseFunctionSignature: Unknown argument type %c at position %d", signature[i], i);
                     default_allocator.free(funcType);
                     return NULL;
             }
+
+            types++;
         }
     }
 

@@ -370,6 +370,8 @@ void default_free(void* ptr) {
             return;
         }
 
+        ptr = NULL;
+
     } CATCH {
         ESP_LOGE("WASM3", "default_free: Exception occurred during free: %s", esp_err_to_name(last_error));
         //return ESP_FAIL;

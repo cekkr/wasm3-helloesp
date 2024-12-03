@@ -104,6 +104,9 @@ _try {
 
         _throwifnull (io_module->functions);
     }
+    else {
+        return result; // nothing to do
+    }
 } _catch:
     ESP_LOGE("WASM", "PreallocFunctions error");
     return result;

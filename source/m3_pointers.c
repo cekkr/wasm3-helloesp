@@ -51,7 +51,7 @@ bool is_ptr_freeable(void* ptr) {
     }
 
     // 2. Verifica allineamento (l'heap ESP32 richiede allineamento a 8 byte)
-    if (false && ((uintptr_t)ptr) % 8 != 0) { // disabled
+    if ((uint32_t)ptr & 0x3) { // disabled
         if(WASM_DEBUG_POINTERS){
              ESP_LOGE("WASM3", "Unaligned pointer: %p", ptr);
              if(WASM_DEBUG_POINTERS_BACKTRACE) esp_backtrace_print(100);
