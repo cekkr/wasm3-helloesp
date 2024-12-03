@@ -352,6 +352,7 @@ void* default_malloc(size_t size) {
 }
 
 static const bool WASM_DEBUG_DEFAULT_FREE = false;
+static const bool WAMS_DEFAULT_FREE_CHECK_FREEEABLE = true;
 void default_free(void* ptr) {
     TRY {
         if (!ptr) return;
@@ -360,10 +361,10 @@ void default_free(void* ptr) {
         if(WASM_DEBUG_DEFAULT_FREE) ESP_LOGD("WASM3", "Attempting to free memory at %p", ptr);
         
         bool notFreeToFree = false;
-        if (!is_ptr_freeable(ptr)) {
-            //backtrace();
+        if (WAMS_DEFAULT_FREE_CHECK_FREEEABLE && !is_ptr_freeable(ptr)) {            
             ESP_LOGW("WASM3", "default_free: is_ptr_freeable check failed for pointer");
-            notFreeToFree = true;
+            backtrace();
+            //notFreeToFree = true;
             //return;
         }
 

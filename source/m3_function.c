@@ -472,7 +472,10 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName, const c
     function->compiled = NULL;  // Non compilata
 
     //function->funcType = ParseFunctionSignature(signature);  // Tipo non definito    
-    SignatureToFuncType(function->funcType, signature);
+    M3Result signatureResult = SignatureToFuncType(& function->funcType, signature);
+    if(signatureResult){
+        ESP_LOGE("WASM3", "addFunctionToModule: SignatureToFuncType failed: %s", signatureResult);
+    }
 
     return m3Err_none;
 }

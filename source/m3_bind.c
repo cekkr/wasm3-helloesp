@@ -88,9 +88,10 @@ _   (AllocFuncType (& funcType, (u32) maxNumTypes));
     }
 
 } _catch:
-
-    if (result)
+    if (result){
+        ESP_LOGE("WASM3", "SignatureToFuncType error: %s", result);
         m3_Int_Free (funcType);
+    }
 
     * o_functionType = funcType;
 
@@ -161,6 +162,10 @@ _   (SignatureToFuncType (& ftype, i_linkingSignature));
     }
 
     _catch:
+
+    if(result){
+        ESP_LOGE("WASM3", "ValidateSignature failed: %s", result);
+    }
 
     m3_Int_Free (ftype);
 
