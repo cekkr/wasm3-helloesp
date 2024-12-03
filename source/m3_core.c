@@ -16,6 +16,7 @@
 
 #include "esp_debug_helpers.h"
 #include "esp_heap_caps.h"
+#include "esp_exception.h"
 
 void m3_Abort(const char* message) {
 #ifdef DEBUG
@@ -322,82 +323,90 @@ void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
 static const int ALLOC_SHIFT_OF = 0; // 4
 
 void* default_malloc(size_t size) {
-    if(CHECK_MEMORY_AVAILABLE){
-        print_memory_info();
-    }
-
-    void* ptr = WASM_ENABLE_SPI_MEM ? heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
-    if (ptr == NULL) {
-        ptr = heap_caps_malloc(size + ALLOC_SHIFT_OF, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL); // | MALLOC_CAP_INTERNAL
-
-        if (ptr) {
-            memset(ptr, 0, size + ALLOC_SHIFT_OF);  // Zero-fill con padding
+    esp_try {
+        if(CHECK_MEMORY_AVAILABLE){
+            print_memory_info();
         }
-    }
 
-    if(ptr == NULL){
-        ESP_LOGE("WASM3", "Failed to allocate memory of size %d", size);
-        esp_backtrace_print(100);
-    }
+        void* ptr = WASM_ENABLE_SPI_MEM ? heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
+        if (ptr == NULL) {
+            ptr = heap_caps_malloc(size + ALLOC_SHIFT_OF, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL); // | MALLOC_CAP_INTERNAL
 
-    return ptr;
+            if (ptr) {
+                memset(ptr, 0, size + ALLOC_SHIFT_OF);  // Zero-fill con padding
+            }
+        }
+
+        if(ptr == NULL){
+            ESP_LOGE("WASM3", "Failed to allocate memory of size %d", size);
+            esp_backtrace_print(100);
+        }
+
+        return ptr;
+        
+    } esp_catch(e) {
+        ESP_LOGE("WASM3", "default_malloc: Exception occurred during malloc: %s", esp_err_to_name(e));
+        return NULL;
+    }
 }
 
 static const bool WASM_DEBUG_DEFAULT_FREE = false;
 void default_free(void* ptr) {
-    if (!ptr) return;
-    
-    // Logging del puntatore prima della free
-    if(WASM_DEBUG_DEFAULT_FREE) ESP_LOGD("WASM3", "Attempting to free memory at %p", ptr);
-    
-    if (false && !is_ptr_freeable(ptr)) {
-        ESP_LOGW("WASM3", "safe_free check failed for pointer");
-        return;
-    }
-
-    /*if (heap_caps_check_integrity_all(true)) {  // Check completo dell'heap
-        if (heap_caps_check_integrity_addr(ptr, true)) {  // Check dettagliato
-            heap_caps_free(ptr);
-        } else {
-            ESP_LOGW("WASM3", "Integrity check failed for specific address %p", ptr);
+    esp_try {
+        if (!ptr) return;
+        
+        // Logging del puntatore prima della free
+        if(WASM_DEBUG_DEFAULT_FREE) ESP_LOGD("WASM3", "Attempting to free memory at %p", ptr);
+        
+        if (!is_ptr_freeable(ptr)) {
+            ESP_LOGW("WASM3", "safe_free check failed for pointer");
+            return;
         }
-    } else {
-        ESP_LOGW("WASM3", "Global heap corruption detected before free");
-    }*/
 
-    void* temp = ptr;
-    if (!ultra_safe_free(&temp)) {
-        ESP_LOGW("WASM3", "Skipped unsafe free operation");
-        return;
+        void* temp = ptr;
+        if (!ultra_safe_free(&temp)) {
+            ESP_LOGW("WASM3", "Skipped unsafe free operation");
+            return;
+        }
+
+    } esp_catch(e) {
+        ESP_LOGE("WASM3", "default_free: Exception occurred during free: %s", esp_err_to_name(e));
+        //return ESP_FAIL;
     }
 }
 
 static const bool REALLOC_USE_MALLOC_IF_NEW = false;
 void* default_realloc(void* ptr, size_t new_size) {
-    if(!ptr || !ultra_safe_ptr_valid(ptr)){
-        return default_malloc(new_size);
-    }
-
-    void* new_ptr = WASM_ENABLE_SPI_MEM ? heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
-    if (new_ptr == NULL) {
-        if(REALLOC_USE_MALLOC_IF_NEW && ptr == NULL){
-            new_ptr = default_malloc(new_size);
-        }
-        else {
-            new_ptr = heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL); //  
+    esp_try {
+        if(!ptr || !ultra_safe_ptr_valid(ptr)){
+            return default_malloc(new_size);
         }
 
-        if(new_ptr) {
-            memset(new_ptr, 0, new_size);
+        void* new_ptr = WASM_ENABLE_SPI_MEM ? heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
+        if (new_ptr == NULL) {
+            if(REALLOC_USE_MALLOC_IF_NEW && ptr == NULL){
+                new_ptr = default_malloc(new_size);
+            }
+            else {
+                new_ptr = heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL); //  
+            }
+
+            if(new_ptr) {
+                memset(new_ptr, 0, new_size);
+            }
         }
-    }
 
-    if (new_ptr == NULL){
-        ESP_LOGE("WASM3", "Failed to reallocate memory of size %zu", new_size);
-        //esp_backtrace_print(100);
-    }
+        if (new_ptr == NULL){
+            ESP_LOGE("WASM3", "Failed to reallocate memory of size %zu", new_size);
+            //esp_backtrace_print(100);
+        }
 
-    return new_ptr;
+        return new_ptr;
+
+    } esp_catch(e) {
+        ESP_LOGE("WASM3", "default_realloc: Exception occurred during realloc: %s", esp_err_to_name(e));
+        return ptr;
+    }
 }
 
 void m3_SetMemoryAllocator(MemoryAllocator* allocator) {

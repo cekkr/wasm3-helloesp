@@ -203,7 +203,7 @@ _               (CompileRawFunction (io_module, f, i_function, i_userdata));
         }
     }
 } _catch:
-    ESP_LOGE("WASM3", "FindAndLinkFunction error: %s", result);
+    //ESP_LOGE("WASM3", "FindAndLinkFunction error: %s", result);
     return result;
 }
 
