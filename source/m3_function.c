@@ -10,7 +10,7 @@
 
 #include "m3_function.h"
 #include "m3_env.h"
-
+#include "m3_bind.h"
 #include "m3_pointers.h"
 
 M3Result AllocFuncType (IM3FuncType * o_functionType, u32 i_numTypes)
@@ -472,7 +472,7 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName, const c
     function->compiled = NULL;  // Non compilata
 
     //function->funcType = ParseFunctionSignature(signature);  // Tipo non definito    
-    SignatureToFuncType(function->funcType, signature)
+    SignatureToFuncType(function->funcType, signature);
 
     return m3Err_none;
 }
