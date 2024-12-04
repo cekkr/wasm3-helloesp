@@ -13,7 +13,7 @@
 
 d_m3BeginExternC
 
-# define m3MemData(mem)                 (u8*)(((M3MemoryHeader*)(mem))+1)
+//# define m3MemData(mem)                 (u8*)(((M3MemoryHeader*)(mem))+1)
 # define m3MemRuntime(mem)              (((M3MemoryHeader*)(mem))->runtime)
 # define m3MemInfo(mem)                 (&(((M3MemoryHeader*)(mem))->runtime->memory))
 

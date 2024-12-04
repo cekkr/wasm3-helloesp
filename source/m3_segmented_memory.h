@@ -12,7 +12,8 @@ typedef struct MemorySegment {
 } MemorySegment;
 
 typedef struct M3Memory_t {  
-    M3MemoryHeader*         mallocated;
+    //M3MemoryHeader*       mallocated;    
+    M3Runtime*              runtime;
 
     u32                     initPages; // initPages or numPages?
     u32                     numPages;
