@@ -1054,7 +1054,7 @@ M3ValueType  m3_GetGlobalType  (IM3Global          i_global)
 }
 
 
-static const bool WASM_DEBUG_VERBOSE_v_FindFunction = true;
+static const bool WASM_DEBUG_VERBOSE_v_FindFunction = false;
 void *  v_FindFunction  (IM3Module i_module, const char * const i_name)
 {
     // Prefer exported functions
