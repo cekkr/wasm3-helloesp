@@ -1054,13 +1054,20 @@ M3ValueType  m3_GetGlobalType  (IM3Global          i_global)
 }
 
 
+static const bool WASM_DEBUG_VERBOSE_v_FindFunction = true;
 void *  v_FindFunction  (IM3Module i_module, const char * const i_name)
 {
-
     // Prefer exported functions
     for (u32 i = 0; i < i_module->numFunctions; ++i)
     {
         IM3Function f = & i_module->functions [i];
+
+        if(WASM_DEBUG_VERBOSE_v_FindFunction){
+            if(f->export_name){
+                ESP_LOGI("WASM3", "v_FindFunction: cycling function %s in module %s", f->export_name, i_module->name);
+            }
+        }
+
         if (f->export_name and strcmp (f->export_name, i_name) == 0)
             return f;
     }
@@ -1077,6 +1084,12 @@ void *  v_FindFunction  (IM3Module i_module, const char * const i_name)
 
         for (int j = 0; j < f->numNames; j++)
         {
+            if(WASM_DEBUG_VERBOSE_v_FindFunction){
+                if(f->names [j]){
+                    ESP_LOGI("WASM3", "v_FindFunction: cycling internal function %s in module %s", f->names [j], i_module->name);
+                }
+            }
+
             if (f->names [j] and strcmp (f->names [j], i_name) == 0)
                 return f;
         }
