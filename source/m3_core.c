@@ -484,7 +484,7 @@ void* m3_Malloc_Impl(size_t i_size) {
     for (size_t i = 0; i < memory->num_segments; i++) {
         memory->segments[i].data = NULL;
         memory->segments[i].is_allocated = false;
-        memory->segment_size = 0;
+        //memory->segment_size = 0; //???
     }
 
     if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Returning memory pointer");

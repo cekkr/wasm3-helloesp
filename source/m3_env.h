@@ -12,7 +12,7 @@
 #include "m3_code.h"
 #include "m3_compile.h"
 
-#define WASM_SEGMENT_SIZE 4096
+#define WASM_SEGMENT_SIZE 4096 // 4096 * x // btw move the definition elsewhere
 #define WASM_PAGE_SIZE 65536 //todo: think about
 #define WASM_ENABLE_SPI_MEM 0
 
@@ -184,10 +184,17 @@ typedef struct M3Runtime
 
     IM3Module               modules;        // linked list of imported modules
 
+    /* // Original stack management
     void *                  stack;
     void *                  originStack;
     u32                     stackSize;
     u32                     numStackSlots;
+    */
+
+    IM3Memory               stack;
+    IM3Memory               originStack;
+    u32                     maxStackSize;
+
     IM3Function             lastCalled;     // last function that successfully executed
 
     void *                  userdata;

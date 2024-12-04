@@ -667,20 +667,20 @@ d_m3Op  (MemSize)
 {
     IM3Memory memory            =_mem; //  m3MemInfo (_mem);
 
-    _r0 = memory->numPages;
+    _r0 = memory->total_size; // istead of memory->numPages
 
     nextOp ();
 }
 
 
-d_m3Op (MemGrow)
+d_m3Op (MemGrow) //todo: convert it to new memory model
 {
     IM3Runtime runtime = m3MemRuntime(_mem);
     IM3Memory memory = &runtime->memory;
 
     i32 numPagesToGrow = _r0;
     if (numPagesToGrow >= 0) {
-        _r0 = memory->numPages;
+        _r0 = memory->total_size;
 
         if (M3_LIKELY(numPagesToGrow))
         {
@@ -827,6 +827,7 @@ d_m3Op  (Entry)
         if(end_segment > memory->num_segments){
             // realloc new segments
             memory->num_segments = end_segment;
+            ESP_LOGI("WASM3", "(Entry): Going to reallocate %u memory->segments", end_segment);
             if(current_allocator->realloc(memory->segments, memory->num_segments * sizeof(MemorySegment)) == NULL){
                 forwardTrap(error_details(m3Err_mallocFailed, "during segments realloc in (Entry)"));
                 return NULL;

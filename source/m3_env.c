@@ -272,6 +272,20 @@ void  Environment_ReleaseCodePages  (IM3Environment i_environment, IM3CodePage i
     }
 }
 
+static const bool WASM_DEBUG_STACK = false;
+IM3Memory m3_NewStack(){
+    if(WASM_DEBUG_STACK) ESP_LOGI("WASM3", "m3_NewStack called");
+
+    IM3Memory memory = m3_NewMemory();
+    
+    if (memory == NULL){
+        ESP_LOGE("WASM3", "Failed to allocate memory for IM3Memory");
+        return NULL;
+    }
+
+    return memory;
+}
+
 
 IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes, void * i_userdata)
 {
@@ -286,12 +300,17 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
         runtime->environment = i_environment;
         runtime->userdata = i_userdata;
 
-        runtime->originStack = m3_Int_Malloc ("Wasm Stack", i_stackSizeInBytes + 4*sizeof (m3slot_t)); // TODO: more precise stack checks
+        //runtime->originStack = m3_Int_Malloc ("Wasm Stack", i_stackSizeInBytes + 4*sizeof (m3slot_t)); // TODO: more precise stack checks
+        runtime->originalStack = m3_NewStack();        
 
         if (runtime->originStack)
         {
+            runtime->originalStack->runtime = runtime;
+            runtime->originalStack->max_size = i_stackSizeInBytes;
+
             runtime->stack = runtime->originStack;
-            runtime->numStackSlots = i_stackSizeInBytes / sizeof (m3slot_t);         
+            runtime->maxStackSize = i_stackSizeInBytes; // is it important save it here?
+            //runtime->numStackSlots = i_stackSizeInBytes / sizeof (m3slot_t);         
             m3log (runtime, "new stack: %p", runtime->originStack);
         }
         else m3_Int_Free (runtime);
@@ -582,6 +601,7 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) {
     }
     else {
         if(io_runtime->memory.segment_size == 0) {
+            ESP_LOGW("WASM3", "InitMemory: io_runtime->memory.segment_size == 0");
             io_runtime->memory.segment_size = WASM_SEGMENT_SIZE;
         }
     }

@@ -26,7 +26,7 @@ d_m3BeginExternC
 # define m3MemRuntime(mem)              (((M3Memory*)(mem))->runtime)
 # define m3MemInfo(mem)                 (&(((M3Memory*)(mem))->runtime->memory))
 
-# define d_m3BaseOpSig                  pc_t _pc, m3stack_t _sp, M3Memory* _mem, m3reg_t _r0
+# define d_m3BaseOpSig                  pc_t _pc, M3MemoryPoint* _sp, M3Memory* _mem, m3reg_t _r0
 # define d_m3BaseOpArgs                 _sp, _mem, _r0
 # define d_m3BaseOpAllArgs              _pc, _sp, _mem, _r0
 # define d_m3BaseOpDefaultArgs          0
