@@ -2840,6 +2840,7 @@ M3Result  ReserveConstants  (IM3Compilation o)
 }
 
 
+static const double WAS_DEBUG_CompileFunction = true;
 M3Result  CompileFunction  (IM3Function io_function)
 {
     if (!io_function->wasm) return "function body is missing";
@@ -2900,6 +2901,7 @@ _   (CompileLocals (o));
 _   (ReserveConstants (o));
 
     // start tracking the max stack used (Push() also updates this value) so that op_Entry can precisely detect stack overflow
+    if(WAS_DEBUG_CompileFunction) ESP_LOGI("WASM3", "Assigning o->maxStacksSlots");
     o->maxStackSlots = o->slotMaxAllocatedIndexPlusOne = o->slotFirstDynamicIndex;
 
     o->block.blockStackIndex = o->stackFirstDynamicIndex = o->stackIndex;                           m3log (compile, "start stack index: %d",
@@ -2913,6 +2915,8 @@ _   (CompileBlockStatements (o));
     _throwif(m3Err_wasmMalformed, o->previousOpcode != c_waOp_end);
 
     io_function->compiled = pc;
+
+    if(WAS_DEBUG_CompileFunction) ESP_LOGI("WASM3", "Assigning io_function->maxStacksSlots");
     io_function->maxStackSlots = o->maxStackSlots;
 
     u16 numConstantSlots = o->slotMaxConstIndex - o->slotFirstConstIndex;                           m3log (compile, "unique constant slots: %d; unused slots: %d",

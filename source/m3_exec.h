@@ -794,6 +794,7 @@ d_m3Op  (Compile)
 }
 
 
+static const bool WASM_Entry_IgnoreBufferOverflow = true;
 d_m3Op  (Entry)
 {
     d_m3ClearRegisters
@@ -807,8 +808,7 @@ d_m3Op  (Entry)
     if (true)
 #else
     // Usa total_size invece di maxStack per il controllo
-    if (M3_LIKELY ((void *)(_sp + function->maxStackSlots) < 
-                   (void *)(memory->total_size)))
+    if (WASM_Entry_IgnoreBufferOverflow || M3_LIKELY ((void *)(_sp + function->maxStackSlots) <  (void *)(memory->total_size))) //todo: DEPRECATE IT?
 #endif
     {
 #if defined(DEBUG)
