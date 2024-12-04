@@ -30,4 +30,22 @@ void ExceptionBreakpoint (cstr_t i_exception, cstr_t i_message);
 
 #define _throwifnull(PTR)                   _throwif (m3Err_mallocFailed, !(PTR))
 
+char* error_details(const char* base_error, const char* format, ...) {
+    static char buffer[512];  // Buffer statico per il risultato
+    char temp_buffer[256];    // Buffer temporaneo per la parte formattata
+    va_list args;
+    
+    // Formatta la seconda parte con i parametri variabili
+    va_start(args, format);
+    vsnprintf(temp_buffer, sizeof(temp_buffer), format, args);
+    va_end(args);
+    
+    // Combina l'errore base con i dettagli formattati
+    snprintf(buffer, sizeof(buffer), "%s: %s", base_error, temp_buffer);
+    
+    return buffer;
+}
+
+// const char* err2 = error_details(trapStackOverflow, "Errore alla linea %d", line_number);
+
 #endif // m3_exception_h

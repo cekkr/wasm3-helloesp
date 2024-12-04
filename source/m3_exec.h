@@ -9,6 +9,7 @@
 
 #include "esp_log.h"
 #include "m3_core.h"
+#include "m3_exception.h"
 
 // TODO: all these functions could move over to the .c at some point. normally, I'd say screw it,
 // but it might prove useful to be able to compile m3_exec alone w/ optimizations while the remaining
@@ -914,7 +915,7 @@ d_m3Op  (Entry)
         }
         forwardTrap(r);
     }
-    else newTrap(m3Err_trapStackOverflow);
+    else newTrap(error_details(m3Err_trapStackOverflow, "in d_m30p (Entry)"));
 }
 
 

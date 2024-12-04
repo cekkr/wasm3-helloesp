@@ -401,7 +401,7 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
         result = CompileBlock (o, ftype, c_waOp_block);
 
         if (not result && o->maxStackSlots >= runtime.numStackSlots) {
-            result = m3Err_trapStackOverflow;
+            result = error_details(m3Err_trapStackOverflow, "in EvaluateExpression");
         }
 
         if (not result)
