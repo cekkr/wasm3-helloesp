@@ -4,6 +4,7 @@
 #include <stddef.h>
 
 #include "m3_core.h"
+#include "m3_env.h"
 
 typedef struct MemorySegment {    
     void* data;           // Puntatore ai dati effettivi
@@ -13,7 +14,7 @@ typedef struct MemorySegment {
 
 typedef struct M3Memory_t {  
     //M3MemoryHeader*       mallocated;    
-    M3Runtime*              runtime;
+    IM3Runtime              runtime;
 
     u32                     initPages; // initPages or numPages?
     u32                     numPages;

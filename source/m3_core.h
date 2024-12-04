@@ -47,8 +47,6 @@ typedef float           f32;
 
 #endif // d_m3ShortTypesDefined
 
-#include "m3_segmented_memory.h"
-
 #define PRIf32          "f"
 #define PRIf64          "lf"
 
