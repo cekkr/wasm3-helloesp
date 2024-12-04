@@ -129,6 +129,7 @@ typedef void /*const*/ *                    code_t;
 typedef code_t const * /*__restrict__*/     pc_t;
 
 
+/* // Try to deprecate it
 typedef struct M3MemoryHeader
 {
     IM3Runtime      runtime;
@@ -136,6 +137,7 @@ typedef struct M3MemoryHeader
     size_t          length;
 }
 M3MemoryHeader;
+*/
 
 struct M3CodeMappingPage;
 

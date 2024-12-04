@@ -550,7 +550,7 @@ d_m3Op (Call)
 {
     pc_t callPC                 = immediate (pc_t);
     i32 stackOffset            = immediate (i32);
-    IM3Memory memory           = m3MemInfo (_mem);
+    IM3Memory memory           =_mem; //  m3MemInfo (_mem);
 
     m3stack_t sp = _sp + stackOffset;
 
@@ -577,7 +577,7 @@ d_m3Op (CallIndirect)
     IM3Module module           = immediate (IM3Module);
     IM3FuncType type           = immediate (IM3FuncType);
     i32 stackOffset            = immediate (i32);
-    IM3Memory memory          = m3MemInfo (_mem);
+    IM3Memory memory          =_mem; //  m3MemInfo (_mem);
 
     m3stack_t sp = _sp + stackOffset;
 
@@ -634,7 +634,7 @@ d_m3Op (CallRawFunction)
     ctx.function = immediate (IM3Function);
     ctx.userdata = immediate (void *);
     u64* const sp = ((u64*)_sp);
-    IM3Memory memory = m3MemInfo (_mem);
+    IM3Memory memory =_mem; //  m3MemInfo (_mem);
     IM3Runtime runtime = m3MemRuntime(_mem);
 
 #if d_m3EnableStrace
@@ -664,7 +664,7 @@ d_m3Op (CallRawFunction)
 
 d_m3Op  (MemSize)
 {
-    IM3Memory memory            = m3MemInfo (_mem);
+    IM3Memory memory            =_mem; //  m3MemInfo (_mem);
 
     _r0 = memory->numPages;
 
@@ -800,7 +800,7 @@ d_m3Op  (Entry)
     d_m3TracePrepare
 
     IM3Function function = immediate (IM3Function);
-    IM3Memory memory = m3MemInfo (_mem);
+    IM3Memory memory =_mem; //  m3MemInfo (_mem);
 
 #if d_m3SkipStackCheck
     if (true)
@@ -928,7 +928,7 @@ d_m3Op  (Loop)
 
     m3ret_t r;
     
-    IM3Memory memory = m3MemInfo (_mem);
+    IM3Memory memory =_mem; //  m3MemInfo (_mem);
     
     // Manteniamo un contatore delle iterazioni per debug/logging opzionale
     u32 iteration_count = 0;

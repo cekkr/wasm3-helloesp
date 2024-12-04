@@ -1278,6 +1278,7 @@ _   (checkStartFunction(i_function->module))
         }
     }
 
+// Here's born _mem
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
     result = (M3Result) RunCode(i_function->compiled, (m3stack_t)(runtime->stack), &runtime->memory, d_m3OpDefaultArgs, d_m3BaseCstr);
 # else
