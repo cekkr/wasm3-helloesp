@@ -321,8 +321,11 @@ void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
 
 // Allocatore di default che usa heap_caps
 static const int ALLOC_SHIFT_OF = 0; // 4
+static const bool WASM_DEBUG_ALLOCS = true;
 
 void* default_malloc(size_t size) {
+    if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_malloc called for %p (size: %ld)", ptr, size);
+
     TRY {
         if(CHECK_MEMORY_AVAILABLE){
             print_memory_info();
@@ -354,6 +357,8 @@ void* default_malloc(size_t size) {
 static const bool WASM_DEBUG_DEFAULT_FREE = false;
 static const bool WAMS_DEFAULT_FREE_CHECK_FREEEABLE = true;
 void default_free(void* ptr) {
+    if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_free called for %p", ptr);
+
     TRY {
         if (!ptr) return;
         
@@ -383,6 +388,8 @@ void default_free(void* ptr) {
 
 static const bool REALLOC_USE_MALLOC_IF_NEW = false;
 void* default_realloc(void* ptr, size_t new_size) {
+    if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_realloc called for %p (size: %ld)", ptr, new_size);
+
     TRY {
         if((!ptr) || !ultra_safe_ptr_valid(ptr)){
             ptr = default_malloc(new_size);
