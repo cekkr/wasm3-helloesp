@@ -324,7 +324,7 @@ static const int ALLOC_SHIFT_OF = 0; // 4
 static const bool WASM_DEBUG_ALLOCS = true;
 
 void* default_malloc(size_t size) {
-    if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_malloc called for %p (size: %ld)", ptr, size);
+    if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_malloc called for %p (size: %u)", ptr, size);
 
     TRY {
         if(CHECK_MEMORY_AVAILABLE){
@@ -388,7 +388,7 @@ void default_free(void* ptr) {
 
 static const bool REALLOC_USE_MALLOC_IF_NEW = false;
 void* default_realloc(void* ptr, size_t new_size) {
-    if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_realloc called for %p (size: %ld)", ptr, new_size);
+    if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_realloc called for %p (size: %u)", ptr, new_size);
 
     TRY {
         if((!ptr) || !ultra_safe_ptr_valid(ptr)){
