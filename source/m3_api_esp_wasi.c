@@ -11,10 +11,11 @@
 
 #include "m3_env.h"
 #include "m3_exception.h"
+#include "m3_function.h"
 
 #include "esp_log.h"
 
-#if defined(ESP32)
+//#if defined(ESP32)
 
 typedef uint32_t __wasi_size_t;
 #include "extra/wasi_core.h"
@@ -614,7 +615,7 @@ _catch:
     return result;
 }
 
-#endif // ESP32
+//#endif // ESP32
 
 M3Result m3_LinkEspWASI_Hello(IM3Module module)
 {
@@ -630,24 +631,46 @@ M3Result m3_LinkEspWASI_Hello(IM3Module module)
     }
  
     // Linko solo le funzioni essenziali che ci servono
-    const char* wasi = "wasi";
+    const char* wasi = "wasi";   
 
-    ESP_LOGI("WASM3", "m3_LinkEspWASI: link basic functions");
-    // Funzioni di base per I/O
-    _(SuppressLookupFailure(m3_LinkRawFunction(module, wasi, "fd_write", "i(i*i*)", &m3_wasi_generic_fd_write)));
-    _(SuppressLookupFailure(m3_LinkRawFunction(module, wasi, "fd_close", "i(i)", &m3_wasi_generic_fd_close)));
-    //ESP_LOGI("WASM3", "m3_LinkEspWASI: done link fd_");
-    
-    // Funzione di uscita
-    _(SuppressLookupFailure(m3_LinkRawFunctionEx(module, wasi, "proc_exit", "v(i)", &m3_wasi_generic_proc_exit, wasi_context)));
-    //ESP_LOGI("WASM3", "m3_LinkEspWASI: done link proc_");
+    if(false){ // classic implementation
+        ESP_LOGI("WASM3", "m3_LinkEspWASI: link basic functions");
 
-    // Se usiamo args
-    _(SuppressLookupFailure(m3_LinkRawFunctionEx(module, wasi, "args_get", "i(**)", &m3_wasi_generic_args_get, wasi_context)));
-    _(SuppressLookupFailure(m3_LinkRawFunctionEx(module, wasi, "args_sizes_get", "i(**)", &m3_wasi_generic_args_sizes_get, wasi_context)));
-    //ESP_LOGI("WASM3", "m3_LinkEspWASI: done link args_");
+        // Funzioni di base per I/O
+        _(SuppressLookupFailure(m3_LinkRawFunction(module, wasi, "fd_write", "i(i*i*)", &m3_wasi_generic_fd_write)));
+        _(SuppressLookupFailure(m3_LinkRawFunction(module, wasi, "fd_close", "i(i)", &m3_wasi_generic_fd_close)));
+        //ESP_LOGI("WASM3", "m3_LinkEspWASI: done link fd_");
+        
+        // Funzione di uscita
+        _(SuppressLookupFailure(m3_LinkRawFunctionEx(module, wasi, "proc_exit", "v(i)", &m3_wasi_generic_proc_exit, wasi_context)));
+        //ESP_LOGI("WASM3", "m3_LinkEspWASI: done link proc_");
 
-    //ESP_LOGI("WASM3", "m3_LinkEspWASI: basic functions linked");
+        // Se usiamo args
+        _(SuppressLookupFailure(m3_LinkRawFunctionEx(module, wasi, "args_get", "i(**)", &m3_wasi_generic_args_get, wasi_context)));
+        _(SuppressLookupFailure(m3_LinkRawFunctionEx(module, wasi, "args_sizes_get", "i(**)", &m3_wasi_generic_args_sizes_get, wasi_context)));
+        //ESP_LOGI("WASM3", "m3_LinkEspWASI: done link args_");
+    }
+    else {
+        ESP_LOGI("WASM3", "m3_LinkEspWASI: link basic functions with RegisterWasmFunctions");
+
+        // Definizione della lookup table entry
+        const WasmFunctionEntry functionTable[] = {
+            { 
+                .name = (const char*)"args_get",           
+                .func = m3_wasi_generic_args_get,   
+                .signature = (const char*)"i(**)"       
+            },
+            { 
+                .name = (const char*)"args_sizes_get",           
+                .func = m3_wasi_generic_args_sizes_get,   
+                .signature = (const char*)"i(**)"       
+            },
+        };
+
+        M3Result result = RegisterWasmFunctions(module, functionTable, sizeof(functionTable)/sizeof(functionTable[0]));
+    }
+
+    ESP_LOGI("WASM3", "m3_LinkEspWASI: basic functions linked");
 
 
 _catch:

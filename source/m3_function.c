@@ -286,6 +286,7 @@ u32  GetFunctionNumArgsAndLocals (IM3Function i_function)
 
 static const bool WASM_DEBUG_PARSE_FUNCTION_SIGNATURE = true;
 
+// (Probably) abandoned function (SignatureToFuncType from WASM3)
 M3FuncType* ParseFunctionSignature(const char* signature) {
     if (!signature) {
         ESP_LOGW("WASM3", "ParseFunctionSignature: returns NULL (null signature)");
