@@ -822,13 +822,21 @@ d_m3Op  (Entry)
         
         // Alloca i segmenti necessari per lo stack
         size_t start_segment = stack_start_offset / memory->segment_size;
-        size_t end_segment = (stack_start_offset + required_size - 1) / 
-                            memory->segment_size;
+        size_t end_segment = (stack_start_offset + required_size - 1) / memory->segment_size;
                             
+        if(end_segment > memory->num_segments){
+            // realloc new segments
+            memory->num_segments = end_segment;
+            if(current_allocator->realloc(memory->segments, memory->num_segments * sizeof(MemorySegment)) == NULL){
+                forwardTrap(error_details(m3Err_mallocFailed, "during segments realloc in (Entry)"));
+                return NULL;
+            }
+        }
+
         for (size_t i = start_segment; i <= end_segment; i++) {
             if (!memory->segments[i].is_allocated) {
                 if (!allocate_segment(memory, i)) {
-                    forwardTrap(m3Err_mallocFailed);
+                    forwardTrap(error_details(m3Err_mallocFailed, "during allocate_segment in (Entry)"));
                     return NULL;
                 }
             }
