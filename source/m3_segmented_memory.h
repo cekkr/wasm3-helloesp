@@ -11,7 +11,10 @@ typedef struct MemorySegment {
     //size_t size;         // Dimensione del segmento
 } MemorySegment;
 
-typedef struct M3Memory_t {
+typedef struct M3Memory_t {  
+    M3MemoryHeader*         mallocated;
+
+    u32                     initPages; // initPages or numPages?
     u32                     numPages;
     u32                     maxPages;
     u32                     pageSize;

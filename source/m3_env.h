@@ -21,6 +21,7 @@ d_m3BeginExternC
 
 //---------------------------------------------------------------------------------------------------------------------------------
 
+/* // Disabled
 typedef struct M3MemoryInfo
 {
     u32     initPages;
@@ -28,6 +29,7 @@ typedef struct M3MemoryInfo
     u32     pageSize;
 }
 M3MemoryInfo;
+*/
 
 
 /* // Old M3Memory implementation
