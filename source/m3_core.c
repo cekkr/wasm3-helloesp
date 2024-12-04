@@ -324,7 +324,7 @@ static const int ALLOC_SHIFT_OF = 0; // 4
 static const bool WASM_DEBUG_ALLOCS = true;
 
 void* default_malloc(size_t size) {
-    if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_malloc called for %p (size: %u)", ptr, size);
+    if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_malloc called size: %u", size);
 
     TRY {
         if(CHECK_MEMORY_AVAILABLE){
