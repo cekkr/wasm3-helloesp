@@ -165,9 +165,8 @@ _   (SignatureToFuncType (& ftype, i_linkingSignature));
 
     if(result){
         ESP_LOGE("WASM3", "ValidateSignature failed: %s", result);
-    }
-
-    m3_Int_Free (ftype);
+        m3_Int_Free (ftype);
+    }    
 
     return result;
 }
