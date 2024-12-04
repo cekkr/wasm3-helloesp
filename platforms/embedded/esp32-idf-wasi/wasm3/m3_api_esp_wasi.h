@@ -19,7 +19,8 @@ typedef struct m3_wasi_context_t
     ccstr_t *               argv;
 } m3_wasi_context_t;
 
-    M3Result    m3_LinkEspWASI     (IM3Module io_module);
+M3Result    m3_LinkEspWASI     (IM3Module io_module);
+M3Result m3_LinkEspWASI_Hello(IM3Module module);
 
 m3_wasi_context_t* m3_GetWasiContext();
 
