@@ -9,10 +9,11 @@
 #define m3_env_h
 
 #include "wasm3.h"
+#include "m3_compile.h"
 #include "m3_core.h"
 #include "m3_code.h"
-#include "m3_compile.h"
 #include "m3_segmented_memory.h"
+#include "m3_function.h"
 
 d_m3BeginExternC
 
@@ -224,8 +225,6 @@ void *                      v_FindFunction              (IM3Module i_module, con
 IM3CodePage                 AcquireCodePage             (IM3Runtime io_runtime);
 IM3CodePage                 AcquireCodePageWithCapacity (IM3Runtime io_runtime, u32 i_lineCount);
 void                        ReleaseCodePage             (IM3Runtime io_runtime, IM3CodePage i_codePage);
-
-bool allocate_segment(M3Memory* memory, size_t segment_index);
 
 d_m3EndExternC
 

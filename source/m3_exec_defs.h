@@ -8,8 +8,8 @@
 #ifndef m3_exec_defs_h
 #define m3_exec_defs_h
 
-#include "m3_core.h"
-#include "m3_segmented_memory.h"
+//#include "m3_core.h"
+//#include "m3_segmented_memory.h"
 
 d_m3BeginExternC
 
@@ -26,7 +26,10 @@ d_m3BeginExternC
 # define m3MemRuntime(mem)              (((M3Memory*)(mem))->runtime)
 # define m3MemInfo(mem)                 (&(((M3Memory*)(mem))->runtime->memory))
 
-# define d_m3BaseOpSig                  pc_t _pc, M3MemoryPoint* _sp, M3Memory* _mem, m3reg_t _r0
+typedef void* M3MemoryPoint_ptr; // it means M3MemoryPoint
+typedef void* M3Memory_ptr; // it means M3Memory
+
+# define d_m3BaseOpSig                  pc_t _pc, M3MemoryPoint_ptr _sp, M3Memory_ptr _mem, m3reg_t _r0
 # define d_m3BaseOpArgs                 _sp, _mem, _r0
 # define d_m3BaseOpAllArgs              _pc, _sp, _mem, _r0
 # define d_m3BaseOpDefaultArgs          0
