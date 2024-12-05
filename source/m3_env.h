@@ -11,18 +11,14 @@
 #include "wasm3.h"
 #include "m3_code.h"
 #include "m3_compile.h"
-
-#define WASM_SEGMENT_SIZE 4096 // 4096 * x // btw move the definition elsewhere
-#define WASM_PAGE_SIZE 65536 //todo: think about
-#define WASM_ENABLE_SPI_MEM 0
+#include "m3_segmented_memory.h"
 
 d_m3BeginExternC
-
 
 //---------------------------------------------------------------------------------------------------------------------------------
 
 // Disabled
-typedef struct M3MemoryInfo
+typedef struct M3MemoryInfo //todo: study its usage
 {
     u32     initPages;
     u32     maxPages;
@@ -218,11 +214,6 @@ typedef struct M3Runtime
 	u32						newCodePageSequence;
 }
 M3Runtime;
-
-void                        InitRuntime                 (IM3Runtime io_runtime, u32 i_stackSizeInBytes);
-void                        Runtime_Release             (IM3Runtime io_runtime);
-
-M3Result                    ResizeMemory                (IM3Runtime io_runtime, u32 i_numPages);
 
 typedef void *              (* ModuleVisitor)           (IM3Module i_module, void * i_info);
 void *                      ForEachModule               (IM3Runtime i_runtime, ModuleVisitor i_visitor, void * i_info);
