@@ -56,7 +56,7 @@ typedef void* M3Memory_ptr; // it means M3Memory
 #   define d_m3ClearRegisters       d_m3BaseClearRegisters
 # endif
 
-#include "m3_env.h"
+//#include "m3_env.h"
 
 #define d_m3RetSig                  static inline m3ret_t vectorcall
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
