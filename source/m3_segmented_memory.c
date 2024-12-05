@@ -218,7 +218,9 @@ M3Result GrowStack(M3Memory* memory, size_t additional_size) {
 
 static const int DEBUG_TOP_MEMORY = 1;
 
-/*M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) {
+/*
+// old implementation. even older ones in m3_env
+M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) {
     if(DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "InitMemory called");
 
     if (i_module->memoryInfo.pageSize == 0) {
@@ -387,3 +389,81 @@ void FreeMemory(IM3Runtime io_runtime) {
     memory->numPages = 0;
     memory->maxPages = 0;
 }
+
+
+////////////////////////////////////////////////////////////////
+// Segmented memory management
+
+#define WASM_DEBUG_SEGMENTED_MEM_MAN 1
+
+bool allocate_segment(M3Memory* memory, size_t segment_index) {
+    if (!memory || segment_index >= memory->num_segments) {
+        return false;
+    }
+
+    // Se il segmento è già allocato, restituisci true
+    if (memory->segments[segment_index].is_allocated) {
+        return true;
+    }
+
+    if (WASM_DEBUG_SEGMENTED_MEM_MAN) {
+        ESP_LOGI("WASM3", "Allocating segment %zu of size %zu", 
+                 segment_index, memory->segment_size);
+    }
+
+    // Prima prova ad allocare in SPIRAM se abilitata
+    void* ptr = WASM_ENABLE_SPI_MEM ? 
+                heap_caps_malloc(memory->segment_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : 
+                NULL;
+
+    // Se l'allocazione in SPIRAM fallisce o non è disponibile, prova la memoria interna
+    if (!ptr) {
+        ptr = heap_caps_malloc(memory->segment_size, 
+                             MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+        
+        if (WASM_DEBUG_SEGMENTED_MEM_MAN && !ptr) {
+            ESP_LOGE("WASM3", "Failed to allocate segment in internal memory");
+        }
+    }
+    else if (WASM_DEBUG_SEGMENTED_MEM_MAN) {
+        ESP_LOGI("WASM3", "Segment allocated in SPIRAM");
+    }
+
+    if (ptr) {
+        // Inizializza il segmento con zeri
+        memset(ptr, 0, memory->segment_size);
+        
+        memory->segments[segment_index].data = ptr;
+        memory->segments[segment_index].is_allocated = true;
+        
+        if (WASM_DEBUG_SEGMENTED_MEM_MAN) {
+            ESP_LOGI("WASM3", "Segment %zu successfully allocated", segment_index);
+        }
+        
+        return true;
+    }
+
+    return false;
+}
+
+static inline void* GetMemorySegment(IM3Memory memory, u32 offset)
+{
+    size_t segment_index = offset / memory->segment_size;
+    size_t segment_offset = offset % memory->segment_size;
+    MemorySegment segment = memory->segments[segment_index];
+    return (u8*)segment.data + segment_offset;
+}
+
+static inline i32 m3_LoadInt(IM3Memory memory, u32 offset)
+{
+    void* ptr = GetMemorySegment(memory, offset);
+    return *(i32*)ptr;
+}
+
+static inline void m3_StoreInt(IM3Memory memory, u32 offset, i32 value)
+{
+    void* ptr = GetMemorySegment(memory, offset);
+    *(i32*)ptr = value;
+}
+
+////////////////////////////////////////////////////////////////

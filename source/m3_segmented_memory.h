@@ -84,5 +84,10 @@ u8* GetEffectiveAddress(M3Memory* memory, size_t offset);
 bool IsStackAddress(M3Memory* memory, u8* addr);
 M3Result GrowStack(M3Memory* memory, size_t additional_size);
 
+////////////////////////////////
+bool allocate_segment(M3Memory* memory, size_t segment_index);
+static inline void* GetMemorySegment(IM3Memory memory, u32 offset);
+static inline i32 m3_LoadInt(IM3Memory memory, u32 offset);
+static inline void m3_StoreInt(IM3Memory memory, u32 offset, i32 value);
 
 #endif
