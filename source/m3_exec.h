@@ -13,6 +13,12 @@
 #include "m3_function.h"
 #include "m3_env.h"
 
+#include "m3_math_utils.h"
+#include "m3_compile.h"
+#include "m3_env.h"
+#include "m3_info.h"
+#include "m3_exec_defs.h"
+
 // TODO: all these functions could move over to the .c at some point. normally, I'd say screw it,
 // but it might prove useful to be able to compile m3_exec alone w/ optimizations while the remaining
 // code is at debug O0
@@ -30,12 +36,6 @@
 #ifndef M3_COMPILE_OPCODES
 #  error "Opcodes should only be included in one compilation unit"
 #endif
-
-#include "m3_math_utils.h"
-#include "m3_compile.h"
-#include "m3_env.h"
-#include "m3_info.h"
-#include "m3_exec_defs.h"
 
 #include <limits.h>
 

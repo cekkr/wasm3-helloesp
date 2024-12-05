@@ -8,10 +8,16 @@
 #ifndef m3_compile_h
 #define m3_compile_h
 
+#include "wasm3.h"
 #include "m3_code.h"
 #include "m3_exec_defs.h"
 #include "m3_exec.h"
 #include "m3_function.h"
+
+#include "m3_exception.h"
+#include "m3_info.h"
+#include "m3_core.h"
+#include "m3_env.h"
 
 #include "m3_segmented_memory.h"
 

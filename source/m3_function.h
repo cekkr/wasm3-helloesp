@@ -8,6 +8,7 @@
 #ifndef m3_function_h
 #define m3_function_h
 
+#include "wasm3.h"
 #include "m3_core.h"
 
 d_m3BeginExternC
@@ -79,6 +80,8 @@ typedef struct M3Function
     void *                  constants;
 }
 M3Function;
+
+typedef M3Function *        IM3Function;
 
 void        Function_Release            (IM3Function i_function);
 void        Function_FreeCompiledCode   (IM3Function i_function);
