@@ -224,12 +224,12 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
         runtime->userdata = i_userdata;
 
         //runtime->originStack = m3_Int_Malloc ("Wasm Stack", i_stackSizeInBytes + 4*sizeof (m3slot_t)); // TODO: more precise stack checks
-        runtime->originalStack = m3_NewStack();        
+        runtime->originStack = m3_NewStack();        
 
         if (runtime->originStack)
         {
-            runtime->originalStack->runtime = runtime;
-            runtime->originalStack->max_size = i_stackSizeInBytes;
+            runtime->originStack->runtime = runtime;
+            runtime->originStack->max_size = i_stackSizeInBytes;
 
             runtime->stack = runtime->originStack;
             runtime->maxStackSize = i_stackSizeInBytes; // is it important save it here?
@@ -315,7 +315,7 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
     M3_INIT (runtime);
 
     runtime.environment = i_module->runtime->environment;
-    runtime.numStackSlots = i_module->runtime->numStackSlots;
+    //runtime.numStackSlots = i_module->runtime->numStackSlots; // deprecated
     runtime.stack = i_module->runtime->stack;
 
     m3stack_t stack = (m3stack_t)runtime.stack;
@@ -342,9 +342,9 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
         pc_t m3code = GetPagePC (o->page);
         result = CompileBlock (o, ftype, c_waOp_block);
 
-        if (not result && o->maxStackSlots >= runtime.numStackSlots) {
+        /*if (not result && o->maxStackSlots >= runtime.numStackSlots) {
             result = error_details(m3Err_trapStackOverflow, "in EvaluateExpression");
-        }
+        }*/
 
         if (not result)
         {
