@@ -19,8 +19,6 @@
 #include "m3_core.h"
 //#include "m3_env.h"
 
-#include "m3_operation.h"
-
 #include "m3_segmented_memory.h"
 
 d_m3BeginExternC
