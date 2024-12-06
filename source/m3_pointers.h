@@ -2,9 +2,6 @@
 #ifndef m3_pointers_h
 #define m3_pointers_h
 
-#include "m3_core.h"
-#include "m3_pointers.h"
-
 ///
 /// Pointer validation
 ///

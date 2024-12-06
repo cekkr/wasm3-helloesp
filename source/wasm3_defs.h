@@ -290,4 +290,121 @@
 #  define M3_LIKELY(x)   (x)
 # endif
 
+///
+/// Moved from core.h
+///
+
+
+# if defined(__cplusplus)
+#   define d_m3BeginExternC     extern "C" {
+#   define d_m3EndExternC       }
+# else
+#   define d_m3BeginExternC
+#   define d_m3EndExternC
+# endif
+
+d_m3BeginExternC
+
+#define d_m3ImplementFloat (d_m3HasFloat || d_m3NoFloatDynamic)
+
+#if !defined(d_m3ShortTypesDefined)
+
+typedef uint64_t        u64;
+typedef int64_t         i64;
+typedef uint32_t        u32;
+typedef int32_t         i32;
+typedef uint16_t        u16;
+typedef int16_t         i16;
+typedef uint8_t         u8;
+typedef int8_t          i8;
+
+#if d_m3ImplementFloat
+typedef double          f64;
+typedef float           f32;
+#endif
+
+#endif // d_m3ShortTypesDefined
+
+#define PRIf32          "f"
+#define PRIf64          "lf"
+
+typedef const void *            m3ret_t;
+typedef const void *            voidptr_t;
+typedef const char *            cstr_t;
+typedef const char * const      ccstr_t;
+typedef const u8 *              bytes_t;
+typedef const u8 * const        cbytes_t;
+
+typedef u16                     m3opcode_t;
+
+typedef i64                     m3reg_t;
+
+# if d_m3Use32BitSlots
+typedef u32                     m3slot_t;
+# else
+typedef u64                     m3slot_t;
+# endif
+
+typedef m3slot_t *              m3stack_t;
+
+typedef
+const void * const  cvptr_t;
+
+# if defined (DEBUG)
+
+#   define d_m3Log(CATEGORY, FMT, ...)                  printf (" %8s  |  " FMT, #CATEGORY, ##__VA_ARGS__);
+
+#   if d_m3LogParse
+#       define m3log_parse(CATEGORY, FMT, ...)          d_m3Log(CATEGORY, FMT, ##__VA_ARGS__)
+#   else
+#       define m3log_parse(...) {}
+#   endif
+
+#   if d_m3LogCompile
+#       define m3log_compile(CATEGORY, FMT, ...)        d_m3Log(CATEGORY, FMT, ##__VA_ARGS__)
+#   else
+#       define m3log_compile(...) {}
+#   endif
+
+#   if d_m3LogEmit
+#       define m3log_emit(CATEGORY, FMT, ...)           d_m3Log(CATEGORY, FMT, ##__VA_ARGS__)
+#   else
+#       define m3log_emit(...) {}
+#   endif
+
+#   if d_m3LogCodePages
+#       define m3log_code(CATEGORY, FMT, ...)           d_m3Log(CATEGORY, FMT, ##__VA_ARGS__)
+#   else
+#       define m3log_code(...) {}
+#   endif
+
+#   if d_m3LogModule
+#       define m3log_module(CATEGORY, FMT, ...)         d_m3Log(CATEGORY, FMT, ##__VA_ARGS__)
+#   else
+#       define m3log_module(...) {}
+#   endif
+
+#   if d_m3LogRuntime
+#       define m3log_runtime(CATEGORY, FMT, ...)        d_m3Log(CATEGORY, FMT, ##__VA_ARGS__)
+#   else
+#       define m3log_runtime(...) {}
+#   endif
+
+#   define m3log(CATEGORY, FMT, ...)                    m3log_##CATEGORY (CATEGORY, FMT "\n", ##__VA_ARGS__)
+# else
+#   define d_m3Log(CATEGORY, FMT, ...)                  {}
+#   define m3log(CATEGORY, FMT, ...)                    {}
+# endif
+
+
+# if defined(ASSERTS) || (defined(DEBUG) && !defined(NASSERTS))
+#   define d_m3Assert(ASS)  if (!(ASS)) { printf("Assertion failed at %s:%d : %s\n", __FILE__, __LINE__, #ASS); abort(); }
+# else
+#   define d_m3Assert(ASS)
+# endif
+
+typedef void /*const*/ *                    code_t;
+typedef code_t const * /*__restrict__*/     pc_t;
+
+
 #endif // wasm3_defs_h

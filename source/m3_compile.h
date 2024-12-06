@@ -17,7 +17,7 @@
 #include "m3_exception.h"
 #include "m3_info.h"
 #include "m3_core.h"
-#include "m3_env.h"
+//#include "m3_env.h"
 
 #include "m3_segmented_memory.h"
 

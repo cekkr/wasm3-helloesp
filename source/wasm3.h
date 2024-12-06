@@ -20,6 +20,7 @@
 #include <stdarg.h>
 
 #include "wasm3_defs.h"
+#include "m3_config.h"
 
 // Constants
 #define M3_BACKTRACE_TRUNCATED      (IM3BacktraceFrame)(SIZE_MAX)

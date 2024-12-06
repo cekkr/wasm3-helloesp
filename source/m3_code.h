@@ -8,10 +8,28 @@
 #ifndef m3_code_h
 #define m3_code_h
 
-d_m3BeginExternC
+//d_m3BeginExternC
 
-#include "m3_env.h"
+//#include "m3_env.h"
 #include "m3_core.h"
+
+
+struct M3CodeMappingPage;
+
+typedef struct M3CodePageHeader
+{
+    struct M3CodePage *           next;
+
+    u32                           lineIndex;
+    u32                           numLines;
+    u32                           sequence;       // this is just used for debugging; could be removed
+    u32                           usageCount;
+
+# if d_m3RecordBacktraces
+    struct M3CodeMappingPage *    mapping;
+# endif // d_m3RecordBacktraces
+}
+M3CodePageHeader;
 
 typedef struct M3CodePage
 {
@@ -76,6 +94,6 @@ M3CodeMappingPage;
 
 # endif // d_m3RecordBacktraces
 
-d_m3EndExternC
+//d_m3EndExternC
 
 #endif // m3_code_h

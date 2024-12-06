@@ -10,6 +10,7 @@
 
 d_m3BeginExternC
 
+#include "wasm3.h"
 //#include "m3_core.h"
 //#include "m3_segmented_memory.h"
 #include "m3_config_platforms.h"
