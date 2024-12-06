@@ -466,7 +466,7 @@ void* m3_Malloc_Impl(size_t i_size) {
     memory->segment_size = WASM_SEGMENT_SIZE;    
     memory->total_size = i_size;
     memory->num_segments = (i_size + memory->segment_size - 1) / memory->segment_size;
-    memory->point = 0;
+    //memory->point = 0; // Moved to M3MemoryPoint
 
     ESP_LOGI("WASM3", "m3_Malloc_Imp memory->segment_size = %zu", memory->segment_size);
 

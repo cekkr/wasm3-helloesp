@@ -13,16 +13,26 @@
 
 #define M3Memory_MaxPages 1024
 
+typedef enum {
+    ADDRESS_INVALID = 0,
+    ADDRESS_STACK,
+    ADDRESS_LINEAR
+} AddressType;
+
+// Unified memory region structure
 typedef struct M3MemoryRegion {
-    u8* base;           // Indirizzo base della regione
-    size_t size;        // Dimensione corrente
-    size_t max_size;    // Dimensione massima
+    u8* base;           // Base address of region
+    size_t size;        // Current size
+    size_t max_size;    // Maximum size
+    size_t current_offset; // Current offset within region
 } M3MemoryRegion;
 
+// Memory segment with metadata
 typedef struct MemorySegment {    
-    void* data;           // Puntatore ai dati effettivi
-    bool is_allocated;    // Flag per indicare se il segmento è stato allocato
-    //size_t size;         // Dimensione del segmento
+    void* data;           // Actual data pointer
+    bool is_allocated;    // Allocation flag
+    size_t stack_size;    // Current stack size in this segment
+    size_t linear_size;   // Current linear memory size in this segment
 } MemorySegment;
 
 typedef struct M3Memory_t {  

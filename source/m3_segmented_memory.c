@@ -14,7 +14,7 @@ IM3Memory m3_NewMemory(){
     memory->max_size = 0; 
     memory->num_segments = 0;
     memory->total_size = 0;
-    memory->point = 0;
+    //memory->point = 0;
 
     // What are used for pages?
     memory->numPages = 0;
@@ -41,7 +41,7 @@ IM3MemoryPoint m3_GetMemoryPoint(IM3Memory mem){
 ///
 
 // Funzioni di gestione della memoria
-M3Result InitMemory(M3Memory* memory, size_t initial_stack, size_t initial_linear) {
+/*M3Result InitMemory(M3Memory* memory, size_t initial_stack, size_t initial_linear) {
     size_t total = initial_stack + initial_linear;
     memory->memory = m3_malloc(total);
     if (!memory->memory) return M3Result_mallocFailed;
@@ -62,13 +62,13 @@ M3Result InitMemory(M3Memory* memory, size_t initial_stack, size_t initial_linea
     memory->stack_pointer = memory->stack.base;
     
     return M3Result_success;
-}
+}*/
 
 // Funzione per verificare se un indirizzo appartiene allo stack
-bool IsStackAddress(M3Memory* memory, u8* addr) {
+/*bool IsStackAddress(M3Memory* memory, u8* addr) {
     return (addr <= memory->stack.base && 
             addr >= (memory->stack.base - memory->stack.size));
-}
+}*/
 
 // Funzione per verificare se un indirizzo appartiene alla memoria lineare
 bool IsLinearAddress(M3Memory* memory, u8* addr) {
@@ -82,7 +82,7 @@ u8* GetStackAddress(M3Memory* memory, size_t offset) {
 }
 
 // Funzione per la crescita dello stack
-M3Result GrowStack(M3Memory* memory, size_t additional_size) {
+/*M3Result GrowStack(M3Memory* memory, size_t additional_size) {
     // Calcola nuovo punto di incontro
     size_t new_stack_size = memory->stack.size + additional_size;
     u8* new_stack_limit = memory->stack.base - new_stack_size;
@@ -108,7 +108,7 @@ M3Result GrowStack(M3Memory* memory, size_t additional_size) {
     
     memory->stack.size = new_stack_size;
     return M3Result_success;
-}
+}*/
 
 /* // Example implementation
 
@@ -151,20 +151,20 @@ d_m3Operation(Pop_i32) {
 M3Result AddSegment(M3Memory* memory) {
     size_t new_size = (memory->num_segments + 1) * sizeof(MemorySegment);
     MemorySegment* new_segments = m3_realloc(memory->segments, new_size);
-    if (!new_segments) return M3Result_mallocFailed;
+    if (!new_segments) return m3Err_mallocFailed;
     
     memory->segments = new_segments;
     
     // Inizializza il nuovo segmento
     size_t new_idx = memory->num_segments;
     memory->segments[new_idx].data = m3_malloc(memory->segment_size);
-    if (!memory->segments[new_idx].data) return M3Result_mallocFailed;
+    if (!memory->segments[new_idx].data) return m3Err_mallocFailed;
     
     memory->segments[new_idx].is_allocated = true;
     memory->num_segments++;
     memory->total_size += memory->segment_size;
     
-    return M3Result_success;
+    return NULL; // aka success
 }
 
 // Funzione per trovare l'indirizzo effettivo dato un offset
@@ -195,7 +195,7 @@ bool IsStackAddress(M3Memory* memory, u8* addr) {
 }
 
 // Funzione per la crescita dello stack
-M3Result GrowStack(M3Memory* memory, size_t additional_size) {
+/*M3Result GrowStack(M3Memory* memory, size_t additional_size) {
     size_t new_stack_size = memory->stack.size + additional_size;
     
     // Verifica se serve un nuovo segmento
@@ -210,7 +210,7 @@ M3Result GrowStack(M3Memory* memory, size_t additional_size) {
     
     memory->stack.size = new_stack_size;
     return M3Result_success;
-}
+}*/
 
 ///
 /// From m3_env
@@ -253,13 +253,13 @@ M3Result InitMemory(M3Memory* memory, size_t initial_stack, size_t initial_linea
     memory->segment_size = WASM_SEGMENT_SIZE;  // es: 64KB (dimensione pagina WebAssembly)
     memory->num_segments = 1;  // Inizia con un segmento
     memory->segments = m3_malloc(sizeof(MemorySegment));
-    if (!memory->segments) return M3Result_mallocFailed;
+    if (!memory->segments) return m3Err_mallocFailed;
     
     // Alloca il primo segmento
     memory->segments[0].data = m3_malloc(memory->segment_size);
     if (!memory->segments[0].data) {
         m3_free(memory->segments);
-        return M3Result_mallocFailed;
+        return m3Err_mallocFailed;
     }
     memory->segments[0].is_allocated = true;
     
@@ -272,7 +272,7 @@ M3Result InitMemory(M3Memory* memory, size_t initial_stack, size_t initial_linea
     
     memory->total_size = memory->segment_size;
     
-    return M3Result_success;
+    return NULL; // aka success
 }
 
 M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
@@ -446,7 +446,7 @@ bool allocate_segment(M3Memory* memory, size_t segment_index) {
     return false;
 }
 
-static inline void* GetMemorySegment(IM3Memory memory, u32 offset)
+/*static inline void* GetMemorySegment(IM3Memory memory, u32 offset)
 {
     size_t segment_index = offset / memory->segment_size;
     size_t segment_offset = offset % memory->segment_size;
@@ -464,6 +464,161 @@ static inline void m3_StoreInt(IM3Memory memory, u32 offset, i32 value)
 {
     void* ptr = GetMemorySegment(memory, offset);
     *(i32*)ptr = value;
-}
+}*/
 
 ////////////////////////////////////////////////////////////////
+
+///
+/// New implementation
+///
+
+
+// Get segment and offset for a given address
+static bool GetSegmentAndOffset(M3Memory* memory, u8* addr, size_t* seg_idx, size_t* offset) {
+    for (size_t i = 0; i < memory->num_segments; i++) {
+        if (!memory->segments[i].is_allocated) continue;
+        
+        u8* seg_start = memory->segments[i].data;
+        u8* seg_end = seg_start + memory->segment_size;
+        
+        if (addr >= seg_start && addr < seg_end) {
+            *seg_idx = i;
+            *offset = addr - seg_start;
+            return true;
+        }
+    }
+    return false;
+}
+
+// Unified function to check address type
+AddressType GetAddressType(M3Memory* memory, u8* addr) {
+    size_t seg_idx, offset;
+    
+    if (!GetSegmentAndOffset(memory, addr, &seg_idx, &offset)) {
+        return ADDRESS_INVALID;
+    }
+    
+    MemorySegment* segment = &memory->segments[seg_idx];
+    size_t total_offset = seg_idx * memory->segment_size + offset;
+    
+    if (total_offset >= memory->total_size - memory->stack.size) {
+        return ADDRESS_STACK;
+    }
+    
+    if (total_offset < memory->linear.size) {
+        return ADDRESS_LINEAR;
+    }
+    
+    return ADDRESS_INVALID;
+}
+
+// Unified stack growth function
+M3Result GrowStack(M3Memory* memory, size_t additional_size) {
+    size_t new_stack_size = memory->stack.size + additional_size;
+    
+    // Check if we need a new segment
+    if (memory->linear.size + new_stack_size > memory->total_size) {
+        // Try to allocate new segment first
+        M3Result result = AddSegment(memory);
+        if (result != M3Result_success) {
+            return result;
+        }
+        
+        // Update stack base to end of new segment
+        size_t last_seg = memory->num_segments - 1;
+        memory->stack.base = (u8*)memory->segments[last_seg].data + memory->segment_size;
+        
+        // Update segment metadata
+        memory->segments[last_seg].stack_size = additional_size;
+    } else {
+        // Find segment containing stack top
+        size_t seg_idx = (memory->total_size - memory->stack.size) / memory->segment_size;
+        memory->segments[seg_idx].stack_size += additional_size;
+    }
+    
+    memory->stack.size = new_stack_size;
+    return M3Result_success;
+}
+
+// Get effective address with bounds checking
+u8* GetEffectiveAddress(M3Memory* memory, size_t offset) {
+    size_t segment_idx = offset / memory->segment_size;
+    size_t segment_offset = offset % memory->segment_size;
+    
+    if (segment_idx >= memory->num_segments || 
+        !memory->segments[segment_idx].is_allocated) {
+        return NULL;
+    }
+    
+    // Check if address is in valid region
+    if (offset >= memory->linear.size && 
+        offset < memory->total_size - memory->stack.size) {
+        return NULL;
+    }
+    
+    return (u8*)memory->segments[segment_idx].data + segment_offset;
+}
+
+// Memory initialization with proper segmentation
+M3Result InitMemory(M3Memory* memory, size_t initial_stack, size_t initial_linear) {
+    memory->segment_size = WASM_SEGMENT_SIZE;
+    
+    // Calculate required segments
+    size_t total_size = initial_stack + initial_linear;
+    size_t num_segments = (total_size + memory->segment_size - 1) / memory->segment_size;
+    
+    memory->segments = m3_malloc(num_segments * sizeof(MemorySegment));
+    if (!memory->segments) return M3Result_mallocFailed;
+    
+    // Initialize segments
+    for (size_t i = 0; i < num_segments; i++) {
+        memory->segments[i].data = NULL;
+        memory->segments[i].is_allocated = false;
+        memory->segments[i].stack_size = 0;
+        memory->segments[i].linear_size = 0;
+    }
+    
+    // Allocate first segment
+    if (!allocate_segment(memory, 0)) {
+        m3_free(memory->segments);
+        return M3Result_mallocFailed;
+    }
+    
+    // Setup memory regions
+    memory->linear.base = memory->segments[0].data;
+    memory->linear.size = initial_linear;
+    memory->linear.current_offset = 0;
+    
+    memory->stack.base = (u8*)memory->segments[num_segments-1].data + memory->segment_size;
+    memory->stack.size = initial_stack;
+    memory->stack.current_offset = 0;
+    
+    memory->num_segments = num_segments;
+    memory->total_size = num_segments * memory->segment_size;
+    
+    return M3Result_success;
+}
+
+// Memory access helpers
+static inline void* GetMemorySegment(IM3Memory memory, u32 offset) {
+    u8* addr = GetEffectiveAddress(memory, offset);
+    if (!addr) {
+        // Handle error - could throw exception or return error code
+        return NULL;
+    }
+    return addr;
+}
+
+static inline i32 m3_LoadInt(IM3Memory memory, u32 offset) {
+    void* ptr = GetMemorySegment(memory, offset);
+    if (!ptr) return 0; // Or handle error
+    return *(i32*)ptr;
+}
+
+static inline void m3_StoreInt(IM3Memory memory, u32 offset, i32 value) {
+    void* ptr = GetMemorySegment(memory, offset);
+    if (ptr) {
+        *(i32*)ptr = value;
+    }
+    // else handle error
+}
