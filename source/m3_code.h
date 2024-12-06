@@ -8,7 +8,7 @@
 #ifndef m3_code_h
 #define m3_code_h
 
-#include "m3_env.h"
+//#include "m3_env.h"
 #include "m3_core.h"
 
 d_m3BeginExternC

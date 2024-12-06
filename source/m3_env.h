@@ -17,6 +17,8 @@
 
 d_m3BeginExternC
 
+typedef M3Compilation; // forced pre-declaration (m3_compile.h)
+
 //---------------------------------------------------------------------------------------------------------------------------------
 
 // Disabled

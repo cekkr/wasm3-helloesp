@@ -7,9 +7,11 @@
 
 #include <limits.h>
 #include "m3_code.h"
+#include "m3_env.h"
 
 //---------------------------------------------------------------------------------------------------------------------------------
 
+typedef M3Runtime; // forced pre-declaration (m3_env.h)
 
 IM3CodePage  NewCodePage  (IM3Runtime i_runtime, u32 i_minNumLines)
 {

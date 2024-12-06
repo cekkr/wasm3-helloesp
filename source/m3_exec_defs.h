@@ -8,10 +8,11 @@
 #ifndef m3_exec_defs_h
 #define m3_exec_defs_h
 
+d_m3BeginExternC
+
 //#include "m3_core.h"
 //#include "m3_segmented_memory.h"
-
-d_m3BeginExternC
+#include "m3_config_platforms.h"
 
 /*
 # define m3MemData(mem)                 (u8*)(((M3MemoryHeader*)(mem))+1)
@@ -66,11 +67,11 @@ typedef void* M3Memory_ptr; // it means M3Memory
 #    define nextOpImpl()            ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs, __FUNCTION__)
 #    define jumpOpImpl(PC)          ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs, __FUNCTION__)
 # else
-    typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
+    typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig); // was vectorcall * IM3Operation
 #    define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
 
-#    define nextOpImpl()            ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs)
-#    define jumpOpImpl(PC)          ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs)
+#   define nextOpImpl()             ((IM3Operation)(*_pc))(*_pc + 1, d_m3OpArgs)
+#   define jumpOpImpl(PC)           ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs)
 # endif
 
 #define nextOpDirect()              M3_MUSTTAIL return nextOpImpl()

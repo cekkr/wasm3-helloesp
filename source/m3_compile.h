@@ -11,7 +11,7 @@
 #include "wasm3.h"
 #include "m3_code.h"
 #include "m3_exec_defs.h"
-#include "m3_exec.h"
+//#include "m3_exec.h"
 #include "m3_function.h"
 
 #include "m3_exception.h"
