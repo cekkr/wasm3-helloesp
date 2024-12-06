@@ -374,4 +374,8 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 }
 #endif
 
+// Trying to reorder the inclusion order
+#include "m3_compile.h"
+#include "m3_env.h"
+
 #endif // wasm3_h

@@ -4,7 +4,6 @@
 #include <stddef.h>
 
 #include "wasm3.h"
-#include "m3_pointers.h"
 
 
 #define WASM_SEGMENT_SIZE 4096 // 4096 * x // btw move the definition elsewhere

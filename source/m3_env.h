@@ -17,7 +17,9 @@
 
 d_m3BeginExternC
 
-//typedef M3Compilation; // forced pre-declaration (m3_compile.h)
+// forced pre-declaration (m3_compile.h)
+//struct M3Compilation;  // Forward declaration
+//typedef struct M3Compilation M3Compilation;
 
 //---------------------------------------------------------------------------------------------------------------------------------
 
@@ -172,7 +174,7 @@ void                        Environment_AddFuncType     (IM3Environment i_enviro
 
 typedef struct M3Runtime
 {
-    M3Compilation           compilation;
+    M3Compilation *           compilation;
 
     IM3Environment          environment;
 
