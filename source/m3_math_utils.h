@@ -9,21 +9,13 @@
 #define m3_math_utils_h
 
 #include <limits.h>
-#include <intrin.h>
 #include <math.h>
-#include <intrin.h>
-#include <math.h>
-#include <intrin.h>
-#include <math.h>
-#include <intrin.h>
-#include <math.h>
-#include <intrin.h>
-#include <math.h>
+
 #include "m3_core.h"
 
 #if defined(M3_COMPILER_MSVC)
 
-#include <intrin.h>
+
 
 #define __builtin_popcount    __popcnt
 
