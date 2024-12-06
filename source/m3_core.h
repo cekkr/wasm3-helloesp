@@ -13,10 +13,10 @@
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
-
 #include "wasm3.h"
 #include "m3_config.h"
-
+#include "m3_config_platforms.h"
+#include "m3_includes.h"
 
 /* // Try to deprecate it
 typedef struct M3MemoryHeader

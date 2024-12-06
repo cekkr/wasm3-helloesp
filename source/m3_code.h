@@ -10,9 +10,8 @@
 
 //d_m3BeginExternC
 
-//#include "m3_env.h"
-#include "m3_core.h"
-
+//#include "m3_core.h"
+#include "m3_env.h"
 
 struct M3CodeMappingPage;
 

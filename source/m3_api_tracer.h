@@ -9,6 +9,8 @@
 #define m3_api_tracer_h
 
 #include "m3_core.h"
+#include "m3_env.h"
+#include "m3_exception.h"
 
 d_m3BeginExternC
 

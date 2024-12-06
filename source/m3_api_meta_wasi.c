@@ -7,9 +7,6 @@
 
 #include "m3_api_wasi.h"
 
-#include "m3_env.h"
-#include "m3_exception.h"
-
 #if defined(d_m3HasMetaWASI)
 
 // NOTE: MetaWASI mostly redirects WASI calls to the host WASI environment

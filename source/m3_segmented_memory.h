@@ -2,9 +2,7 @@
 #define m3_segmented_memory_h
 
 #include <stddef.h>
-
 #include "wasm3.h"
-
 
 #define WASM_SEGMENT_SIZE 4096 // 4096 * x // btw move the definition elsewhere
 #define WASM_PAGE_SIZE 65536 //todo: think about

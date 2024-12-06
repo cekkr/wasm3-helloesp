@@ -8,9 +8,18 @@
 #ifndef m3_math_utils_h
 #define m3_math_utils_h
 
-#include "m3_core.h"
-
 #include <limits.h>
+#include <intrin.h>
+#include <math.h>
+#include <intrin.h>
+#include <math.h>
+#include <intrin.h>
+#include <math.h>
+#include <intrin.h>
+#include <math.h>
+#include <intrin.h>
+#include <math.h>
+#include "m3_core.h"
 
 #if defined(M3_COMPILER_MSVC)
 
