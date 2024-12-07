@@ -8,7 +8,7 @@
 #ifndef m3_config_h
 #define m3_config_h
 
-#include "m3_config_platforms.h"
+#include "wasm3_defs.h"
 
 // general --------------------------------------------------------------------
 

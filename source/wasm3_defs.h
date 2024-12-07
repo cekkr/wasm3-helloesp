@@ -318,10 +318,10 @@ typedef int16_t         i16;
 typedef uint8_t         u8;
 typedef int8_t          i8;
 
-#if d_m3ImplementFloat
+//#if d_m3ImplementFloat
 typedef double          f64;
 typedef float           f32;
-#endif
+//#endif
 
 #endif // d_m3ShortTypesDefined
 

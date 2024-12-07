@@ -15,6 +15,7 @@
 #include "m3_function.h"
 #include "m3_code.h"
 #include "m3_code_fwd.h"
+#include "m3_config_platforms.h"
 
 d_m3BeginExternC
 

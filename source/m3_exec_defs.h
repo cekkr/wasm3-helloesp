@@ -12,6 +12,10 @@ d_m3BeginExternC
 
 #include "wasm3.h"
 #include "m3_segmented_memory.h"
+#include "m3_config_platforms.h"
+#include "m3_core.h"
+
+typedef double f64;
 
 /*
 # define m3MemData(mem)                 (u8*)(((M3MemoryHeader*)(mem))+1)

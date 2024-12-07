@@ -2240,7 +2240,6 @@ M3Result  CompileRawFunction  (IM3Module io_module,  IM3Function io_function, co
 }
 
 
-
 // d_logOp, d_logOp2 macros aren't actually used by the compiler, just codepage decoding (d_m3LogCodePages = 1)
 #define d_logOp(OP)                         { op_##OP,                  NULL,                       NULL,                       NULL }
 #define d_logOp2(OP1,OP2)                   { op_##OP1,                 op_##OP2,                   NULL,                       NULL }

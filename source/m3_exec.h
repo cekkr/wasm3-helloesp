@@ -9,6 +9,7 @@
 
 #include "esp_log.h"
 
+#include "wasm3_defs.h"
 #include "wasm3.h"
 
 
@@ -183,6 +184,9 @@ d_m3CommutativeOpMacro(RES, REG, TYPE,NAME, OP, ##__VA_ARGS__)
 #define d_m3CompareOp_f(TYPE, NAME, OP)             d_m3OpMacro                 (_r0, _fp0, TYPE, NAME, M3_OPER, OP)
 #define d_m3CommutativeCmpOp_f(TYPE, NAME, OP)      d_m3CommutativeOpMacro      (_r0, _fp0, TYPE, NAME, M3_OPER, OP)
 
+///
+///
+///
 
 //-----------------------
 
