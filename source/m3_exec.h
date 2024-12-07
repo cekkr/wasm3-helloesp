@@ -49,13 +49,13 @@ d_m3BeginExternC
 
 
 # if d_m3EnableOpProfiling
-    d_m3RetSig  profileOp   (d_m3OpSig, cstr_t i_operationName);
+                                    d_m3RetSig  profileOp   (d_m3OpSig, cstr_t i_operationName);
 #   define nextOp()                 M3_MUSTTAIL return profileOp (d_m3OpAllArgs, __FUNCTION__)
 # elif d_m3EnableOpTracing
-    d_m3RetSig  debugOp     (d_m3OpSig, cstr_t i_operationName);
+                                    d_m3RetSig  debugOp     (d_m3OpSig, cstr_t i_operationName);
 #   define nextOp()                 M3_MUSTTAIL return debugOp (d_m3OpAllArgs, __FUNCTION__)
 # else
-#   define nextOp()                 M3_MUSTTAIL nextOpDirect()
+#   define nextOp()                 nextOpDirect()
 # endif
 
 #define jumpOp(PC)                  jumpOpDirect(PC)
@@ -64,14 +64,14 @@ d_m3BeginExternC
     #define pushBacktraceFrame()            (PushBacktraceFrame (_mem->runtime, _pc - 1))
     #define fillBacktraceFrame(FUNCTION)    (FillBacktraceFunctionInfo (_mem->runtime, function))
 
-    #define newTrap(err)                    return (pushBacktraceFrame (), err)
-    #define forwardTrap(err)                return err
+    #define newTrap(err)                    (pushBacktraceFrame(), (err))
+    #define forwardTrap(err)                (err)
 #else
     #define pushBacktraceFrame()            do {} while (0)
     #define fillBacktraceFrame(FUNCTION)    do {} while (0)
 
-    #define newTrap(err)                    return err
-    #define forwardTrap(err)                return err
+    #define newTrap(err)                    (err)
+    #define forwardTrap(err)                (err)
 #endif
 
 
