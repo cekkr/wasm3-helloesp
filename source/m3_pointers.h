@@ -1,6 +1,4 @@
-
-#ifndef m3_pointers_h
-#define m3_pointers_h
+#pragma once
 
 #include "m3_segmented_memory.h"
 
@@ -61,4 +59,3 @@ ptr_status_t validate_ptr_for_free(const void* ptr);
 #define     m3_Int_ReallocArray(STRUCT, PTR, NEW, OLD)  (STRUCT *)default_realloc ((void *)(PTR), sizeof (STRUCT) * (NEW)) // , sizeof (STRUCT) * (OLD)
 #define     m3_Int_Free(P)                              do { default_free((void*)(P)); (P) = NULL; } while(0)
 
-#endif  // m3_pointers_h

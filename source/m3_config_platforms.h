@@ -5,8 +5,7 @@
 //  Copyright © 2019 Volodymyr Shymanskyy. All rights reserved.
 //
 
-#ifndef m3_config_platforms_h
-#define m3_config_platforms_h
+#pragma once
 
 #include "wasm3_defs.h"
 
@@ -283,4 +282,3 @@ typedef int8_t          i8;
 #  endif
 #endif
 
-#endif // m3_config_platforms_h

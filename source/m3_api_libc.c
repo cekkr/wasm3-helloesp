@@ -9,9 +9,6 @@
 
 #include "m3_api_libc.h"
 
-#include "m3_env.h"
-#include "m3_exception.h"
-
 #include <time.h>
 #include <errno.h>
 #include <stdio.h>

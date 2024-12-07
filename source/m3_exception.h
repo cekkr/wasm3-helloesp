@@ -6,12 +6,9 @@
 //
 //  some macros to emulate try/catch
 
-#ifndef m3_exception_h
-#define m3_exception_h
+#pragma once
 
-#include "m3_config.h"
-#include "m3_segmented_memory.h"
-#include "wasm3_defs.h"
+#include <stdarg.h>
 
 # if d_m3EnableExceptionBreakpoint
 
@@ -32,22 +29,7 @@ void ExceptionBreakpoint (cstr_t i_exception, cstr_t i_message);
 
 #define _throwifnull(PTR)                   _throwif (m3Err_mallocFailed, !(PTR))
 
-char* error_details(const char* base_error, const char* format, ...) {
-    static char buffer[512];  // Buffer statico per il risultato
-    char temp_buffer[256];    // Buffer temporaneo per la parte formattata
-    va_list args;
-    
-    // Formatta la seconda parte con i parametri variabili
-    va_start(args, format);
-    vsnprintf(temp_buffer, sizeof(temp_buffer), format, args);
-    va_end(args);
-    
-    // Combina l'errore base con i dettagli formattati
-    snprintf(buffer, sizeof(buffer), "%s: %s", base_error, temp_buffer);
-    
-    return buffer;
-}
+char* error_details(const char* base_error, const char* format, ...);
 
 // const char* err2 = error_details(trapStackOverflow, "Errore alla linea %d", line_number);
 
-#endif // m3_exception_h

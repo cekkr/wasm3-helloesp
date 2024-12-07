@@ -5,8 +5,7 @@
 //  All rights reserved.
 //
 
-#ifndef wasm3_h
-#define wasm3_h
+#pragma once
 
 #define M3_VERSION_MAJOR 0
 #define M3_VERSION_MINOR 5
@@ -19,8 +18,11 @@
 #include <inttypes.h>
 #include <stdarg.h>
 
-//#include "wasm3_defs.h"
-//#include "m3_config.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+
+#include "wasm3_defs.h"
 
 // Constants
 #define M3_BACKTRACE_TRUNCATED      (IM3BacktraceFrame)(SIZE_MAX)
@@ -173,6 +175,7 @@ d_m3ErrorConst  (argumentTypeMismatch,          "argument type mismatch")
 d_m3ErrorConst  (globalLookupFailed,            "global lookup failed")
 d_m3ErrorConst  (globalTypeMismatch,            "global type mismatch")
 d_m3ErrorConst  (globalNotMutable,              "global is not mutable")
+d_m3ErrorConst  (nullRuntime,                   "runtime is null")
 
 // traps
 d_m3ErrorConst  (trapOutOfBoundsMemoryAccess,   "[trap] out of bounds memory access")
@@ -374,5 +377,3 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 #if defined(__cplusplus)
 }
 #endif
-
-#endif // wasm3_h

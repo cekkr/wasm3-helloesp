@@ -1,7 +1,7 @@
-#ifndef m3_segmented_memory_h
-#define m3_segmented_memory_h
+#pragma once
 
 #include <stddef.h>
+#include <stdbool.h>
 
 #include "wasm3.h"
 
@@ -97,4 +97,3 @@ static inline void* GetMemorySegment(IM3Memory memory, u32 offset);
 static inline i32 m3_LoadInt(IM3Memory memory, u32 offset);
 static inline void m3_StoreInt(IM3Memory memory, u32 offset, i32 value);
 
-#endif

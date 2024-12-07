@@ -5,30 +5,12 @@
 //  Copyright © 2019 Steven Massey. All rights reserved.
 //
 
-#ifndef m3_exec_defs_h
-#define m3_exec_defs_h
+#pragma once
 
 d_m3BeginExternC
 
-#include "m3_api_esp_wasi.h"
-#include "m3_api_libc.h"
-#include "m3_api_wasi.h"
-#include "m3_code.h"
-#include "m3_compile.h"
-#include "m3_config.h"
 #include "m3_core.h"
-#include "m3_env.h"
-#include "m3_exception.h"
-#include "m3_exec.h"
-#include "m3_function.h"
-#include "m3_includes.h"
-#include "m3_info.h"
-#include "m3_math_utils.h"
-#include "m3_parse.h"
-#include "m3_pointers.h"
-#include "m3_segmented_memory.h"
-#include "wasm3.h"
-#include "wasm3_defs.h"
+//#include "m3_segmented_memory.h"
 
 //typedef double f64;
 
@@ -92,7 +74,10 @@ typedef void* M3Memory_ptr; // it means M3Memory
 #   define jumpOpImpl(PC)           ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs)
 # endif
 
-#define nextOpDirect()              M3_MUSTTAIL return nextOpImpl()
+M3_MUSTTAIL inline void nextOpDirect() {
+    return nextOpImpl();
+}
+
 #define jumpOpDirect(PC)            M3_MUSTTAIL return jumpOpImpl((pc_t)(PC))
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
@@ -106,4 +91,3 @@ d_m3RetSig  RunCode  (d_m3OpSig)
 
 d_m3EndExternC
 
-#endif // m3_exec_defs_h

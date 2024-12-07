@@ -10,27 +10,7 @@
 
 #include <limits.h>
 #include <math.h>
-
-#include "m3_api_esp_wasi.h"
-#include "m3_api_libc.h"
-#include "m3_api_wasi.h"
-#include "m3_code.h"
-#include "m3_compile.h"
-#include "m3_config.h"
 #include "m3_core.h"
-#include "m3_env.h"
-#include "m3_exception.h"
-#include "m3_exec.h"
-#include "m3_exec_defs.h"
-#include "m3_function.h"
-#include "m3_includes.h"
-#include "m3_info.h"
-#include "m3_math_utils.h"
-#include "m3_parse.h"
-#include "m3_pointers.h"
-#include "m3_segmented_memory.h"
-#include "wasm3.h"
-#include "wasm3_defs.h"
 
 #if defined(M3_COMPILER_MSVC)
 
@@ -227,17 +207,17 @@ u64 rotr64(u64 n, unsigned c) {
 #define OP_I64_TRUNC_F64(RES, A)    OP_TRUNC(RES, A, i64, -9223372036854777856.0 ,  9223372036854775808.0 )
 #define OP_U64_TRUNC_F64(RES, A)    OP_TRUNC(RES, A, u64,                   -1.0 , 18446744073709551616.0 )
 
-#define OP_TRUNC_SAT(RES, A, TYPE, RMIN, RMAX, IMIN, IMAX)  \
-    if (M3_UNLIKELY(isnan(A))) {                               \
-        RES = 0;                                            \
-    } else if (M3_UNLIKELY(A <= RMIN)) {                       \
-        RES = IMIN;                                         \
-    } else if (M3_UNLIKELY(A >= RMAX)) {                       \
-        RES = IMAX;                                         \
-    } else {                                                \
-        RES = (TYPE)A;                                      \
+#define OP_TRUNC_SAT(RES, A, TYPE, RMIN, RMAX, IMIN, IMAX) \
+    if (M3_UNLIKELY(isnan(A))) { \
+        RES = 0; \
+    } else if (M3_UNLIKELY(A <= RMIN)) { \
+        RES = IMIN; \
+    } else if (M3_UNLIKELY(A >= RMAX)) { \
+        RES = IMAX; \
+    } else { \
+        RES = (TYPE)A; \
     }
-
+    
 #define OP_I32_TRUNC_SAT_F32(RES, A)    OP_TRUNC_SAT(RES, A, i32, -2147483904.0f, 2147483648.0f,   INT32_MIN,  INT32_MAX)
 #define OP_U32_TRUNC_SAT_F32(RES, A)    OP_TRUNC_SAT(RES, A, u32,          -1.0f, 4294967296.0f,         0UL, UINT32_MAX)
 #define OP_I32_TRUNC_SAT_F64(RES, A)    OP_TRUNC_SAT(RES, A, i32, -2147483649.0 , 2147483648.0,    INT32_MIN,  INT32_MAX)

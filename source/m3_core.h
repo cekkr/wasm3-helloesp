@@ -5,8 +5,7 @@
 //  Copyright © 2019 Steven Massey. All rights reserved.
 //
 
-#ifndef m3_core_h
-#define m3_core_h
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,25 +13,8 @@
 #include <string.h>
 #include <assert.h>
 
-#include "m3_api_esp_wasi.h"
-#include "m3_api_libc.h"
-#include "m3_api_wasi.h"
-#include "m3_code.h"
-#include "m3_compile.h"
-#include "m3_config.h"
-#include "m3_env.h"
-#include "m3_exception.h"
-#include "m3_exec.h"
-#include "m3_exec_defs.h"
-#include "m3_function.h"
-#include "m3_includes.h"
-#include "m3_info.h"
-#include "m3_math_utils.h"
-#include "m3_parse.h"
-#include "m3_pointers.h"
-#include "m3_segmented_memory.h"
 #include "wasm3.h"
-#include "wasm3_defs.h"
+#include "m3_config.h"
 
 /* // Try to deprecate it
 typedef struct M3MemoryHeader
@@ -220,4 +202,3 @@ static MemoryAllocator default_allocator = {
 static MemoryAllocator* current_allocator = &default_allocator;
 
 d_m3EndExternC
-#endif // m3_core_h

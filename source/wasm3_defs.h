@@ -5,8 +5,9 @@
 //  Copyright © 2019 Volodymyr Shymanskyy. All rights reserved.
 //
 
-#ifndef wasm3_defs_h
-#define wasm3_defs_h
+#pragma once
+
+#include <stdint.h>
 
 #define M3_STR__(x) #x
 #define M3_STR(x)   M3_STR__(x)
@@ -407,4 +408,3 @@ typedef void /*const*/ *                    code_t;
 typedef code_t const * /*__restrict__*/     pc_t;
 
 
-#endif // wasm3_defs_h

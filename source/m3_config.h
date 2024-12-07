@@ -5,10 +5,9 @@
 //  Copyright © 2019 Steven Massey. All rights reserved.
 //
 
-#ifndef m3_config_h
-#define m3_config_h
+#pragma once
 
-#include "wasm3_defs.h"
+#include "m3_config_platforms.h"
 
 // general --------------------------------------------------------------------
 
@@ -153,4 +152,3 @@
 
 #define d_m3EnableCodePageRefCounting           0       // not supported currently
 
-#endif // m3_config_h
