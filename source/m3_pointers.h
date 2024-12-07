@@ -2,7 +2,7 @@
 #ifndef m3_pointers_h
 #define m3_pointers_h
 
-#include "wasm3.h"
+#include "m3_segmented_memory.h"
 
 ///
 /// Pointer validation

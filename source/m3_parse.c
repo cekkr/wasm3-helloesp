@@ -5,12 +5,7 @@
 //  Copyright © 2019 Steven Massey. All rights reserved.
 //
 
-#include "m3_env.h"
-#include "m3_compile.h"
-#include "m3_exception.h"
-#include "m3_info.h"
-#include "m3_pointers.h"
-#include "m3_env.h"
+#include "m3_parse.h"
 
 static const bool WASM_DEBUG_PARSE = false;
 

@@ -5,10 +5,7 @@
 //  Copyright © 2019 Steven Massey. All rights reserved.
 //
 
-#include "m3_env.h"
-#include "m3_exception.h"
-#include "m3_pointers.h"
-#include "m3_function.h"
+#include "m3_module.h"
 
 #include "esp_log.h"
 #include "esp_debug_helpers.h"

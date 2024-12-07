@@ -1,4 +1,4 @@
-#include "m3_core.h"
+#include "m3_exception.h"
 
 char* error_details(const char* base_error, const char* format, ...) {
     static char buffer[512];  // Buffer statico per il risultato

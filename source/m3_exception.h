@@ -10,6 +10,8 @@
 #define m3_exception_h
 
 #include "m3_config.h"
+#include "m3_segmented_memory.h"
+#include "wasm3_defs.h"
 
 # if d_m3EnableExceptionBreakpoint
 
