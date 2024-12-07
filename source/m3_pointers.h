@@ -2,6 +2,8 @@
 #ifndef m3_pointers_h
 #define m3_pointers_h
 
+#include "wasm3.h"
+
 ///
 /// Pointer validation
 ///

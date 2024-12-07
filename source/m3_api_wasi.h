@@ -8,7 +8,7 @@
 #ifndef m3_api_wasi_h
 #define m3_api_wasi_h
 
-
+#include "wasm3.h"
 #include "m3_core.h"
 #include "m3_env.h"
 #include "m3_exception.h"

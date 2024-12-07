@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
+
 #include "wasm3.h"
 #include "m3_config.h"
 #include "m3_config_platforms.h"

@@ -8,6 +8,7 @@
 #ifndef m3_api_tracer_h
 #define m3_api_tracer_h
 
+#include "wasm3.h"
 #include "m3_core.h"
 #include "m3_env.h"
 #include "m3_exception.h"

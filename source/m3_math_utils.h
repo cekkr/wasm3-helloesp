@@ -11,6 +11,8 @@
 #include <limits.h>
 #include <math.h>
 
+#include "wasm3.h"
+
 #include "m3_core.h"
 
 #if defined(M3_COMPILER_MSVC)

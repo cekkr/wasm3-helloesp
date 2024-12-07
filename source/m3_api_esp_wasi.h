@@ -8,6 +8,7 @@
 #ifndef m3_api_esp_wasi_h
 #define m3_api_esp_wasi_h
 
+#include "wasm3.h"
 #include "m3_core.h"
 
 d_m3BeginExternC

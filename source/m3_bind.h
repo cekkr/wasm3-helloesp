@@ -8,6 +8,7 @@
 #ifndef m3_bind_h
 #define m3_bind_h
 
+#include "wasm3.h"
 #include "m3_env.h"
 
 d_m3BeginExternC

@@ -1,3 +1,2 @@
 #pragma once
-
-struct M3Function;
+typedef struct M3Function M3Function;

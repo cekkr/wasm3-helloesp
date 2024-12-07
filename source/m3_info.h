@@ -8,6 +8,8 @@
 #ifndef m3_info_h
 #define m3_info_h
 
+#include "wasm3.h"
+
 #include "m3_compile.h"
 
 d_m3BeginExternC
