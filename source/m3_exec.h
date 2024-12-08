@@ -98,11 +98,11 @@ d_m3BeginExternC
 #ifdef DEBUG
   #define d_outOfBounds newTrap (ErrorRuntime (m3Err_trapOutOfBoundsMemoryAccess,   \
                         _mem->runtime, "memory size: %zu; access offset: %zu",      \
-                        _mem->total_size, operand))
+                        _mem->memory->total_size, operand))
 
 #   define d_outOfBoundsMemOp(OFFSET, SIZE) newTrap (ErrorRuntime (m3Err_trapOutOfBoundsMemoryAccess,   \
                       _mem->runtime, "memory size: %zu; access offset: %zu; size: %u",     \
-                      _mem->total_size, OFFSET, SIZE))
+                      _mem->memory->total_size, OFFSET, SIZE))
 #else
   #define d_outOfBounds newTrap (m3Err_trapOutOfBoundsMemoryAccess)
 
@@ -732,9 +732,9 @@ d_m3Op  (MemCopy)
     u64 source = slot (u32);
     u64 destination = slot (u32);
 
-    if (M3_LIKELY(destination + size <= _mem->total_size))
+    if (M3_LIKELY(destination + size <= _mem->memory->total_size))
     {
-        if (M3_LIKELY(source + size <= _mem->total_size))
+        if (M3_LIKELY(source + size <= _mem->memory->total_size))
         {
             u8 * dst = m3MemData (_mem) + destination;
             u8 * src = m3MemData (_mem) + source;
@@ -754,7 +754,7 @@ d_m3Op  (MemFill)
     u32 byte = slot (u32);
     u64 destination = slot (u32);
 
-    if (M3_LIKELY(destination + size <= _mem->total_size))
+    if (M3_LIKELY(destination + size <= _mem->memory->total_size))
     {
         u8 * mem8 = m3MemData (_mem) + destination;
         memset (mem8, (u8) byte, size);
@@ -1404,7 +1404,7 @@ d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_r)                 \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (SRC_TYPE) <= _mem->total_size     \
+        operand + sizeof (SRC_TYPE) <= _mem->memory->total_size     \
     )) {                                                \
         {                                               \
             u8* src8 = m3MemData(_mem) + operand;       \
@@ -1426,7 +1426,7 @@ d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_s)                 \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (SRC_TYPE) <= _mem->total_size     \
+        operand + sizeof (SRC_TYPE) <= _mem->memory->total_size     \
     )){                                                \
         {                                               \
             u8* src8 = m3MemData(_mem) + operand;       \
@@ -1482,7 +1482,7 @@ d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_r)                 \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (SRC_TYPE) <= _mem->total_size \
+        operand + sizeof (SRC_TYPE) <= _mem->memory->total_size \
     )){                                                \
         {                                               \
             u8* src8 = m3SegmentedMemAccess(_mem, operand, sizeof(SRC_TYPE)); \
@@ -1505,7 +1505,7 @@ d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_s)                 \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (SRC_TYPE) <= _mem->total_size \
+        operand + sizeof (SRC_TYPE) <= _mem->memory->total_size \
     )){                                                \
         {                                               \
             u8* src8 = m3SegmentedMemAccess(_mem, operand, sizeof(SRC_TYPE)); \
@@ -1556,7 +1556,7 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_rs)             \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
+        operand + sizeof (DEST_TYPE) <= _mem->memory->total_size    \
     )){                                                \
         {                                               \
             d_m3TraceStore(SRC_TYPE, operand, REG);     \
@@ -1578,7 +1578,7 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_sr)             \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
+        operand + sizeof (DEST_TYPE) <= _mem->memory->total_size    \
     )){                                                \
         {                                               \
             d_m3TraceStore(SRC_TYPE, operand, value);   \
@@ -1600,7 +1600,7 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_ss)             \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
+        operand + sizeof (DEST_TYPE) <= _mem->memory->total_size    \
     )){                                                \
         {                                               \
             d_m3TraceStore(SRC_TYPE, operand, value);   \
@@ -1624,7 +1624,7 @@ d_m3Op(TYPE##_Store_##TYPE##_rr)                      \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (TYPE) <= _mem->total_size         \
+        operand + sizeof (TYPE) <= _mem->memory->total_size         \
     )){                                                \
         {                                               \
             d_m3TraceStore(TYPE, operand, REG);         \
@@ -1652,7 +1652,7 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_rs)             \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
+        operand + sizeof (DEST_TYPE) <= _mem->memory->total_size    \
     )){                                                \
         {                                               \
             d_m3TraceStore(SRC_TYPE, operand, REG);     \
@@ -1675,7 +1675,7 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_sr)             \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
+        operand + sizeof (DEST_TYPE) <= _mem->memory->total_size    \
     )){                                                \
         {                                               \
             d_m3TraceStore(SRC_TYPE, operand, value);   \
@@ -1698,7 +1698,7 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_ss)             \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
+        operand + sizeof (DEST_TYPE) <= _mem->memory->total_size    \
     )){                                                \
         {                                               \
             d_m3TraceStore(SRC_TYPE, operand, value);   \
@@ -1722,7 +1722,7 @@ d_m3Op(TYPE##_Store_##TYPE##_rr)                      \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (TYPE) <= _mem->total_size         \
+        operand + sizeof (TYPE) <= _mem->memory->total_size         \
     )){                                                \
         {                                               \
             d_m3TraceStore(TYPE, operand, REG);         \
