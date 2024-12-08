@@ -14,6 +14,7 @@
 #include "m3_exception.h"
 #include "m3_info.h"
 #include "m3_pointers.h"
+#include "m3_function.h"
 
 d_m3BeginExternC
 

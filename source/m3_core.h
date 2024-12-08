@@ -18,6 +18,7 @@
 #include "m3_pointers.h"
 #include "m3_exception.h"
 #include "m3_segmented_memory.h"
+#include "m3_compile.h"
 
 /* // Try to deprecate it
 typedef struct M3MemoryHeader

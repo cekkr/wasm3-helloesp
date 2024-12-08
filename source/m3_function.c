@@ -9,7 +9,7 @@
 #include <string.h>
 
 #include "m3_function.h"
-#include "m3_env.h"
+//#include "m3_env.h"
 #include "m3_bind.h"
 #include "m3_pointers.h"
 

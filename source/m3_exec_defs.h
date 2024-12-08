@@ -9,7 +9,7 @@
 
 d_m3BeginExternC
 
-#include "m3_core.h"
+#include "m3_segmented_memory.h"
 
 //typedef double f64;
 
@@ -73,10 +73,7 @@ typedef void* M3Memory_ptr; // it means M3Memory
 #   define jumpOpImpl(PC)           ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs)
 # endif
 
-M3_MUSTTAIL inline void nextOpDirect() {
-    return nextOpImpl();
-}
-
+#define nextOpDirect()              M3_MUSTTAIL return nextOpImpl()
 #define jumpOpDirect(PC)            M3_MUSTTAIL return jumpOpImpl((pc_t)(PC))
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
