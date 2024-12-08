@@ -9,10 +9,6 @@
 #include <limits.h>
 
 #include "m3_env.h"
-#include "m3_compile.h"
-#include "m3_exception.h"
-#include "m3_info.h"
-#include "m3_pointers.h"
 
 static const bool WASM_DEBUG_NEW_ENV = false;
 

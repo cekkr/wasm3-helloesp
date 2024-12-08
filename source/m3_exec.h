@@ -14,6 +14,7 @@
 #include "m3_info.h"
 #include "m3_exec_defs.h"
 #include "m3_exception.h"
+#include "m3_segmented_memory.h"
 
 // TODO: all these functions could move over to the .c at some point. normally, I'd say screw it,
 // but it might prove useful to be able to compile m3_exec alone w/ optimizations while the remaining

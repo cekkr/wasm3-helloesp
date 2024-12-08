@@ -6,13 +6,8 @@
 //
 
 #define M3_IMPLEMENT_ERROR_STRINGS
-#include "m3_config.h"
-#include "wasm3.h"
 
-#include "m3_env.h"
 #include "m3_core.h"
-
-#include "m3_pointers.h"
 
 #include "esp_debug_helpers.h"
 #include "esp_heap_caps.h"

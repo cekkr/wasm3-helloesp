@@ -12,6 +12,8 @@
 #include "m3_compile.h"
 #include "m3_segmented_memory.h"
 #include "m3_exception.h"
+#include "m3_info.h"
+#include "m3_pointers.h"
 
 d_m3BeginExternC
 

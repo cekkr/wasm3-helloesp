@@ -9,6 +9,7 @@
 #pragma once
 
 #include <stdarg.h>
+#include "m3_exception.h"
 
 # if d_m3EnableExceptionBreakpoint
 

@@ -10,6 +10,7 @@
 //d_m3BeginExternC
 
 #include "m3_core.h"
+#include "m3_exception.h"
 
 typedef struct M3CodePage;
 struct M3CodeMappingPage;

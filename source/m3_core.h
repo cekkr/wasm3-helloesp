@@ -15,7 +15,9 @@
 
 #include "wasm3.h"
 #include "m3_config.h"
+#include "m3_pointers.h"
 #include "m3_exception.h"
+#include "m3_segmented_memory.h"
 
 /* // Try to deprecate it
 typedef struct M3MemoryHeader
