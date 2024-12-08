@@ -8,6 +8,7 @@
 #pragma once
 
 #include "m3_core.h"
+#include "m3_exception.h"
 
 d_m3BeginExternC
 

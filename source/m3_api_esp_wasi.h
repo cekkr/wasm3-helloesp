@@ -9,6 +9,7 @@
 
 #include "wasm3.h"
 #include "m3_function.h"
+#include "m3_exception.h"
 
 d_m3BeginExternC
 

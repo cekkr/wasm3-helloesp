@@ -8,6 +8,7 @@
 #pragma once
 
 #include "wasm3_defs.h"
+#include "m3_exception.h"
 
 // Ad hoc configuration settings for ESP32
 // m3_config_platform.h

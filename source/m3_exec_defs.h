@@ -9,8 +9,11 @@
 
 d_m3BeginExternC
 
-#include "m3_core.h"
-//#include "m3_segmented_memory.h"
+#include "m3_math_utils.h"
+#include "m3_compile.h"
+#include "m3_env.h"
+#include "m3_info.h"
+#include "m3_exec_defs.h"
 
 //typedef double f64;
 

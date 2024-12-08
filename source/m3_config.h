@@ -8,6 +8,7 @@
 #pragma once
 
 #include "m3_config_platforms.h"
+#include "m3_exception.h"
 
 // general --------------------------------------------------------------------
 

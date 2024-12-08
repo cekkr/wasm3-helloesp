@@ -1,6 +1,7 @@
 #pragma once
 
 #include "m3_segmented_memory.h"
+#include "m3_exception.h"
 
 ///
 /// Pointer validation
