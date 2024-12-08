@@ -10,12 +10,11 @@
 
 #include <limits.h>
 #include <math.h>
+
 #include "m3_core.h"
-#include "m3_exception.h"
+//#include "m3_exception.h"
 
 #if defined(M3_COMPILER_MSVC)
-
-
 
 #define __builtin_popcount    __popcnt
 

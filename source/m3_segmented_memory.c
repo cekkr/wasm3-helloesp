@@ -2,7 +2,6 @@
 #include "esp_log.h"
 
 #include "m3_pointers.h"
-#include "m3_env.h"
 
 IM3Memory m3_NewMemory(){
     IM3Memory memory = m3_Int_AllocStruct (M3Memory);
