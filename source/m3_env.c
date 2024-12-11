@@ -319,7 +319,7 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
     IM3Runtime savedRuntime = i_module->runtime;
     i_module->runtime = & runtime;
 
-    IM3Compilation o = & runtime.compilation;
+    IM3Compilation o = runtime.compilation;
     o->runtime = & runtime;
     o->module =  i_module;
     o->wasm =    * io_bytes;
