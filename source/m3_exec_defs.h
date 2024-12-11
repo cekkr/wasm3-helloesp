@@ -10,12 +10,7 @@
 d_m3BeginExternC
 
 #include "m3_segmented_memory.h"
-//#include "m3_exception.h"
-//#include "m3_config.h"
-//#include "m3_env.h"      
 #include "m3_core.h"   
-
-//#include "m3_exec.h"
 
 //typedef double f64;
 

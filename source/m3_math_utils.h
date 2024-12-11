@@ -11,9 +11,7 @@
 #include <limits.h>
 #include <math.h>
 
-//#include "m3_core.h"
 #include "m3_compile.h"
-//#include "m3_exception.h"
 
 #if defined(M3_COMPILER_MSVC)
 
