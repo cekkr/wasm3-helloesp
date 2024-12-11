@@ -8,10 +8,15 @@
 
 #include "esp_log.h"
 
-#include "wasm3.h"
+/*#include "wasm3.h"
 #include "m3_math_utils.h"
 #include "m3_exception.h"
-#include "m3_segmented_memory.h"
+#include "m3_segmented_memory.h"*/
+
+#include "m3_math_utils.h"
+#include "m3_compile.h"
+#include "m3_env.h"
+#include "m3_info.h"
 #include "m3_exec_defs.h"
 
 // TODO: all these functions could move over to the .c at some point. normally, I'd say screw it,

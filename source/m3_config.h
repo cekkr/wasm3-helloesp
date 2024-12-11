@@ -7,6 +7,7 @@
 
 #pragma once
 
+//#include "wasm3.h"
 #include "m3_config_platforms.h"
 #include "m3_exception.h"
 

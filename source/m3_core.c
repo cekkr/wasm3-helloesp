@@ -13,6 +13,9 @@
 #include "esp_heap_caps.h"
 #include "esp_try.h"
 
+//#include "m3_compile.h"
+
+
 void m3_Abort(const char* message) {
 #ifdef DEBUG
     fprintf(stderr, "Error: %s\n", message);

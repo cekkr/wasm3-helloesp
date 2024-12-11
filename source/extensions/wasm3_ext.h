@@ -10,7 +10,7 @@
 #ifndef wasm3_ext_h
 #define wasm3_ext_h
 
-#include "wasm3.h"
+#include "../wasm3.h"
 #include <stdbool.h>
 
 #if defined(__cplusplus)

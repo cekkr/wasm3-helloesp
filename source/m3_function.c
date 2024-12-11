@@ -10,8 +10,8 @@
 
 #include "m3_function.h"
 //#include "m3_env.h"
-#include "m3_bind.h"
-#include "m3_pointers.h"
+#include "m3_bind.h" 
+//#include "m3_pointers.h"
 
 M3Result AllocFuncType (IM3FuncType * o_functionType, u32 i_numTypes)
 {

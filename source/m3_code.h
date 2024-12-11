@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "wasm3.h"
+
 //d_m3BeginExternC
 
 typedef struct M3CodePage;

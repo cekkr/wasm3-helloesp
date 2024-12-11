@@ -7,8 +7,10 @@
 
 #pragma once
 
-#include "m3_core.h"
-#include "m3_exception.h"
+//#include "m3_core.h"
+//#include "m3_exception.h"
+
+#include "m3_compile.h"
 
 #if defined(d_m3HasUVWASI)
 #include "uvwasi.h"

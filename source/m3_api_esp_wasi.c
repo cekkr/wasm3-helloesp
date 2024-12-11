@@ -9,6 +9,8 @@
 
 #include "m3_api_esp_wasi.h"
 
+#include "extra/wasi_core.h"
+
 #include "esp_log.h"
 
 //#if defined(ESP32)

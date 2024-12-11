@@ -9,10 +9,12 @@
 
 #include <stdbool.h>
 
-#include "m3_code.h"
+#include "m3_core.h"
+
+//#include "m3_code.h"
 #include "m3_exec.h"
-#include "m3_function.h"
-#include "m3_exception.h"
+//#include "m3_function.h"
+//#include "m3_exception.h"
 
 d_m3BeginExternC
 
