@@ -25,7 +25,7 @@ d_m3BeginExternC
 
 static bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
 
-static inline u8* m3SegmentedMemAccess(IM3Memory mem, u64 offset, size_t size) 
+static inline u8* m3SegmentedMemAccess(IM3Memory mem, iptr offset, size_t size) 
 {
     if(WASM_DEBUG_SEGMENTED_MEM_ACCESS) ESP_LOGI("WASM3", "m3SegmentedMemAccess call");
     
@@ -54,22 +54,6 @@ static inline u8* m3SegmentedMemAccess(IM3Memory mem, u64 offset, size_t size)
     return ((u8*)mem->segments[segment_index].data) + segment_offset;
 }
 
-// Helper function per accedere alla memoria segmentata (currently just for comparison, not used)
-/*static inline u8* m3MemSegmentAccessAt(IM3Memory memory, u64 offset, u32 size)
-{
-    size_t segment_index = offset / memory->segment_size;
-    size_t segment_offset = offset % memory->segment_size;
-    
-    if (M3_UNLIKELY(segment_index >= memory->num_segments ||
-                    !memory->segments[segment_index].is_allocated ||
-                    segment_offset + size > memory->segment_size))
-    {
-        return NULL;
-    }
-    
-    return ((u8*)memory->segments[segment_index].data) + segment_offset;
-}*/
-
 // Deprecated: direct memory access impossible with segmentation
 //# define m3MemData(mem)                 m3SegmentedMemAccess((M3Memory*)(mem), 0, ((M3Memory*)(mem))->total_size)
 
@@ -82,11 +66,14 @@ static inline u8* m3SegmentedMemAccess(IM3Memory mem, u64 offset, size_t size)
 // Helper macro per accesso sicuro a offset specifici
 # define m3MemAccessAt(mem, off, sz)   m3SegmentedMemAccess((M3Memory*)(mem), (off), (sz))
 
+#define MEMACCESS(type, mem, pc) \
+    *((type*)(m3SegmentedMemAccess(mem, pc, sizeof(type))))
+
 ///
 ///
 ///
 
-# define d_m3BaseOpSig                  pc_t _pc, m3stack_t _sp, M3Memory * _mem, m3reg_t _r0
+# define d_m3BaseOpSig                  iptr _pc, m3stack_t _sp, M3Memory * _mem, m3reg_t _r0
 # define d_m3BaseOpArgs                 _sp, _mem, _r0
 # define d_m3BaseOpAllArgs              _pc, _sp, _mem, _r0
 # define d_m3BaseOpDefaultArgs          0
@@ -119,18 +106,18 @@ static inline u8* m3SegmentedMemAccess(IM3Memory mem, u64 offset, size_t size)
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, cstr_t i_operationName);
 #    define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, cstr_t i_operationName)
 
-#    define nextOpImpl()            ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs, __FUNCTION__)
-#    define jumpOpImpl(PC)          ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs, __FUNCTION__)
+#    define nextOpImpl()            (IM3Operation)((MEMACCESS(IM3Operation, _mem, _pc)))(_pc + 1, d_m3OpArgs, __FUNCTION__)
+#    define jumpOpImpl(PC)          ((IM3Operation)((MEMACCESS(IM3Operation, _mem, PC))))( PC + 1, d_m3OpArgs, __FUNCTION__)
 # else
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
 #define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
 
-#    define nextOpImpl()            ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs)
-#    define jumpOpImpl(PC)          ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs)
+#    define nextOpImpl()            (IM3Operation)((MEMACCESS(IM3Operation, _mem, _pc)))(_pc + 1, d_m3OpArgs)
+#    define jumpOpImpl(PC)          ((IM3Operation)((MEMACCESS(IM3Operation, _mem, PC))))( PC + 1, d_m3OpArgs)
 # endif
 
 #define nextOpDirect()              M3_MUSTTAIL return nextOpImpl()
-#define jumpOpDirect(PC)            M3_MUSTTAIL return jumpOpImpl((pc_t)(PC))
+#define jumpOpDirect(PC)            M3_MUSTTAIL return jumpOpImpl((u64)(PC))
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
 d_m3RetSig  RunCode  (d_m3OpSig, cstr_t i_operationName)

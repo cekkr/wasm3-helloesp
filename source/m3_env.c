@@ -335,9 +335,6 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
 
     runtime.environment = savedRuntime->environment;
     runtime.numStackSlots = savedRuntime->numStackSlots; 
-
-    if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "runtime.stack: %ld", runtime.stack);
-    if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "savedRuntime->stack: %ld", savedRuntime->stack);
     runtime.stack = savedRuntime->stack;
 
     m3stack_t stack = (m3stack_t)runtime.stack;

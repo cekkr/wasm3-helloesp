@@ -182,8 +182,8 @@ typedef struct M3Runtime
 
     //IM3Memory               stack;
     //IM3Memory               originStack;
-    u32                     stack;
-    u32                     originStack;
+    iptr                     stack;
+    iptr                     originStack;
     u32                     maxStackSize;
     u32                     numStackSlots;
     //void * maxStack; removed and unused (in M3MemoryHeader)

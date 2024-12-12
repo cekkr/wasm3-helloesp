@@ -182,13 +182,6 @@ d_m3CommutativeOpMacro(RES, REG, TYPE,NAME, OP, ##__VA_ARGS__)
 ///
 ///
 
-#define MEMACCESS(type, mem, pc) \
-    (*(type*)m3SegmentedMemAccess(mem, pc, sizeof(type)))
-
-///
-///
-///
-
 //-----------------------
 
 // signed
@@ -640,7 +633,7 @@ d_m3Op (CallRawFunction)
 
     M3ImportContext ctx;
 
-    M3RawCall call = (M3RawCall) (*_pc++);
+    M3RawCall call = (M3RawCall) (*MEMACCESS(M3RawCall, _mem, _pc++));
     ctx.function = immediate (IM3Function);
     ctx.userdata = immediate (void *);
     u64* const sp = ((u64*)_sp);
@@ -1040,7 +1033,7 @@ d_m3Op  (Loop)
 
 d_m3Op  (Branch)
 {
-    jumpOp (* _pc);
+    jumpOp (_pc);
 }
 
 
@@ -1048,7 +1041,7 @@ d_m3Op  (If_r)
 {
     i32 condition = (i32) _r0;
 
-    pc_t elsePC = immediate (pc_t);
+    u64 elsePC = immediate (pc_t);
 
     if (condition)
         nextOp ();
@@ -1061,7 +1054,7 @@ d_m3Op  (If_s)
 {
     i32 condition = slot (i32);
 
-    pc_t elsePC = immediate (pc_t);
+    u64 elsePC = immediate (pc_t);
 
     if (condition)
         nextOp ();

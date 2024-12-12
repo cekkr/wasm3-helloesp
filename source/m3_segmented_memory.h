@@ -16,8 +16,9 @@
 
 #define M3Memory_MaxPages 1024
 
-#define M3Memory_Simplified true
+typedef u32 iptr;
 
+#define M3Memory_Simplified true
 #ifdef M3Memory_Simplified
 
 // Simplified memory segment structure
