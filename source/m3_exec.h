@@ -736,8 +736,8 @@ d_m3Op  (MemCopy)
     {
         if (M3_LIKELY(source + size <= _mem->total_size))
         {
-            u8 * dst = m3MemData (_mem) + destination;
-            u8 * src = m3MemData (_mem) + source;
+            u8 * dst = m3MemAccessAt (_mem, destination, 1);
+            u8 * src = m3MemAccessAt (_mem, source, 1);
             memmove (dst, src, size);
 
             nextOp ();
@@ -756,7 +756,7 @@ d_m3Op  (MemFill)
 
     if (M3_LIKELY(destination + size <= _mem->total_size))
     {
-        u8 * mem8 = m3MemData (_mem) + destination;
+        u8 * mem8 = m3MemAccessAt (_mem, destination, 1);
         memset (mem8, (u8) byte, size);
         nextOp ();
     }
@@ -1393,40 +1393,6 @@ d_m3Op  (SetGlobal_f64)
 #endif
 
 // memcpy here is to support non-aligned access on some platforms.
-
-///
-/// Segmented memory management
-///
-
-static bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
-
-static inline u8* m3SegmentedMemAccess(IM3Memory mem, u64 offset, size_t size) 
-{
-    if(WASM_DEBUG_SEGMENTED_MEM_ACCESS) ESP_LOGI("WASM3", "m3SegmentedMemAccess call");
-    
-    // Verifica che l'accesso sia nei limiti della memoria totale
-    if (offset + size > mem->total_size) return NULL;
-
-    size_t segment_index = offset / mem->segment_size;
-    size_t segment_offset = offset % mem->segment_size;
-    
-    // Verifica se stiamo accedendo attraverso più segmenti
-    size_t end_segment = (offset + size - 1) / mem->segment_size;
-    
-    // Alloca tutti i segmenti necessari se non sono già allocati
-    for (size_t i = segment_index; i <= end_segment; i++) {
-        if (!mem->segments[i].is_allocated) {
-            if (!allocate_segment(mem, i)) {
-                ESP_LOGE("WASM3", "Failed to allocate segment %zu on access", i);
-                return NULL;
-            }
-            if(WASM_DEBUG_SEGMENTED_MEM_ACCESS) ESP_LOGI("WASM3", "Lazy allocated segment %zu on access", i);
-        }
-    }
-    
-    // Ora possiamo essere sicuri che il segmento è allocato
-    return ((u8*)mem->segments[segment_index].data) + segment_offset;
-}
 
 #define d_m3Load(REG,DEST_TYPE,SRC_TYPE)                \
 d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_r)                 \

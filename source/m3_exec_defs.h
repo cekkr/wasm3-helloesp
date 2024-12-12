@@ -12,9 +12,62 @@
 
 d_m3BeginExternC
 
+/*
 # define m3MemData(mem)                 (u8*)(((M3MemoryPoint*)(mem))->offset) //todo: get memory at offset
 # define m3MemRuntime(mem)              (((M3Memory*)(mem))->runtime)
 # define m3MemInfo(mem)                 (&(((M3Memory*)(mem))->runtime->memory))
+*/
+
+
+///
+/// Segmented memory management
+///
+
+static bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
+
+static inline u8* m3SegmentedMemAccess(IM3Memory mem, u64 offset, size_t size) 
+{
+    if(WASM_DEBUG_SEGMENTED_MEM_ACCESS) ESP_LOGI("WASM3", "m3SegmentedMemAccess call");
+    
+    // Verifica che l'accesso sia nei limiti della memoria totale
+    if (offset + size > mem->total_size) return NULL;
+
+    size_t segment_index = offset / mem->segment_size;
+    size_t segment_offset = offset % mem->segment_size;
+    
+    // Verifica se stiamo accedendo attraverso più segmenti
+    size_t end_segment = (offset + size - 1) / mem->segment_size;
+    
+    // Alloca tutti i segmenti necessari se non sono già allocati
+    for (size_t i = segment_index; i <= end_segment; i++) {
+        if (!mem->segments[i].is_allocated) {
+            if (!allocate_segment(mem, i)) {
+                ESP_LOGE("WASM3", "Failed to allocate segment %zu on access", i);
+                return NULL;
+            }
+            if(WASM_DEBUG_SEGMENTED_MEM_ACCESS) ESP_LOGI("WASM3", "Lazy allocated segment %zu on access", i);
+        }
+    }
+    
+    // Ora possiamo essere sicuri che il segmento è allocato
+    return ((u8*)mem->segments[segment_index].data) + segment_offset;
+}
+
+// Accesso alla memoria sempre attraverso m3SegmentedMemAccess
+# define m3MemData(mem)                 m3SegmentedMemAccess((M3Memory*)(mem), 0, ((M3Memory*)(mem))->total_size)
+
+// Accesso al runtime
+# define m3MemRuntime(mem)             ((M3Memory*)(mem))->runtime
+
+// Accesso alle informazioni di memoria
+# define m3MemInfo(mem)                (&((M3Memory*)(mem))->runtime->memory)
+
+// Helper macro per accesso sicuro a offset specifici
+# define m3MemAccessAt(mem, off, sz)   m3SegmentedMemAccess((M3Memory*)(mem), (off), (sz))
+
+///
+///
+///
 
 # define d_m3BaseOpSig                  pc_t _pc, m3stack_t _sp, M3Memory * _mem, m3reg_t _r0
 # define d_m3BaseOpArgs                 _sp, _mem, _r0

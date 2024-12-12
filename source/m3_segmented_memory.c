@@ -25,7 +25,7 @@ IM3Memory m3_NewMemory(){
     return memory;
 }
 
-IM3MemoryPoint m3_GetMemoryPoint(IM3Memory mem){
+/*IM3MemoryPoint m3_GetMemoryPoint(IM3Memory mem){
     IM3MemoryPoint point = m3_Int_AllocStruct (M3MemoryPoint);
 
     if(point == NULL){
@@ -36,7 +36,7 @@ IM3MemoryPoint m3_GetMemoryPoint(IM3Memory mem){
     point->memory = mem;
     point->offset = 0;
     return point;
-}
+}*/
 
 ///
 /// Memory fragmentation

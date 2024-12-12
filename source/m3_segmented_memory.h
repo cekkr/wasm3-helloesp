@@ -63,12 +63,14 @@ typedef struct M3Memory_t {
 
 typedef M3Memory *          IM3Memory;
 
+/* // Currently unused
 typedef struct M3MemoryPoint_t {  
     IM3Memory memory;
     size_t offset;
 } M3MemoryPoint;
 
 typedef M3MemoryPoint *          IM3MemoryPoint;
+*/
 
 ///
 /// M3Memory fragmentation
@@ -78,7 +80,7 @@ typedef M3MemoryPoint *          IM3MemoryPoint;
 
 ////////////////////////////////
 IM3Memory m3_NewMemory();
-IM3MemoryPoint m3_GetMemoryPoint(IM3Memory mem);
+//IM3MemoryPoint m3_GetMemoryPoint(IM3Memory mem);
 
 
 bool IsStackAddress(M3Memory* memory, u8* addr);
