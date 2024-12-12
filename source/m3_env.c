@@ -314,6 +314,7 @@ void  m3_FreeRuntime  (IM3Runtime i_runtime)
     }
 }
 
+const bool WASM_DEBUG_EvaluateExpression = false;
 M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type, bytes_t * io_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
@@ -328,21 +329,23 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
 #endif
     //M3_INIT (runtime);    
 
+    if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: M3Runtime size: %d", sizeof (M3Runtime));
+
     IM3Runtime savedRuntime = i_module->runtime;
 
     runtime.environment = savedRuntime->environment;
     runtime.numStackSlots = savedRuntime->numStackSlots; 
 
-    //ESP_LOGI("WASM3", "runtime.stack: %ld", runtime.stack);
-    //ESP_LOGI("WASM3", "savedRuntime->stack: %ld", savedRuntime->stack);
+    if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "runtime.stack: %ld", runtime.stack);
+    if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "savedRuntime->stack: %ld", savedRuntime->stack);
     runtime.stack = savedRuntime->stack;
 
     m3stack_t stack = (m3stack_t)runtime.stack;
 
     i_module->runtime = & runtime;
 
-    IM3Compilation o = runtime.compilation;
-    o->runtime = & runtime;
+    IM3Compilation o = & runtime.compilation;
+    o->runtime = i_module->runtime;
     o->module =  i_module;
     o->wasm =    * io_bytes;
     o->wasmEnd = i_end;

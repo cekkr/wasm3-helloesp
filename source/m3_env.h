@@ -168,7 +168,7 @@ void                        Environment_AddFuncType     (IM3Environment i_enviro
 
 typedef struct M3Runtime
 {
-    M3Compilation *           compilation;
+    M3Compilation           compilation;
 
     IM3Environment          environment;
 
