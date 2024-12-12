@@ -372,9 +372,9 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
         if (not result)
         {
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-            m3ret_t r = RunCode (m3code, stack, &runtime.memory, d_m3OpDefaultArgs, d_m3BaseCstr); // memory was NULL
+            m3ret_t r = RunCode (m3code, stack, NULL, d_m3OpDefaultArgs, d_m3BaseCstr); 
 # else
-            m3ret_t r = RunCode (m3code, stack, &runtime.memory, d_m3OpDefaultArgs); // memory was NULL
+            m3ret_t r = RunCode (m3code, stack, NULL, d_m3OpDefaultArgs); 
 # endif
             
             if (r == 0)
