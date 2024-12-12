@@ -626,7 +626,7 @@ void FreeMemory(IM3Runtime io_runtime) {
 
 // Memory initialization M3Runtime - M3Module
 //const bool WASM_DEBUG_INIT_MEMORY = true;
-M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module)
+M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .h
 {
     M3Result result = m3Err_none;
 
