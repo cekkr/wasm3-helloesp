@@ -28,7 +28,9 @@ static bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
 static inline u8* m3SegmentedMemAccess(IM3Memory mem, iptr offset, size_t size) 
 {
     if(mem == NULL){
-        
+        ESP_LOGE("WASM3", "m3SegmentedMemAccess called with null memory pointer");     
+        backtrace();
+        return NULL;
     }
 
     if(WASM_DEBUG_SEGMENTED_MEM_ACCESS){ 
@@ -74,8 +76,10 @@ static inline u8* m3SegmentedMemAccess(IM3Memory mem, iptr offset, size_t size)
 // Helper macro per accesso sicuro a offset specifici
 # define m3MemAccessAt(mem, off, sz)   m3SegmentedMemAccess((M3Memory*)(mem), (off), (sz))
 
+#define STRINGIFY(x) #x
 #define MEMACCESS(type, mem, pc) \
-    *((type*)(m3SegmentedMemAccess(mem, pc, sizeof(type))))
+    (printf("MEM ACCESS type: %s\n", STRINGIFY(type)), \
+    *((type*)(m3SegmentedMemAccess(mem, pc, sizeof(type)))))
 
 ///
 ///

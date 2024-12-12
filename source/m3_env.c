@@ -251,6 +251,10 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
     }
     else {
         ESP_LOGE("WASM3", "m3_NewRuntime: runtime is NULL");
+    }    
+
+    if(runtime == NULL) {
+        if(WASM_DEBUG_NEW_RUNTIME) ESP_LOGI("WASM3", "m3_NewRuntime: successfully created");
     }
 
     return runtime;
@@ -336,6 +340,7 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
     runtime.environment = savedRuntime->environment;
     runtime.numStackSlots = savedRuntime->numStackSlots; 
     runtime.stack = savedRuntime->stack;
+    runtime.memory = savedRuntime->memory;
 
     m3stack_t stack = (m3stack_t)runtime.stack;
 
@@ -367,9 +372,9 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
         if (not result)
         {
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-            m3ret_t r = RunCode (m3code, stack, NULL, d_m3OpDefaultArgs, d_m3BaseCstr);
+            m3ret_t r = RunCode (m3code, stack, &runtime.memory, d_m3OpDefaultArgs, d_m3BaseCstr); // memory was NULL
 # else
-            m3ret_t r = RunCode (m3code, stack, NULL, d_m3OpDefaultArgs);
+            m3ret_t r = RunCode (m3code, stack, &runtime.memory, d_m3OpDefaultArgs); // memory was NULL
 # endif
             
             if (r == 0)
@@ -709,7 +714,7 @@ M3Result  InitGlobals  (IM3Module io_module)
                 if (g->initExpr)
                 {
                     bytes_t start = g->initExpr;
-
+                    
                     result = EvaluateExpression (io_module, & g->i64Value, g->type, & start, g->initExpr + g->initExprSize);
 
                     if (not result)
@@ -892,7 +897,7 @@ _           (CompileFunction (function));
         io_module->startFunction = -1;
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-        result = (M3Result) RunCode (function->compiled, (m3stack_t) runtime->stack, runtime->memory, d_m3OpDefaultArgs, d_m3BaseCstr);
+        result = (M3Result) RunCode (function->compiled, (m3stack_t) runtime->stack, &runtime->memory, d_m3OpDefaultArgs, d_m3BaseCstr);
 # else
         result = (M3Result) RunCode (function->compiled, (m3stack_t) runtime->stack, &runtime->memory, d_m3OpDefaultArgs);
 # endif
