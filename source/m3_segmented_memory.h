@@ -101,3 +101,7 @@ static inline void* GetMemorySegment(IM3Memory memory, u32 offset);
 static inline i32 m3_LoadInt(IM3Memory memory, u32 offset);
 static inline void m3_StoreInt(IM3Memory memory, u32 offset, i32 value);
 
+////////////////////////////////////////////////////////////////
+
+bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size);
+u8* GetSegmentPtr(IM3Memory memory, u64 offset, u32 size);

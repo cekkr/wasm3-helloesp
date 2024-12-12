@@ -13,6 +13,8 @@
 #include "m3_env.h"
 #include "m3_info.h"
 #include "m3_exec_defs.h"
+#include "m3_helpers.h"
+#include "m3_segmented_memory.h"
 
 // TODO: all these functions could move over to the .c at some point. normally, I'd say screw it,
 // but it might prove useful to be able to compile m3_exec alone w/ optimizations while the remaining
@@ -33,6 +35,8 @@
 #endif
 
 #include <limits.h>
+
+// Segmented memory blocks management: https://claude.site/artifacts/1bd111d2-d502-422d-ba33-073490d042e6
 
 #define DEBUG_MEMORY 1
 
@@ -726,7 +730,7 @@ d_m3Op (MemGrow) //todo: convert it to new memory model
 }
 
 
-d_m3Op  (MemCopy)
+/*d_m3Op  (MemCopy)
 {
     u32 size = (u32) _r0;
     u64 source = slot (u32);
@@ -745,10 +749,58 @@ d_m3Op  (MemCopy)
         else d_outOfBoundsMemOp (source, size);
     }
     else d_outOfBoundsMemOp (destination, size);
+}*/
+
+// Memory Copy operation
+d_m3Op (MemCopy)
+{
+    u32 size = (u32) _r0;
+    u32 source = slot (u32);
+    u32 destination = slot (u32);
+    
+    if (M3_UNLIKELY(!IsValidMemoryAccess(_mem, source, size) ||
+                    !IsValidMemoryAccess(_mem, destination, size)))
+    {
+        d_outOfBoundsMemOp((source > destination) ? source : destination, size);
+        return;
+    }
+    
+    // Handle overlapping regions across segments
+    size_t src_segment = source / _mem->segment_size;
+    size_t dst_segment = destination / _mem->segment_size;
+    size_t src_offset = source % _mem->segment_size;
+    size_t dst_offset = destination % _mem->segment_size;
+    size_t remaining = size;
+    
+    while (remaining > 0)
+    {
+        if (M3_UNLIKELY(!_mem->segments[src_segment].is_allocated ||
+                        !_mem->segments[dst_segment].is_allocated))
+        {
+            return m3Err_mallocFailed;
+        }
+        
+        size_t src_available = _mem->segment_size - src_offset;
+        size_t dst_available = _mem->segment_size - dst_offset;
+        size_t copy_size = min3(remaining, src_available, dst_available);
+        
+        u8* src_ptr = (u8*)_mem->segments[src_segment].data + src_offset;
+        u8* dst_ptr = (u8*)_mem->segments[dst_segment].data + dst_offset;
+        
+        memmove(dst_ptr, src_ptr, copy_size);
+        
+        remaining -= copy_size;
+        src_segment++;
+        dst_segment++;
+        src_offset = 0;
+        dst_offset = 0;
+    }
+    
+    nextOp();
 }
 
 
-d_m3Op  (MemFill)
+/*d_m3Op  (MemFill)
 {
     u32 size = (u32) _r0;
     u32 byte = slot (u32);
@@ -761,6 +813,50 @@ d_m3Op  (MemFill)
         nextOp ();
     }
     else d_outOfBoundsMemOp (destination, size);
+}*/
+
+d_m3Op (MemFill)
+{
+    u32 size = (u32) _r0;
+    u32 byte = slot (u32);
+    u64 destination = slot (u32);
+    
+    if (M3_UNLIKELY(destination + size > _mem->total_size))
+    {
+        d_outOfBoundsMemOp (destination, size);
+        return;
+    }
+
+    // Calcola il segmento iniziale e l'offset
+    size_t start_segment = destination / _mem->segment_size;
+    size_t start_offset = destination % _mem->segment_size;
+    
+    // Bytes rimanenti da scrivere
+    size_t remaining = size;
+    
+    while (remaining > 0)
+    {
+        // Verifica che il segmento sia allocato
+        if (M3_UNLIKELY(!_mem->segments[start_segment].is_allocated))
+        {
+            return m3Err_mallocFailed;
+        }
+        
+        // Calcola quanti bytes possiamo scrivere in questo segmento
+        size_t bytes_in_segment = _mem->segment_size - start_offset;
+        size_t bytes_to_write = (remaining < bytes_in_segment) ? remaining : bytes_in_segment;
+        
+        // Esegui il fill nel segmento corrente
+        u8* segment_data = (u8*)_mem->segments[start_segment].data;
+        memset(segment_data + start_offset, (u8)byte, bytes_to_write);
+        
+        // Aggiorna i contatori
+        remaining -= bytes_to_write;
+        start_segment++;
+        start_offset = 0;  // Reset offset per i segmenti successivi
+    }
+    
+    nextOp();
 }
 
 

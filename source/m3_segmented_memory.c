@@ -445,3 +445,27 @@ static inline void m3_StoreInt(IM3Memory memory, u32 offset, i32 value) {
     }
     // else handle error
 }
+
+///
+///
+///
+
+bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size)
+{
+    return (offset + size) <= memory->total_size;
+}
+
+u8* GetSegmentPtr(IM3Memory memory, u64 offset, u32 size)
+{
+    size_t segment_index = offset / memory->segment_size;
+    size_t segment_offset = offset % memory->segment_size;
+    
+    if (M3_UNLIKELY(segment_index >= memory->num_segments ||
+                    !memory->segments[segment_index].is_allocated ||
+                    segment_offset + size > memory->segment_size))
+    {
+        return NULL;
+    }
+    
+    return ((u8*)memory->segments[segment_index].data) + segment_offset;
+}
