@@ -27,8 +27,16 @@ static bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
 
 static inline u8* m3SegmentedMemAccess(IM3Memory mem, iptr offset, size_t size) 
 {
-    if(WASM_DEBUG_SEGMENTED_MEM_ACCESS) ESP_LOGI("WASM3", "m3SegmentedMemAccess call");
-    
+    if(mem == NULL){
+        
+    }
+
+    if(WASM_DEBUG_SEGMENTED_MEM_ACCESS){ 
+        ESP_LOGI("WASM3", "m3SegmentedMemAccess call");         
+        ESP_LOGI("WASM3", "m3SegmentedMemAccess: mem = %p", (void*)mem);
+        ESP_LOGI("WASM3", "m3SegmentedMemAccess: well... I'm going to crash!");    
+    }
+
     // Verifica che l'accesso sia nei limiti della memoria totale
     if (mem->total_size > 0 && offset + size > mem->total_size) 
         return NULL;

@@ -9,6 +9,8 @@
 #pragma once
 
 #include <stdarg.h>
+#include "esp_debug_helpers.h"
+
 //#include "m3_config.h"
 //#include "m3_config_platforms.h"
 
@@ -32,6 +34,8 @@ void ExceptionBreakpoint (cstr_t i_exception, cstr_t i_message);
 #define _throwifnull(PTR)                   _throwif (m3Err_mallocFailed, !(PTR))
 
 char* error_details(const char* base_error, const char* format, ...);
+
+void backtrace();
 
 // const char* err2 = error_details(trapStackOverflow, "Errore alla linea %d", line_number);
 

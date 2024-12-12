@@ -15,3 +15,7 @@ char* error_details(const char* base_error, const char* format, ...) {
     
     return buffer;
 }
+
+void backtrace(){
+    esp_backtrace_print(100);
+}
