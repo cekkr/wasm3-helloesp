@@ -305,9 +305,6 @@ void print_memory_info(){
     ESP_LOGI("WASM3", "Minimum free memory: %d bytes\n", info.minimum_free_bytes);  
 }
 
-static const int CHECK_MEMORY_AVAILABLE = 1;
-//static const int WASM_ENABLE_SPI_MEM = 0;
-
 void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
 {
     if(DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_CopyMem");
@@ -319,8 +316,10 @@ void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
 }
 
 // Allocatore di default che usa heap_caps
+//static const int WASM_ENABLE_SPI_MEM = 0;
 static const int ALLOC_SHIFT_OF = 0; // 4
 static const bool WASM_DEBUG_ALLOCS = true;
+static const bool CHECK_MEMORY_AVAILABLE = false;
 
 void* default_malloc(size_t size) {
     if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_malloc called size: %u", size);
