@@ -205,15 +205,18 @@ IM3Memory m3_NewStack(){
     return memory;
 }
 
+const bool WASM_DEBUG_NEW_RUNTIME = true;
 IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes, void * i_userdata)
 {
-    ESP_LOGI("WASM3", "m3_NewRuntime called");
+    if(WASM_DEBUG_NEW_RUNTIME) ESP_LOGI("WASM3", "m3_NewRuntime called");
 
     IM3Runtime runtime = m3_Int_AllocStruct (M3Runtime);
+    if(WASM_DEBUG_NEW_RUNTIME) ESP_LOGI("WASM3", "m3_NewRuntime: m3_Int_AllocStruct done");
 
     if (runtime)
-    {
+    {        
         m3_ResetErrorInfo(runtime);
+        if(WASM_DEBUG_NEW_RUNTIME) ESP_LOGI("WASM3", "m3_NewRuntime: m3_ResetErrorInfo done");
 
         runtime->environment = i_environment;
         runtime->userdata = i_userdata;
@@ -233,7 +236,10 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
             runtime->numStackSlots = i_stackSizeInBytes / sizeof (m3slot_t);         
             m3log (runtime, "new stack: %p", runtime->originStack);
         }
-        else m3_Int_Free (runtime);
+        else { 
+            ESP_LOGE("WASM3", "m3_NewRuntime: runtime->originStack is NULL");
+            m3_Int_Free (runtime);
+        }
     }
 
     return runtime;
