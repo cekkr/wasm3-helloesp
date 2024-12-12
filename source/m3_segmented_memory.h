@@ -15,6 +15,39 @@
 
 #define M3Memory_MaxPages 1024
 
+#define M3Memory_Simplified true
+
+#ifdef M3Memory_Simplified
+
+// Simplified memory segment structure
+typedef struct MemorySegment {    
+    void* data;           // Actual data pointer
+    bool is_allocated;    // Allocation flag
+    size_t size;         // Segment size
+} MemorySegment;
+
+typedef struct M3Memory_t {  
+    IM3Runtime runtime;
+
+    // Memory info
+    u32 initPages;
+    u32 numPages;
+    u32 maxPages;
+    u32 pageSize;
+
+    // Segmentation
+    MemorySegment* segments;    // Array of segments
+    size_t num_segments;        // Current number of segments
+    size_t total_size;         // Current total size
+    size_t max_size;           // Maximum allowed size
+    size_t segment_size;
+
+    // Current memory tracking
+    u8* current_ptr;          // Current position in memory
+} M3Memory;
+
+#else
+
 typedef enum {
     ADDRESS_INVALID = 0,
     ADDRESS_STACK,
@@ -61,7 +94,10 @@ typedef struct M3Memory_t {
 
 } M3Memory;
 
+#endif
+
 typedef M3Memory *          IM3Memory;
+
 
 /* // Currently unused
 typedef struct M3MemoryPoint_t {  
@@ -82,22 +118,25 @@ typedef M3MemoryPoint *          IM3MemoryPoint;
 IM3Memory m3_NewMemory();
 //IM3MemoryPoint m3_GetMemoryPoint(IM3Memory mem);
 
+M3Result AddSegment(M3Memory* memory);
+u8* GetEffectiveAddress(M3Memory* memory, size_t offset);
+
+
+#ifdef M3Memory_Simplified
+M3Result GrowMemory(M3Memory* memory, size_t additional_size);
+#else
+// Stack/linear addresses
+// Studies: https://claude.ai/chat/699c9c02-0792-40c3-b08e-09b8e5df34c8
 
 bool IsStackAddress(M3Memory* memory, u8* addr);
 bool IsLinearAddress(M3Memory* memory, u8* addr);
+M3Result GrowStack(M3Memory* memory, size_t additional_size);
 u8* GetStackAddress(M3Memory* memory, size_t offset);
-M3Result GrowStack(M3Memory* memory, size_t additional_size);
-
-// Stack/linear addresses
-// Studies: https://claude.ai/chat/699c9c02-0792-40c3-b08e-09b8e5df34c8
-M3Result AddSegment(M3Memory* memory);
-u8* GetEffectiveAddress(M3Memory* memory, size_t offset);
-bool IsStackAddress(M3Memory* memory, u8* addr);
-M3Result GrowStack(M3Memory* memory, size_t additional_size);
+#endif
 
 ////////////////////////////////
 bool allocate_segment(M3Memory* memory, size_t segment_index);
-void* GetMemorySegment(IM3Memory memory, u32 offset);
+static void* GetMemorySegment(IM3Memory memory, u32 offset);
 //static inline i32 m3_LoadInt(IM3Memory memory, u32 offset);
 //static inline void m3_StoreInt(IM3Memory memory, u32 offset, i32 value);
 
