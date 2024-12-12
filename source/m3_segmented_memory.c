@@ -230,41 +230,6 @@ u8* GetEffectiveAddress(M3Memory* memory, size_t offset) {
     return (u8*)memory->segments[segment_idx].data + segment_offset;
 }
 
-// Inizializzazione memoria
-const bool WASM_DEBUG_INIT_MEMORY = true;
-M3Result InitMemory(M3Memory* memory, size_t initial_size) {
-    if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "InitMemory: (init size: %d)", initial_size);
-    memory->segment_size = WASM_SEGMENT_SIZE;
-    
-    size_t num_segments = (initial_size + memory->segment_size - 1) / memory->segment_size;
-    if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "InitMemory: (num_segments: %d)", num_segments);
-
-    memory->segments = m3_Int_Malloc("memory->segments", num_segments * sizeof(MemorySegment));
-    if (!memory->segments) return m3Err_mallocFailed;
-    
-    memory->num_segments = 0;  // Sarà incrementato da AddSegment
-    memory->total_size = 0;    // Sarà incrementato da AddSegment
-    memory->current_ptr = NULL;
-    
-    // Alloca tutti i segmenti necessari
-    for (size_t i = 0; i < num_segments; i++) {
-        M3Result result = AddSegment(memory);
-        if (result != NULL) {
-            // Cleanup in caso di errore
-            for (size_t j = 0; j < memory->num_segments; j++) {
-                if (memory->segments[j].is_allocated) {
-                    m3_Int_Free(memory->segments[j].data);
-                }
-            }
-            m3_Int_Free(memory->segments);
-            return result;
-        }
-    }
-    
-    memory->current_ptr = memory->segments[0].data;
-    return NULL;
-}
-
 #else
 
 ///

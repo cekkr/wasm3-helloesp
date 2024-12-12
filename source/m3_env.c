@@ -624,6 +624,59 @@ void FreeMemory(IM3Runtime io_runtime) {
     memory->maxPages = 0;
 }
 
+// Memory initialization M3Runtime - M3Module
+//const bool WASM_DEBUG_INIT_MEMORY = true;
+M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module)
+{
+    M3Result result = m3Err_none;
+
+    if (not i_module->memoryImported)
+    {
+        // Imposta i parametri di base della memoria
+        u32 maxPages = i_module->memoryInfo.maxPages;
+        u32 pageSize = i_module->memoryInfo.pageSize;
+        io_runtime->memory.maxPages = maxPages ? maxPages : 65536;
+        io_runtime->memory.pageSize = pageSize ? pageSize : d_m3DefaultMemPageSize;
+        
+        // Calcola dimensioni totali
+        io_runtime->memory.max_size = (size_t)io_runtime->memory.maxPages * io_runtime->memory.pageSize;
+        io_runtime->memory.segment_size = WASM_SEGMENT_SIZE;
+        
+        // Calcola numero iniziale di segmenti necessari
+        size_t initial_size = (size_t)i_module->memoryInfo.initPages * io_runtime->memory.pageSize;
+        size_t num_segments = (initial_size + io_runtime->memory.segment_size - 1) / io_runtime->memory.segment_size;
+        
+        // Alloca array dei segmenti
+        io_runtime->memory.segments = m3_Int_Malloc("memory.segments", num_segments * sizeof(MemorySegment));
+        if (!io_runtime->memory.segments)
+            return m3Err_mallocFailed;
+            
+        // Inizializza struttura memoria
+        io_runtime->memory.num_segments = 0;  // Verrà incrementato da AddSegment
+        io_runtime->memory.total_size = 0;    // Verrà incrementato da AddSegment
+        io_runtime->memory.current_ptr = NULL;
+        
+        // Alloca segmenti iniziali
+        for (size_t i = 0; i < num_segments; i++) {
+            result = AddSegment(&io_runtime->memory);
+            if (result) {
+                // Cleanup in caso di errore
+                for (size_t j = 0; j < io_runtime->memory.num_segments; j++) {
+                    if (io_runtime->memory.segments[j].is_allocated) {
+                        m3_Int_Free(io_runtime->memory.segments[j].data);
+                    }
+                }
+                m3_Int_Free(io_runtime->memory.segments);
+                return result;
+            }
+        }
+        
+        io_runtime->memory.current_ptr = io_runtime->memory.segments[0].data;
+    }
+
+    return result;
+}
+
 
 ///
 ///
