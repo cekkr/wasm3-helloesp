@@ -53,8 +53,8 @@ static inline u8* m3SegmentedMemAccess(IM3Memory mem, u64 offset, size_t size)
     return ((u8*)mem->segments[segment_index].data) + segment_offset;
 }
 
-// Accesso alla memoria sempre attraverso m3SegmentedMemAccess
-# define m3MemData(mem)                 m3SegmentedMemAccess((M3Memory*)(mem), 0, ((M3Memory*)(mem))->total_size)
+// Deprecated: direct memory access impossible with segmentation
+//# define m3MemData(mem)                 m3SegmentedMemAccess((M3Memory*)(mem), 0, ((M3Memory*)(mem))->total_size)
 
 // Accesso al runtime
 # define m3MemRuntime(mem)             ((M3Memory*)(mem))->runtime
