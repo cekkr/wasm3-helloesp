@@ -11,7 +11,7 @@
 
 #define WASM_SEGMENT_SIZE 4096 // 4096 * x // btw move the definition elsewhere
 #define WASM_INIT_SEGMENTS 16 // useless, due to the use of reallocation
-#define WASM_PAGE_SIZE 65536 //todo: think about
+//#define WASM_PAGE_SIZE 65536 // deprecated
 #define WASM_ENABLE_SPI_MEM 0
 
 #define M3Memory_MaxPages 1024
