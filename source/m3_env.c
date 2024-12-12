@@ -249,6 +249,9 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
             m3_Int_Free (runtime);
         }
     }
+    else {
+        ESP_LOGE("WASM3", "m3_NewRuntime: runtime is NULL");
+    }
 
     return runtime;
 }
@@ -325,13 +328,14 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
 #endif
     M3_INIT (runtime);
 
-    runtime.environment = i_module->runtime->environment;
-    runtime.numStackSlots = i_module->runtime->numStackSlots; 
-    runtime.stack = i_module->runtime->stack;
-
     m3stack_t stack = (m3stack_t)runtime.stack;
 
     IM3Runtime savedRuntime = i_module->runtime;
+
+    runtime.environment = savedRuntime->environment;
+    runtime.numStackSlots = savedRuntime->numStackSlots; 
+    runtime.stack = savedRuntime->stack;
+
     i_module->runtime = & runtime;
 
     IM3Compilation o = runtime.compilation;

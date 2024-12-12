@@ -180,8 +180,10 @@ typedef struct M3Runtime
 
     IM3Module               modules;        // linked list of imported modules
 
-    IM3Memory               stack;
-    IM3Memory               originStack;
+    //IM3Memory               stack;
+    //IM3Memory               originStack;
+    u32                     stack;
+    u32                     originStack;
     u32                     maxStackSize;
     u32                     numStackSlots;
     //void * maxStack; removed and unused (in M3MemoryHeader)

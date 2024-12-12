@@ -32,8 +32,6 @@ IM3Module  m3_NewModule  (IM3Environment i_environment)
     return module;
 }
 
-
-
 M3Result  m3_InjectFunction  (IM3Module                 i_module,
                               int32_t *                 io_functionIndex,
                               const char * const        i_signature,
