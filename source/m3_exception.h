@@ -35,7 +35,5 @@ void ExceptionBreakpoint (cstr_t i_exception, cstr_t i_message);
 
 char* error_details(const char* base_error, const char* format, ...);
 
-void backtrace();
-
 // const char* err2 = error_details(trapStackOverflow, "Errore alla linea %d", line_number);
 
