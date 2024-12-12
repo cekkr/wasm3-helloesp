@@ -1394,60 +1394,15 @@ d_m3Op  (SetGlobal_f64)
 
 // memcpy here is to support non-aligned access on some platforms.
 
-/*
-#define d_m3Load(REG,DEST_TYPE,SRC_TYPE)                \
-d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_r)                 \
-{                                                       \
-    d_m3TracePrepare                                    \
-    u32 offset = immediate (u32);                       \
-    u64 operand = (u32) _r0;                            \
-    operand += offset;                                  \
-                                                        \
-    if (m3MemCheck(                                     \
-        operand + sizeof (SRC_TYPE) <= _mem->total_size     \
-    )) {                                                \
-        {                                               \
-            u8* src8 = m3MemData(_mem) + operand;       \
-            SRC_TYPE value;                             \
-            memcpy(&value, src8, sizeof(value));        \
-            M3_BSWAP_##SRC_TYPE(value);                 \
-            REG = (DEST_TYPE)value;                     \
-            d_m3TraceLoad(DEST_TYPE, operand, REG);     \
-        
-    nextOp();\}                                               \
-        nextOp ();                                      \
-    } else d_outOfBounds;                               \
-}                                                       \
-d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_s)                 \
-{                                                       \
-    d_m3TracePrepare                                    \
-    u64 operand = slot (u32);                           \
-    u32 offset = immediate (u32);                       \
-    operand += offset;                                  \
-                                                        \
-    if (m3MemCheck(                                     \
-        operand + sizeof (SRC_TYPE) <= _mem->total_size     \
-    )){                                                \
-        {                                               \
-            u8* src8 = m3MemData(_mem) + operand;       \
-            SRC_TYPE value;                             \
-            memcpy(&value, src8, sizeof(value));        \
-            M3_BSWAP_##SRC_TYPE(value);                 \
-            REG = (DEST_TYPE)value;                     \
-            d_m3TraceLoad(DEST_TYPE, operand, REG);     \
-        
-    nextOp();\}                                               \
-        nextOp ();                                      \
-    } else d_outOfBounds;                               \
-}
-*/
-
 ///
 /// Segmented memory management
 ///
+
+static bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
+
 static inline u8* m3SegmentedMemAccess(IM3Memory mem, u64 offset, size_t size) 
 {
-    ESP_LOGI("WASM3", "m3SegmentedMemAccess call");
+    if(WASM_DEBUG_SEGMENTED_MEM_ACCESS) ESP_LOGI("WASM3", "m3SegmentedMemAccess call");
     
     // Verifica che l'accesso sia nei limiti della memoria totale
     if (offset + size > mem->total_size) return NULL;
@@ -1465,7 +1420,7 @@ static inline u8* m3SegmentedMemAccess(IM3Memory mem, u64 offset, size_t size)
                 ESP_LOGE("WASM3", "Failed to allocate segment %zu on access", i);
                 return NULL;
             }
-            ESP_LOGI("WASM3", "Lazy allocated segment %zu on access", i);
+            if(WASM_DEBUG_SEGMENTED_MEM_ACCESS) ESP_LOGI("WASM3", "Lazy allocated segment %zu on access", i);
         }
     }
     
@@ -1547,98 +1502,6 @@ d_m3Load_i (i64, i32);
 d_m3Load_i (i64, u32);
 d_m3Load_i (i64, i64);
 
-/*
-#define d_m3Store(REG, SRC_TYPE, DEST_TYPE)             \
-d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_rs)             \
-{                                                       \
-    d_m3TracePrepare                                    \
-    u64 operand = slot (u32);                           \
-    u32 offset = immediate (u32);                       \
-    operand += offset;                                  \
-                                                        \
-    if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
-    )){                                                \
-        {                                               \
-            d_m3TraceStore(SRC_TYPE, operand, REG);     \
-            u8* mem8 = m3MemData(_mem) + operand;       \
-            DEST_TYPE val = (DEST_TYPE) REG;            \
-            M3_BSWAP_##DEST_TYPE(val);                  \
-            memcpy(mem8, &val, sizeof(val));            \
-        
-    nextOp();\}                                               \
-        nextOp ();                                      \
-    } else d_outOfBounds;                               \
-}                                                       \
-d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_sr)             \
-{                                                       \
-    d_m3TracePrepare                                    \
-    const SRC_TYPE value = slot (SRC_TYPE);             \
-    u64 operand = (u32) _r0;                            \
-    u32 offset = immediate (u32);                       \
-    operand += offset;                                  \
-                                                        \
-    if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
-    )){                                                \
-        {                                               \
-            d_m3TraceStore(SRC_TYPE, operand, value);   \
-            u8* mem8 = m3MemData(_mem) + operand;       \
-            DEST_TYPE val = (DEST_TYPE) value;          \
-            M3_BSWAP_##DEST_TYPE(val);                  \
-            memcpy(mem8, &val, sizeof(val));            \
-        
-    nextOp();\}                                               \
-        nextOp ();                                      \
-    } else d_outOfBounds;                               \
-}                                                       \
-d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_ss)             \
-{                                                       \
-    d_m3TracePrepare                                    \
-    const SRC_TYPE value = slot (SRC_TYPE);             \
-    u64 operand = slot (u32);                           \
-    u32 offset = immediate (u32);                       \
-    operand += offset;                                  \
-                                                        \
-    if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
-    )){                                                \
-        {                                               \
-            d_m3TraceStore(SRC_TYPE, operand, value);   \
-            u8* mem8 = m3MemData(_mem) + operand;       \
-            DEST_TYPE val = (DEST_TYPE) value;          \
-            M3_BSWAP_##DEST_TYPE(val);                  \
-            memcpy(mem8, &val, sizeof(val));            \
-        
-    nextOp();\}                                               \
-        nextOp ();                                      \
-    } else d_outOfBounds;                               \
-}
-
-// both operands can be in regs when storing a float
-#define d_m3StoreFp(REG, TYPE)                          \
-d_m3Op(TYPE##_Store_##TYPE##_rr)                      \
-{                                                       \
-    d_m3TracePrepare                                    \
-    u64 operand = (u32) _r0;                            \
-    u32 offset = immediate (u32);                       \
-    operand += offset;                                  \
-                                                        \
-    if (m3MemCheck(                                     \
-        operand + sizeof (TYPE) <= _mem->total_size         \
-    )){                                                \
-        {                                               \
-            d_m3TraceStore(TYPE, operand, REG);         \
-            u8* mem8 = m3MemData(_mem) + operand;       \
-            TYPE val = (TYPE) REG;                      \
-            M3_BSWAP_##TYPE(val);                       \
-            memcpy(mem8, &val, sizeof(val));            \
-        
-    nextOp();\}                                               \
-        nextOp ();                                      \
-    } else d_outOfBounds;                               \
-}
-*/
 
 ///
 /// Segmented memory store
