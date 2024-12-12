@@ -14,7 +14,7 @@ IM3Memory m3_NewMemory(){
         return NULL;
     }
 
-    memory->segments = m3_Int_AllocArray(MemorySegment, WASM_MAX_SEGMENTS);    
+    memory->segments = m3_Int_AllocArray(MemorySegment, WASM_INIT_SEGMENTS);    
     memory->max_size = 0; 
     memory->num_segments = 0;
     memory->total_size = 0;
@@ -22,7 +22,7 @@ IM3Memory m3_NewMemory(){
     //memory->point = 0;
 
     // What are used for pages?
-    memory->numPages = 0;
+    //memory->numPages = 0;
     memory->maxPages = M3Memory_MaxPages;
 
     return memory;

@@ -467,7 +467,7 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
 
     // Update memory metadata
     memory->num_segments = new_num_segments;
-    memory->numPages = i_numPages;
+    //memory->numPages = i_numPages;
     memory->total_size = newPageBytes;
 
     // Reset current pointer if needed
@@ -606,7 +606,7 @@ void FreeMemory(IM3Runtime io_runtime) {
         memory->num_segments = 0;
     }
 
-    memory->numPages = 0;
+    //memory->numPages = 0;
     memory->maxPages = 0;
 }
 

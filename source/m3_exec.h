@@ -680,14 +680,14 @@ d_m3Op (MemGrow) //todo: convert it to new memory model
     IM3Runtime runtime = m3MemRuntime(_mem);
     IM3Memory memory = &runtime->memory;
 
-    i32 numPagesToGrow = _r0;
-    if (numPagesToGrow >= 0) {
+    i32 numSegmentsToGrow = _r0;
+    if (numSegmentsToGrow >= 0) {
         _r0 = memory->total_size;
 
-        if (M3_LIKELY(numPagesToGrow))
+        if (M3_LIKELY(numSegmentsToGrow))
         {
-            u32 requiredPages = memory->numPages + numPagesToGrow;
-            size_t newSize = (size_t)requiredPages * WASM_PAGE_SIZE;
+            u32 requiredPages = memory->num_segments + numSegmentsToGrow;
+            size_t newSize = (size_t)requiredPages * WASM_SEGMENT_SIZE;
             
             // Calcola il nuovo numero di segmenti necessari
             size_t currentSegments = memory->num_segments;
@@ -710,7 +710,7 @@ d_m3Op (MemGrow) //todo: convert it to new memory model
                 // Aggiorna la struttura della memoria
                 memory->segments = newSegments;
                 memory->num_segments = newNumSegments;
-                memory->numPages = requiredPages;
+                //memory->numPages = requiredPages;
                 memory->total_size = newSize;
                 
                 ESP_LOGI("WASM3", "Memory grown to %lu pages (%zu bytes, %zu segments)", 
