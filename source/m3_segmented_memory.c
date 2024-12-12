@@ -423,7 +423,7 @@ M3Result InitMemory(M3Memory* memory, size_t initial_stack, size_t initial_linea
 }
 
 // Memory access helpers
-static inline void* GetMemorySegment(IM3Memory memory, u32 offset) {
+void* GetMemorySegment(IM3Memory memory, u32 offset) {
     u8* addr = GetEffectiveAddress(memory, offset);
     if (!addr) {
         // Handle error - could throw exception or return error code
@@ -432,7 +432,7 @@ static inline void* GetMemorySegment(IM3Memory memory, u32 offset) {
     return addr;
 }
 
-static inline i32 m3_LoadInt(IM3Memory memory, u32 offset) {
+/*static inline i32 m3_LoadInt(IM3Memory memory, u32 offset) {
     void* ptr = GetMemorySegment(memory, offset);
     if (!ptr) return 0; // Or handle error
     return *(i32*)ptr;
@@ -444,7 +444,7 @@ static inline void m3_StoreInt(IM3Memory memory, u32 offset, i32 value) {
         *(i32*)ptr = value;
     }
     // else handle error
-}
+}*/
 
 ///
 ///
