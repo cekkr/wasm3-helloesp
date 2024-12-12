@@ -291,21 +291,21 @@ void print_memory_info(){
     size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
     size_t largest_block = heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT);
 
-    ESP_LOGI("WASM3", "Memoria totale libera: %d bytes\n", free_heap);
-    ESP_LOGI("WASM3", "Blocco contiguo più grande: %d bytes\n", largest_block);
+    ESP_LOGI("WASM3", "Total free memory: %d bytes\n", free_heap);
+    ESP_LOGI("WASM3", "Greater block: %d bytes\n", largest_block);
 
     // Per memoria interna (IRAM)
     size_t free_internal = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    ESP_LOGI("WASM3", "Memoria interna libera: %d bytes\n", free_internal);
+    ESP_LOGI("WASM3", "Internal free memory: %d bytes\n", free_internal);
 
     // Per vedere la frammentazione
     multi_heap_info_t info;
     heap_caps_get_info(&info, MALLOC_CAP_DEFAULT);
-    ESP_LOGI("WASM3", "Totale blocchi liberi: %d\n", info.total_free_bytes);
-    ESP_LOGI("WASM3", "Minima memoria libera: %d bytes\n", info.minimum_free_bytes);  
+    ESP_LOGI("WASM3", "Total free blocks: %d\n", info.total_free_bytes);
+    ESP_LOGI("WASM3", "Minimum free memory: %d bytes\n", info.minimum_free_bytes);  
 }
 
-static const int CHECK_MEMORY_AVAILABLE = 0;
+static const int CHECK_MEMORY_AVAILABLE = 1;
 //static const int WASM_ENABLE_SPI_MEM = 0;
 
 void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
