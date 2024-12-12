@@ -12,9 +12,9 @@
 
 d_m3BeginExternC
 
-# define m3MemData(mem)                 (u8*)(((M3MemoryHeader*)(mem))+1)
-# define m3MemRuntime(mem)              (((M3MemoryHeader*)(mem))->runtime)
-# define m3MemInfo(mem)                 (&(((M3MemoryHeader*)(mem))->runtime->memory))
+# define m3MemData(mem)                 (u8*)(((M3MemoryPoint*)(mem))->offset) //todo: get memory at offset
+# define m3MemRuntime(mem)              (((M3Memory*)(mem))->runtime)
+# define m3MemInfo(mem)                 (&(((M3Memory*)(mem))->runtime->memory))
 
 # define d_m3BaseOpSig                  pc_t _pc, m3stack_t _sp, M3Memory * _mem, m3reg_t _r0
 # define d_m3BaseOpArgs                 _sp, _mem, _r0
@@ -53,7 +53,7 @@ d_m3BeginExternC
 #    define jumpOpImpl(PC)          ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs, __FUNCTION__)
 # else
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
-#    define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
+#define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
 
 #    define nextOpImpl()            ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs)
 #    define jumpOpImpl(PC)          ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs)

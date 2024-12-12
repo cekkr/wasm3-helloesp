@@ -16,8 +16,7 @@
 
 //----- EMIT --------------------------------------------------------------------------------------------------------------
 
-static inline
-pc_t GetPC (IM3Compilation o)
+static inline pc_t GetPC (IM3Compilation o)
 {
     return GetPagePC (o->page);
 }

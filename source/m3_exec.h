@@ -63,14 +63,14 @@ d_m3BeginExternC
     #define pushBacktraceFrame()            (PushBacktraceFrame (_mem->runtime, _pc - 1))
     #define fillBacktraceFrame(FUNCTION)    (FillBacktraceFunctionInfo (_mem->runtime, function))
 
-    #define newTrap(err)                    (pushBacktraceFrame(), (err))
-    #define forwardTrap(err)                (err)
+    #define newTrap(err)                    return (pushBacktraceFrame (), err)
+    #define forwardTrap(err)                return err
 #else
     #define pushBacktraceFrame()            do {} while (0)
     #define fillBacktraceFrame(FUNCTION)    do {} while (0)
 
-    #define newTrap(err)                    (err)
-    #define forwardTrap(err)                (err)
+    #define newTrap(err)                    return err
+    #define forwardTrap(err)                return err
 #endif
 
 
@@ -98,11 +98,11 @@ d_m3BeginExternC
 #ifdef DEBUG
   #define d_outOfBounds newTrap (ErrorRuntime (m3Err_trapOutOfBoundsMemoryAccess,   \
                         _mem->runtime, "memory size: %zu; access offset: %zu",      \
-                        _mem->memory->total_size, operand))
+                        _mem->total_size, operand))
 
 #   define d_outOfBoundsMemOp(OFFSET, SIZE) newTrap (ErrorRuntime (m3Err_trapOutOfBoundsMemoryAccess,   \
                       _mem->runtime, "memory size: %zu; access offset: %zu; size: %u",     \
-                      _mem->memory->total_size, OFFSET, SIZE))
+                      _mem->total_size, OFFSET, SIZE))
 #else
   #define d_outOfBounds newTrap (m3Err_trapOutOfBoundsMemoryAccess)
 
@@ -334,14 +334,14 @@ d_m3UnaryOp_i (u64, Popcnt, __builtin_popcountll)
 
 d_m3Op(i32_Wrap_i64_r){
     _r0 = OP_WRAP_I64((i64) _r0);
-    return nextOp ();
+    nextOp ();
 }
 
 d_m3Op(i32_Wrap_i64_s)
 {
     i64 operand = slot (i64);
     _r0 = OP_WRAP_I64(operand);
-    return nextOp ();
+    nextOp ();
 }
 
 // Integer sign extension operations
@@ -360,27 +360,27 @@ d_m3UnaryOp_i (i64, Extend32_s, OP_EXTEND32_S_I64)
 #define d_m3TruncMacro(DEST, SRC, TYPE, NAME, FROM, OP, ...)   \
 d_m3Op(TYPE##_##NAME##_##FROM##_r_r)                \
 {                                                   \
-    M3Result result = OP((DEST), (FROM) SRC, ##__VA_ARGS__);   \
-    return nextOp ();                               \
+    OP((DEST), (FROM) SRC, ##__VA_ARGS__);          \
+    nextOp ();                                      \
 }                                                   \
 d_m3Op(TYPE##_##NAME##_##FROM##_r_s)                \
 {                                                   \
     FROM * stack = slot_ptr (FROM);                 \
     OP((DEST), (* stack), ##__VA_ARGS__);           \
-    return nextOp ();                                      \
+    nextOp ();                                      \
 }                                                   \
 d_m3Op(TYPE##_##NAME##_##FROM##_s_r)                \
 {                                                   \
     TYPE * dest = slot_ptr (TYPE);                  \
     OP((* dest), (FROM) SRC, ##__VA_ARGS__);        \
-    return nextOp ();                                      \
+    nextOp ();                                      \
 }                                                   \
 d_m3Op(TYPE##_##NAME##_##FROM##_s_s)                \
 {                                                   \
     FROM * stack = slot_ptr (FROM);                 \
     TYPE * dest = slot_ptr (TYPE);                  \
     OP((* dest), (* stack), ##__VA_ARGS__);         \
-    return nextOp ();                                      \
+    nextOp ();                                      \
 }
 
 #if d_m3HasFloat
@@ -409,14 +409,14 @@ d_m3TruncMacro(_r0, _fp0, u64, TruncSat, f64, OP_U64_TRUNC_SAT_F64)
 d_m3Op(TO##_##NAME##_##FROM##_r)                            \
 {                                                           \
     REG_TO = (TO) ((FROM) REG_FROM);                        \
-return     nextOp ();                                               \
+nextOp ();                                               \
 }                                                           \
                                                             \
 d_m3Op(TO##_##NAME##_##FROM##_s)                            \
 {                                                           \
     FROM from = slot (FROM);                                \
     REG_TO = (TO) (from);                                   \
-return     nextOp ();                                               \
+nextOp ();                                               \
 }
 
 // Int to int
@@ -433,27 +433,27 @@ d_m3TypeModifyOp (_fp0, _fp0, f64, Promote, f32);
 d_m3Op(TO##_##NAME##_##FROM##_r_r)                          \
 {                                                           \
     REG_TO = (TO) ((FROM) REG_FROM);                        \
-return     nextOp ();                                               \
+nextOp ();                                               \
 }                                                           \
                                                             \
 d_m3Op(TO##_##NAME##_##FROM##_s_r)                          \
 {                                                           \
     slot (TO) = (TO) ((FROM) REG_FROM);                     \
-return     nextOp ();                                               \
+nextOp ();                                               \
 }                                                           \
                                                             \
 d_m3Op(TO##_##NAME##_##FROM##_r_s)                          \
 {                                                           \
     FROM from = slot (FROM);                                \
     REG_TO = (TO) (from);                                   \
-return     nextOp ();                                               \
+nextOp ();                                               \
 }                                                           \
                                                             \
 d_m3Op(TO##_##NAME##_##FROM##_s_s)                          \
 {                                                           \
     FROM from = slot (FROM);                                \
     slot (TO) = (TO) (from);                                \
-return     nextOp ();                                               \
+nextOp ();                                               \
 }
 
 // Int to float
@@ -475,7 +475,7 @@ d_m3Op(TO##_Reinterpret_##FROM##_r_r)                       \
     union { FROM c; TO t; } u;                              \
     u.c = (FROM) SRC;                                       \
     REG = u.t;                                              \
-return     nextOp ();                                               \
+nextOp ();                                               \
 }                                                           \
                                                             \
 d_m3Op(TO##_Reinterpret_##FROM##_r_s)                       \
@@ -483,7 +483,7 @@ d_m3Op(TO##_Reinterpret_##FROM##_r_s)                       \
     union { FROM c; TO t; } u;                              \
     u.c = slot (FROM);                                      \
     REG = u.t;                                              \
-return     nextOp ();                                               \
+nextOp ();                                               \
 }                                                           \
                                                             \
 d_m3Op(TO##_Reinterpret_##FROM##_s_r)                       \
@@ -491,7 +491,7 @@ d_m3Op(TO##_Reinterpret_##FROM##_s_r)                       \
     union { FROM c; TO t; } u;                              \
     u.c = (FROM) SRC;                                       \
     slot (TO) = u.t;                                        \
-return     nextOp ();                                               \
+nextOp ();                                               \
 }                                                           \
                                                             \
 d_m3Op(TO##_Reinterpret_##FROM##_s_s)                       \
@@ -499,7 +499,7 @@ d_m3Op(TO##_Reinterpret_##FROM##_s_s)                       \
     union { FROM c; TO t; } u;                              \
     u.c = slot (FROM);                                      \
     slot (TO) = u.t;                                        \
-return     nextOp ();                                               \
+nextOp ();                                               \
 }
 
 #if d_m3HasFloat
@@ -514,7 +514,7 @@ d_m3Op  (GetGlobal_s32){
     u32 * global = immediate (u32 *);
     slot (u32) = * global;                        //  printf ("get global: %p %" PRIi64 "\n", global, *global);
 
-    return nextOp ();
+    nextOp ();
 }
 
 
@@ -523,7 +523,7 @@ d_m3Op  (GetGlobal_s64)
     u64 * global = immediate (u64 *);
     slot (u64) = * global;                        // printf ("get global: %p %" PRIi64 "\n", global, *global);
 
-    return nextOp ();
+    nextOp ();
 }
 
 
@@ -532,7 +532,7 @@ d_m3Op  (SetGlobal_i32)
     u32 * global = immediate (u32 *);
     * global = (u32) _r0;                         //  printf ("set global: %p %" PRIi64 "\n", global, _r0);
 
-    return nextOp ();
+    nextOp ();
 }
 
 
@@ -541,7 +541,7 @@ d_m3Op  (SetGlobal_i64)
     u64 * global = immediate (u64 *);
     * global = (u64) _r0;                         //  printf ("set global: %p %" PRIi64 "\n", global, _r0);
 
-    return nextOp ();
+    nextOp ();
 }
 
 
@@ -562,7 +562,7 @@ d_m3Op (Call)
     // Non serve più refreshare _mem dato che usiamo la memoria segmentata
     
     if (M3_LIKELY(not r))
-        return nextOp();
+        nextOp();
     else
     {
         pushBacktraceFrame();
@@ -667,7 +667,7 @@ d_m3Op  (MemSize)
 
     _r0 = memory->total_size; // istead of memory->numPages
 
-    return nextOp ();
+    nextOp ();
 }
 
 
@@ -722,7 +722,7 @@ d_m3Op (MemGrow) //todo: convert it to new memory model
         _r0 = -1;
     }
 
-    return nextOp();
+    nextOp();
 }
 
 
@@ -732,19 +732,19 @@ d_m3Op  (MemCopy)
     u64 source = slot (u32);
     u64 destination = slot (u32);
 
-    if (M3_LIKELY(destination + size <= _mem->memory->total_size))
+    if (M3_LIKELY(destination + size <= _mem->total_size))
     {
-        if (M3_LIKELY(source + size <= _mem->memory->total_size))
+        if (M3_LIKELY(source + size <= _mem->total_size))
         {
             u8 * dst = m3MemData (_mem) + destination;
             u8 * src = m3MemData (_mem) + source;
             memmove (dst, src, size);
 
-            return nextOp ();
+            nextOp ();
         }
-        else return d_outOfBoundsMemOp (source, size);
+        else d_outOfBoundsMemOp (source, size);
     }
-    else return d_outOfBoundsMemOp (destination, size);
+    else d_outOfBoundsMemOp (destination, size);
 }
 
 
@@ -754,13 +754,13 @@ d_m3Op  (MemFill)
     u32 byte = slot (u32);
     u64 destination = slot (u32);
 
-    if (M3_LIKELY(destination + size <= _mem->memory->total_size))
+    if (M3_LIKELY(destination + size <= _mem->total_size))
     {
         u8 * mem8 = m3MemData (_mem) + destination;
         memset (mem8, (u8) byte, size);
-        return nextOp ();
+        nextOp ();
     }
-    else return d_outOfBoundsMemOp (destination, size);
+    else d_outOfBoundsMemOp (destination, size);
 }
 
 
@@ -986,7 +986,7 @@ d_m3Op  (If_r)
     pc_t elsePC = immediate (pc_t);
 
     if (condition)
-        return nextOp ();
+        nextOp ();
     else
         jumpOp (elsePC);
 }
@@ -999,7 +999,7 @@ d_m3Op  (If_s)
     pc_t elsePC = immediate (pc_t);
 
     if (condition)
-        return nextOp ();
+        nextOp ();
     else
         jumpOp (elsePC);
 }
@@ -1023,13 +1023,13 @@ d_m3Op  (BranchTable)
 d_m3Op  (SetRegister_##TYPE)            \
 {                                       \
     REG = slot (TYPE);                  \
-    return nextOp ();                          \
-}\                                       \
+    nextOp ();                          \
+}                                       \
                                         \
 d_m3Op(SetSlot_##TYPE)                 \
 {                                       \
     slot (TYPE) = (TYPE) REG;           \
-return     nextOp ();                           \
+nextOp ();                           \
 }                                       \
                                         \
 d_m3Op (PreserveSetSlot_##TYPE)         \
@@ -1040,7 +1040,7 @@ d_m3Op (PreserveSetSlot_##TYPE)         \
     * preserve = * stack;               \
     * stack = (TYPE) REG;               \
                                         \
-return     nextOp ();                           \
+nextOp ();                           \
 }
 
 d_m3SetRegisterSetSlot (i32, _r0)
@@ -1056,7 +1056,7 @@ d_m3Op (CopySlot_32){
 
     * dst = * src;
 
-    return nextOp ();
+    nextOp ();
 }
 
 
@@ -1069,7 +1069,7 @@ d_m3Op (PreserveCopySlot_32)
     * preserve = * dest;
     * dest = * src;
 
-    return nextOp ();
+    nextOp ();
 }
 
 
@@ -1080,7 +1080,7 @@ d_m3Op (CopySlot_64)
 
     * dst = * src;                  // printf ("copy: %p <- %" PRIi64 " <- %p\n", dst, * dst, src);
 
-    return nextOp ();
+    nextOp ();
 }
 
 
@@ -1093,7 +1093,7 @@ d_m3Op (PreserveCopySlot_64)
     * preserve = * dest;
     * dest = * src;
 
-    return nextOp ();
+    nextOp ();
 }
 
 
@@ -1139,7 +1139,7 @@ d_m3Op  (Select_##TYPE##_rss)                   \
                                                 \
     REG = (condition) ? operand1 : operand2;    \
                                                 \
-    return nextOp ();                                  \
+    nextOp ();                                  \
 }                                               \
                                                 \
 d_m3Op(Select_##TYPE##_srs)                   \
@@ -1151,7 +1151,7 @@ d_m3Op(Select_##TYPE##_srs)                   \
                                                 \
     REG = (condition) ? operand1 : operand2;    \
                                                 \
-return     nextOp ();                                   \
+nextOp ();                                   \
 }                                               \
                                                 \
 d_m3Op  (Select_##TYPE##_ssr)                   \
@@ -1163,7 +1163,7 @@ d_m3Op  (Select_##TYPE##_ssr)                   \
                                                 \
     REG = (condition) ? operand1 : operand2;    \
                                                 \
-return     nextOp ();                                   \
+nextOp ();                                   \
 }                                               \
                                                 \
 d_m3Op  (Select_##TYPE##_sss)                   \
@@ -1175,7 +1175,7 @@ d_m3Op  (Select_##TYPE##_sss)                   \
                                                 \
     REG = (condition) ? operand1 : operand2;    \
                                                 \
-return     nextOp ();                                   \
+nextOp ();                                   \
 }
 
 
@@ -1193,7 +1193,7 @@ d_m3Op  (Select_##TYPE##_##LABEL##ss)           \
                                                 \
     REG = (condition) ? operand1 : operand2;    \
                                                 \
-return     nextOp ();                                   \
+nextOp ();                                   \
 }                                               \
                                                 \
 d_m3Op  (Select_##TYPE##_##LABEL##rs)           \
@@ -1205,7 +1205,7 @@ d_m3Op  (Select_##TYPE##_##LABEL##rs)           \
                                                 \
     REG = (condition) ? operand1 : operand2;    \
                                                 \
-return     nextOp ();                                   \
+nextOp ();                                   \
 }                                               \
                                                 \
 d_m3Op  (Select_##TYPE##_##LABEL##sr)           \
@@ -1217,7 +1217,7 @@ d_m3Op  (Select_##TYPE##_##LABEL##sr)           \
                                                 \
     REG = (condition) ? operand1 : operand2;    \
                                                 \
-return     nextOp ();                                   \
+nextOp ();                                   \
 }
 
 #if d_m3HasFloat
@@ -1243,7 +1243,7 @@ d_m3Op  (BranchIf_r)
     {
         jumpOp (branch);
     }
-    else return nextOp ();
+    else nextOp ();
 }
 
 
@@ -1256,7 +1256,7 @@ d_m3Op  (BranchIf_s)
     {
         jumpOp (branch);
     }
-    else return nextOp ();
+    else nextOp ();
 }
 
 
@@ -1269,7 +1269,7 @@ d_m3Op  (BranchIfPrologue_r)
     {
         // this is the "prologue" that ends with
         // a plain branch to the actual target
-        return nextOp ();
+        nextOp ();
     }
     else jumpOp (branch); // jump over the prologue
 }
@@ -1282,7 +1282,7 @@ d_m3Op  (BranchIfPrologue_s)
 
     if (condition)
     {
-        return nextOp ();
+        nextOp ();
     }
     else jumpOp (branch);
 }
@@ -1310,7 +1310,7 @@ d_m3Op  (ContinueLoopIf)
     {
         return loopId;
     }
-    else return nextOp ();
+    else nextOp ();
 }
 
 
@@ -1318,7 +1318,7 @@ d_m3Op  (Const32)
 {
     u32 value = * (u32 *)_pc++;
     slot (u32) = value;
-    return nextOp ();
+    nextOp ();
 }
 
 
@@ -1327,7 +1327,7 @@ d_m3Op  (Const64)
     u64 value = * (u64 *)_pc;
     _pc += (M3_SIZEOF_PTR == 4) ? 2 : 1;
     slot (u64) = value;
-    return nextOp ();
+    nextOp ();
 }
 
 d_m3Op  (Unsupported)
@@ -1354,7 +1354,7 @@ d_m3Op  (SetGlobal_s32)
     u32 * global = immediate (u32 *);
     * global = slot (u32);
 
-    return nextOp ();
+    nextOp ();
 }
 
 
@@ -1363,7 +1363,7 @@ d_m3Op  (SetGlobal_s64)
     u64 * global = immediate (u64 *);
     * global = slot (u64);
 
-    return nextOp ();
+    nextOp ();
 }
 
 #if d_m3HasFloat
@@ -1372,7 +1372,7 @@ d_m3Op  (SetGlobal_f32)
     f32 * global = immediate (f32 *);
     * global = _fp0;
 
-    return nextOp ();
+    nextOp ();
 }
 
 
@@ -1381,7 +1381,7 @@ d_m3Op  (SetGlobal_f64)
     f64 * global = immediate (f64 *);
     * global = _fp0;
 
-    return nextOp ();
+    nextOp ();
 }
 #endif
 
@@ -1404,7 +1404,7 @@ d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_r)                 \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (SRC_TYPE) <= _mem->memory->total_size     \
+        operand + sizeof (SRC_TYPE) <= _mem->total_size     \
     )) {                                                \
         {                                               \
             u8* src8 = m3MemData(_mem) + operand;       \
@@ -1414,7 +1414,7 @@ d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_r)                 \
             REG = (DEST_TYPE)value;                     \
             d_m3TraceLoad(DEST_TYPE, operand, REG);     \
         
-    return nextOp();\}                                               \
+    nextOp();\}                                               \
         nextOp ();                                      \
     } else d_outOfBounds;                               \
 }                                                       \
@@ -1426,7 +1426,7 @@ d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_s)                 \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (SRC_TYPE) <= _mem->memory->total_size     \
+        operand + sizeof (SRC_TYPE) <= _mem->total_size     \
     )){                                                \
         {                                               \
             u8* src8 = m3MemData(_mem) + operand;       \
@@ -1436,7 +1436,7 @@ d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_s)                 \
             REG = (DEST_TYPE)value;                     \
             d_m3TraceLoad(DEST_TYPE, operand, REG);     \
         
-    return nextOp();\}                                               \
+    nextOp();\}                                               \
         nextOp ();                                      \
     } else d_outOfBounds;                               \
 }
@@ -1482,7 +1482,7 @@ d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_r)                 \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (SRC_TYPE) <= _mem->memory->total_size \
+        operand + sizeof (SRC_TYPE) <= _mem->total_size \
     )){                                                \
         {                                               \
             u8* src8 = m3SegmentedMemAccess(_mem, operand, sizeof(SRC_TYPE)); \
@@ -1492,10 +1492,11 @@ d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_r)                 \
                 M3_BSWAP_##SRC_TYPE(value);            \
                 REG = (DEST_TYPE)value;                 \
                 d_m3TraceLoad(DEST_TYPE, operand, REG); \
-            } else return d_outOfBounds;                       \
+            } else d_outOfBounds;                \
         }                                               \
-return         nextOp ();                                       \
-} else  d_outOfBounds;                                \
+        nextOp();                                       \
+    }                                                  \
+    d_outOfBounds;                             \
 }                                                       \
 d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_s)                 \
 {                                                       \
@@ -1505,7 +1506,7 @@ d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_s)                 \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (SRC_TYPE) <= _mem->memory->total_size \
+        operand + sizeof (SRC_TYPE) <= _mem->total_size \
     )){                                                \
         {                                               \
             u8* src8 = m3SegmentedMemAccess(_mem, operand, sizeof(SRC_TYPE)); \
@@ -1515,9 +1516,9 @@ d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_s)                 \
                 M3_BSWAP_##SRC_TYPE(value);            \
                 REG = (DEST_TYPE)value;                 \
                 d_m3TraceLoad(DEST_TYPE, operand, REG); \
-            } else return d_outOfBounds;                       \
+            } else d_outOfBounds;                       \
         }                                               \
-return         nextOp ();                                       \
+nextOp();                                       \
 } else  d_outOfBounds;                                \
 }
 
@@ -1556,7 +1557,7 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_rs)             \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->memory->total_size    \
+        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
     )){                                                \
         {                                               \
             d_m3TraceStore(SRC_TYPE, operand, REG);     \
@@ -1565,7 +1566,7 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_rs)             \
             M3_BSWAP_##DEST_TYPE(val);                  \
             memcpy(mem8, &val, sizeof(val));            \
         
-    return nextOp();\}                                               \
+    nextOp();\}                                               \
         nextOp ();                                      \
     } else d_outOfBounds;                               \
 }                                                       \
@@ -1578,7 +1579,7 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_sr)             \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->memory->total_size    \
+        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
     )){                                                \
         {                                               \
             d_m3TraceStore(SRC_TYPE, operand, value);   \
@@ -1587,7 +1588,7 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_sr)             \
             M3_BSWAP_##DEST_TYPE(val);                  \
             memcpy(mem8, &val, sizeof(val));            \
         
-    return nextOp();\}                                               \
+    nextOp();\}                                               \
         nextOp ();                                      \
     } else d_outOfBounds;                               \
 }                                                       \
@@ -1600,7 +1601,7 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_ss)             \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->memory->total_size    \
+        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
     )){                                                \
         {                                               \
             d_m3TraceStore(SRC_TYPE, operand, value);   \
@@ -1609,7 +1610,7 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_ss)             \
             M3_BSWAP_##DEST_TYPE(val);                  \
             memcpy(mem8, &val, sizeof(val));            \
         
-    return nextOp();\}                                               \
+    nextOp();\}                                               \
         nextOp ();                                      \
     } else d_outOfBounds;                               \
 }
@@ -1624,7 +1625,7 @@ d_m3Op(TYPE##_Store_##TYPE##_rr)                      \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (TYPE) <= _mem->memory->total_size         \
+        operand + sizeof (TYPE) <= _mem->total_size         \
     )){                                                \
         {                                               \
             d_m3TraceStore(TYPE, operand, REG);         \
@@ -1633,7 +1634,7 @@ d_m3Op(TYPE##_Store_##TYPE##_rr)                      \
             M3_BSWAP_##TYPE(val);                       \
             memcpy(mem8, &val, sizeof(val));            \
         
-    return nextOp();\}                                               \
+    nextOp();\}                                               \
         nextOp ();                                      \
     } else d_outOfBounds;                               \
 }
@@ -1652,7 +1653,7 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_rs)             \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->memory->total_size    \
+        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
     )){                                                \
         {                                               \
             d_m3TraceStore(SRC_TYPE, operand, REG);     \
@@ -1661,10 +1662,10 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_rs)             \
                 DEST_TYPE val = (DEST_TYPE) REG;        \
                 M3_BSWAP_##DEST_TYPE(val);              \
                 memcpy(mem8, &val, sizeof(val));        \
-            } else return d_outOfBounds;                       \
+            } else d_outOfBounds;                       \
         }                                               \
-return         nextOp ();                                       \
-} else  d_outOfBounds;                                \
+    nextOp();                                           \
+    } else  d_outOfBounds;                               \
 }                                                       \
 d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_sr)             \
 {                                                       \
@@ -1675,7 +1676,7 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_sr)             \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->memory->total_size    \
+        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
     )){                                                \
         {                                               \
             d_m3TraceStore(SRC_TYPE, operand, value);   \
@@ -1684,10 +1685,10 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_sr)             \
                 DEST_TYPE val = (DEST_TYPE) value;      \
                 M3_BSWAP_##DEST_TYPE(val);              \
                 memcpy(mem8, &val, sizeof(val));        \
-            } else return d_outOfBounds;                       \
+            } else d_outOfBounds;                       \
         }                                               \
-return         nextOp ();                                       \
-    } else return d_outOfBounds;                                \
+        nextOp();                                       \
+    } else d_outOfBounds;                                \
 }                                                       \
 d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_ss)             \
 {                                                       \
@@ -1698,7 +1699,7 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_ss)             \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->memory->total_size    \
+        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
     )){                                                \
         {                                               \
             d_m3TraceStore(SRC_TYPE, operand, value);   \
@@ -1707,10 +1708,10 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_ss)             \
                 DEST_TYPE val = (DEST_TYPE) value;      \
                 M3_BSWAP_##DEST_TYPE(val);              \
                 memcpy(mem8, &val, sizeof(val));        \
-            } else return d_outOfBounds;                       \
+            } else d_outOfBounds;                       \
         }                                               \
-return         nextOp ();                                       \
-} else return d_outOfBounds;                                \
+        nextOp();                                       \
+    } else d_outOfBounds;                                \
 }
 
 #define d_m3StoreFp(REG, TYPE)                          \
@@ -1722,7 +1723,7 @@ d_m3Op(TYPE##_Store_##TYPE##_rr)                      \
     operand += offset;                                  \
                                                         \
     if (m3MemCheck(                                     \
-        operand + sizeof (TYPE) <= _mem->memory->total_size         \
+        operand + sizeof (TYPE) <= _mem->total_size         \
     )){                                                \
         {                                               \
             d_m3TraceStore(TYPE, operand, REG);         \
@@ -1731,10 +1732,10 @@ d_m3Op(TYPE##_Store_##TYPE##_rr)                      \
                 TYPE val = (TYPE) REG;                  \
                 M3_BSWAP_##TYPE(val);                   \
                 memcpy(mem8, &val, sizeof(val));        \
-            } else return d_outOfBounds;                       \
+            } else d_outOfBounds;                       \
         }                                               \
-return         nextOp ();                                       \
-} else  d_outOfBounds;                                \
+        nextOp();                                       \
+    } else  d_outOfBounds;                                \
 }
 
 #define d_m3Store_i(SRC_TYPE, DEST_TYPE) d_m3Store(_r0, SRC_TYPE, DEST_TYPE)
