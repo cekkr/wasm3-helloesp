@@ -14,7 +14,7 @@ IM3Memory m3_NewMemory(){
         return NULL;
     }
 
-    memory->segments = NULL; //m3_NewArray (MemorySegment, WASM_MAX_SEGMENTS);    
+    memory->segments = m3_Int_AllocArray(MemorySegment, WASM_MAX_SEGMENTS);    
     memory->max_size = 0; 
     memory->num_segments = 0;
     memory->total_size = 0;

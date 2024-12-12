@@ -10,6 +10,7 @@
 #include "esp_heap_caps.h"
 
 #define WASM_SEGMENT_SIZE 4096 // 4096 * x // btw move the definition elsewhere
+#define WASM_MAX_SEGMENTS 1024
 #define WASM_PAGE_SIZE 65536 //todo: think about
 #define WASM_ENABLE_SPI_MEM 0
 
@@ -43,7 +44,7 @@ typedef struct M3Memory_t {
     size_t segment_size;
 
     // Current memory tracking
-    u8* current_ptr;          // Current position in memory
+    u8* current_ptr;          // Current position in memory (used?)
 } M3Memory;
 
 #else
