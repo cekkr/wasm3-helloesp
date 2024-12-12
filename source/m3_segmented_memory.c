@@ -152,14 +152,14 @@ d_m3Operation(Pop_i32) {
 // Funzione per aggiungere un nuovo segmento
 M3Result AddSegment(M3Memory* memory) {
     size_t new_size = (memory->num_segments + 1) * sizeof(MemorySegment);
-    MemorySegment* new_segments = m3_realloc(memory->segments, new_size);
+    MemorySegment* new_segments = m3_Int_Realloc("MemorySegment new_segments", memory->segments, new_size, 1); // 1 is old size
     if (!new_segments) return m3Err_mallocFailed;
     
     memory->segments = new_segments;
     
     // Inizializza il nuovo segmento
     size_t new_idx = memory->num_segments;
-    memory->segments[new_idx].data = m3_malloc(memory->segment_size);
+    memory->segments[new_idx].data = m3_Int_Malloc("memory->segments[new_idx].data", memory->segment_size);
     if (!memory->segments[new_idx].data) return m3Err_mallocFailed;
     
     memory->segments[new_idx].is_allocated = true;
@@ -390,7 +390,7 @@ M3Result InitMemory(M3Memory* memory, size_t initial_stack, size_t initial_linea
     size_t total_size = initial_stack + initial_linear;
     size_t num_segments = (total_size + memory->segment_size - 1) / memory->segment_size;
     
-    memory->segments = m3_malloc(num_segments * sizeof(MemorySegment));
+    memory->segments = m3_Int_Malloc("memory->segments", num_segments * sizeof(MemorySegment));
     if (!memory->segments) return m3Err_mallocFailed;
     
     // Initialize segments
@@ -403,7 +403,7 @@ M3Result InitMemory(M3Memory* memory, size_t initial_stack, size_t initial_linea
     
     // Allocate first segment
     if (!allocate_segment(memory, 0)) {
-        m3_free(memory->segments);
+        m3_Int_Free(memory->segments);
         return m3Err_mallocFailed;
     }
     

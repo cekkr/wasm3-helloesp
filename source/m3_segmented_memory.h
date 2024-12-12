@@ -5,6 +5,7 @@
 
 #include "wasm3.h"
 #include "m3_exception.h"
+#include "m3_pointers.h"
 
 #include "esp_heap_caps.h"
 
