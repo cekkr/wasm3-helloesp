@@ -182,6 +182,13 @@ d_m3CommutativeOpMacro(RES, REG, TYPE,NAME, OP, ##__VA_ARGS__)
 ///
 ///
 
+#define MEMACCESS(type, mem, pc) \
+    (*(type*)(pc), (pc = (void*)((u8*)(pc) + sizeof(type))))
+
+///
+///
+///
+
 //-----------------------
 
 // signed
@@ -1412,7 +1419,7 @@ d_m3Op  (ContinueLoopIf)
 
 d_m3Op  (Const32)
 {
-    u32 value = * (u32 *)_pc++;
+    u32 value = MEMACCESS(u32, _mem, _pc); //* (u32 *)_pc++;    
     slot (u32) = value;
     nextOp ();
 }
@@ -1420,7 +1427,7 @@ d_m3Op  (Const32)
 
 d_m3Op  (Const64)
 {
-    u64 value = * (u64 *)_pc;
+    u64 value = MEMACCESS(u32, _mem, _pc); // * (u64 *)_pc;
     _pc += (M3_SIZEOF_PTR == 4) ? 2 : 1;
     slot (u64) = value;
     nextOp ();
