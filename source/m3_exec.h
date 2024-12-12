@@ -183,7 +183,7 @@ d_m3CommutativeOpMacro(RES, REG, TYPE,NAME, OP, ##__VA_ARGS__)
 ///
 
 #define MEMACCESS(type, mem, pc) \
-    (*(type*)(pc), (pc = (void*)((u8*)(pc) + sizeof(type))))
+    (*(type*)m3SegmentedMemAccess(mem, pc, sizeof(type)))
 
 ///
 ///
@@ -736,28 +736,6 @@ d_m3Op (MemGrow) //todo: convert it to new memory model
     nextOp();
 }
 
-
-/*d_m3Op  (MemCopy)
-{
-    u32 size = (u32) _r0;
-    u64 source = slot (u32);
-    u64 destination = slot (u32);
-
-    if (M3_LIKELY(destination + size <= _mem->total_size))
-    {
-        if (M3_LIKELY(source + size <= _mem->total_size))
-        {
-            u8 * dst = m3MemAccessAt (_mem, destination, 1);
-            u8 * src = m3MemAccessAt (_mem, source, 1);
-            memmove (dst, src, size);
-
-            nextOp ();
-        }
-        else d_outOfBoundsMemOp (source, size);
-    }
-    else d_outOfBoundsMemOp (destination, size);
-}*/
-
 // Memory Copy operation
 d_m3Op (MemCopy)
 {
@@ -805,22 +783,6 @@ d_m3Op (MemCopy)
     
     nextOp();
 }
-
-
-/*d_m3Op  (MemFill)
-{
-    u32 size = (u32) _r0;
-    u32 byte = slot (u32);
-    u64 destination = slot (u32);
-
-    if (M3_LIKELY(destination + size <= _mem->total_size))
-    {
-        u8 * mem8 = m3MemAccessAt (_mem, destination, 1);
-        memset (mem8, (u8) byte, size);
-        nextOp ();
-    }
-    else d_outOfBoundsMemOp (destination, size);
-}*/
 
 d_m3Op (MemFill)
 {
@@ -1419,7 +1381,7 @@ d_m3Op  (ContinueLoopIf)
 
 d_m3Op  (Const32)
 {
-    u32 value = MEMACCESS(u32, _mem, _pc); //* (u32 *)_pc++;    
+    u32 value = MEMACCESS(u32, _mem, _pc++); //* (u32 *)_pc++;    
     slot (u32) = value;
     nextOp ();
 }
