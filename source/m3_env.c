@@ -322,19 +322,22 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
 
     // create a temporary runtime context
 #if defined(d_m3PreferStaticAlloc)
-    static M3Runtime runtime;
+    static M3Runtime runtime = { 0 };
 #else
-    M3Runtime runtime;
+    M3Runtime runtime = { 0 };
 #endif
-    M3_INIT (runtime);
-
-    m3stack_t stack = (m3stack_t)runtime.stack;
+    //M3_INIT (runtime);    
 
     IM3Runtime savedRuntime = i_module->runtime;
 
     runtime.environment = savedRuntime->environment;
     runtime.numStackSlots = savedRuntime->numStackSlots; 
+
+    //ESP_LOGI("WASM3", "runtime.stack: %ld", runtime.stack);
+    //ESP_LOGI("WASM3", "savedRuntime->stack: %ld", savedRuntime->stack);
     runtime.stack = savedRuntime->stack;
+
+    m3stack_t stack = (m3stack_t)runtime.stack;
 
     i_module->runtime = & runtime;
 
