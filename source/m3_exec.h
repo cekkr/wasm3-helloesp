@@ -42,13 +42,20 @@
 
 d_m3BeginExternC
 
-# define rewrite_op(OP)             * ((void **) (_pc-1)) = (void*)(OP)
+// Riscrive l'operazione precedente con un nuovo operatore
+#define rewrite_op(OP)              *((void**)(_pc-1)) = (void*)(OP)
 
-# define immediate(TYPE)            * ((TYPE *) _pc++)
-# define skip_immediate(TYPE)       (_pc++)
+// Legge un valore immediato dal program counter e lo incrementa
+#define immediate(TYPE)             *(TYPE*)m3SegmentedMemAccess(_mem, (iptr)_pc++, sizeof(TYPE))
 
-# define slot(TYPE)                 * (TYPE *) (_sp + immediate (i32))
-# define slot_ptr(TYPE)             (TYPE *) (_sp + immediate (i32))
+// Salta un valore immediato nel program counter
+#define skip_immediate(TYPE)        (_pc++)
+
+// Accede al valore nello slot dello stack usando un offset immediato
+#define slot(TYPE)                  *(TYPE*)m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(TYPE))
+
+// Ottiene il puntatore allo slot dello stack usando un offset immediato
+#define slot_ptr(TYPE)             (TYPE*)m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(TYPE))
 
 
 # if d_m3EnableOpProfiling

@@ -2839,6 +2839,8 @@ M3Result  ReserveConstants  (IM3Compilation o)
 static const double WAS_DEBUG_CompileFunction = true;
 M3Result  CompileFunction  (IM3Function io_function)
 {
+    if(WAS_DEBUG_CompileFunction) ESP_LOGI("WASM3", "CompileFunction: called");
+    
     if (!io_function->wasm) return "function body is missing";
 
     IM3FuncType funcType = io_function->funcType;                   m3log (compile, "compiling: [%d] %s %s; wasm-size: %d",
