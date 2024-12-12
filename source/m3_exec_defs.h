@@ -5,32 +5,18 @@
 //  Copyright © 2019 Steven Massey. All rights reserved.
 //
 
-#pragma once
+#ifndef m3_exec_defs_h
+#define m3_exec_defs_h
+
+#include "m3_core.h"
 
 d_m3BeginExternC
 
-#include "m3_segmented_memory.h"
-#include "m3_core.h"   
-
-//typedef double f64;
-
-/*
 # define m3MemData(mem)                 (u8*)(((M3MemoryHeader*)(mem))+1)
-# define m3MemData(mem)                 (u8*)(((M3MemoryHeader*)(mem))) // useless subtitutive macro
 # define m3MemRuntime(mem)              (((M3MemoryHeader*)(mem))->runtime)
 # define m3MemInfo(mem)                 (&(((M3MemoryHeader*)(mem))->runtime->memory))
-*/
 
-// M3MemoryHeader ignored for M3Memory
-# define m3MemData(mem)                 (u8*)(((M3Memory*)(mem))+1)
-# define m3MemData(mem)                 (u8*)(((M3Memory*)(mem))) // useless subtitutive macro
-# define m3MemRuntime(mem)              (((M3Memory*)(mem))->runtime)
-# define m3MemInfo(mem)                 (&(((M3Memory*)(mem))->runtime->memory))
-
-typedef void* M3MemoryPoint_ptr; // it means M3MemoryPoint
-typedef void* M3Memory_ptr; // it means M3Memory
-
-# define d_m3BaseOpSig                  pc_t _pc, M3MemoryPoint_ptr _sp, M3Memory_ptr _mem, m3reg_t _r0
+# define d_m3BaseOpSig                  pc_t _pc, m3stack_t _sp, M3Memory * _mem, m3reg_t _r0
 # define d_m3BaseOpArgs                 _sp, _mem, _r0
 # define d_m3BaseOpAllArgs              _pc, _sp, _mem, _r0
 # define d_m3BaseOpDefaultArgs          0
@@ -57,11 +43,8 @@ typedef void* M3Memory_ptr; // it means M3Memory
 #   define d_m3ClearRegisters       d_m3BaseClearRegisters
 # endif
 
-//#include "m3_env.h"
 
 #define d_m3RetSig                  static inline m3ret_t vectorcall
-
-/* Converted in static inline functions
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, cstr_t i_operationName);
 #    define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, cstr_t i_operationName)
@@ -69,67 +52,25 @@ typedef void* M3Memory_ptr; // it means M3Memory
 #    define nextOpImpl()            ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs, __FUNCTION__)
 #    define jumpOpImpl(PC)          ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs, __FUNCTION__)
 # else
-    typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig); // was vectorcall * IM3Operation
+    typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
 #    define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
 
-#   define nextOpImpl()             ((IM3Operation)(*_pc))(*_pc + 1, d_m3OpArgs)
-#   define jumpOpImpl(PC)           ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs)
+#    define nextOpImpl()            ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs)
+#    define jumpOpImpl(PC)          ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs)
 # endif
-*/
 
-typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
-
-static inline m3ret_t nextOpImpl(d_m3OpSig) {
-    return ((IM3Operation)(*_pc))(_pc + 1, _sp, _mem, _r0
-    #if d_m3HasFloat
-        , _fp0
-    #endif
-    );
-}
-
-static inline m3ret_t jumpOpImpl(pc_t PC, d_m3OpSig) {
-    return ((IM3Operation)(*PC))(PC + 1, _sp, _mem, _r0
-    #if d_m3HasFloat
-        , _fp0
-    #endif
-    );
-}
-
-// Queste funzioni devono avere gli stessi argomenti delle originali
-static inline m3ret_t nextOpDirect(d_m3OpSig) {
-    return nextOpImpl(_pc, _sp, _mem, _r0
-    #if d_m3HasFloat
-        , _fp0
-    #endif
-    );
-}
-
-static inline m3ret_t jumpOpDirect(pc_t PC, d_m3OpSig) {
-    return jumpOpImpl(PC, _pc, _sp, _mem, _r0
-    #if d_m3HasFloat
-        , _fp0
-    #endif
-    );
-}
-
-/* // Converted in static inline functions
 #define nextOpDirect()              M3_MUSTTAIL return nextOpImpl()
 #define jumpOpDirect(PC)            M3_MUSTTAIL return jumpOpImpl((pc_t)(PC))
-*/
 
-
-#if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-d_m3RetSig RunCode(d_m3OpSig, cstr_t i_operationName)
-#else
-d_m3RetSig RunCode(d_m3OpSig)
-#endif
+# if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
+d_m3RetSig  RunCode  (d_m3OpSig, cstr_t i_operationName)
+# else
+d_m3RetSig  RunCode  (d_m3OpSig)
+# endif
 {
-    return nextOpImpl(_pc, _sp, _mem, _r0
-    #if d_m3HasFloat
-        , _fp0
-    #endif
-    );
+    nextOpDirect();
 }
 
 d_m3EndExternC
 
+#endif // m3_exec_defs_h

@@ -9,7 +9,7 @@
 
 #include "m3_core.h"
 
-//d_m3BeginExternC
+d_m3BeginExternC
 
 typedef struct M3CodePage;
 struct M3CodeMappingPage;
@@ -90,5 +90,5 @@ M3CodeMappingPage;
 
 # endif // d_m3RecordBacktraces
 
-//d_m3EndExternC
+d_m3EndExternC
 

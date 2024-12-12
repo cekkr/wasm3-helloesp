@@ -491,6 +491,198 @@ M3Result  ResizeMemory  (IM3Runtime io_runtime, u32 i_numPages)
 }
 */
 
+/*
+// old implementation. even older ones in m3_env
+M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) {
+    if(DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "InitMemory called");
+
+    if (i_module->memoryInfo.pageSize == 0) {
+        i_module->memoryInfo.pageSize = 65536;  // Standard WebAssembly page size
+        ESP_LOGI("WASM3", "InitMemory - Fixed pageSize to standard 64KB");
+    }
+
+    M3Result result = m3Err_none;
+
+    if (!i_module->memoryImported) {
+        io_runtime->memory.maxPages = i_module->memoryInfo.maxPages ? 
+                                    i_module->memoryInfo.maxPages : 65536;
+        io_runtime->memory.pageSize = i_module->memoryInfo.pageSize;
+        io_runtime->memory.segment_size = WASM_SEGMENT_SIZE;  // Usa la page size come segment size
+        
+        result = ResizeMemory(io_runtime, i_module->memoryInfo.initPages);
+    }
+    else {
+        if(io_runtime->memory.segment_size == 0) {
+            ESP_LOGW("WASM3", "InitMemory: io_runtime->memory.segment_size == 0");
+            io_runtime->memory.segment_size = WASM_SEGMENT_SIZE;
+        }
+    }
+
+    return result;
+}*/
+
+///
+/// Multi-segment implementation
+///
+
+// Trying to implement stack/linear memory differentiation
+/*M3Result InitMemory(M3Memory* memory, size_t initial_stack, size_t initial_linear) {
+    memory->segment_size = WASM_SEGMENT_SIZE;  // es: 64KB (dimensione pagina WebAssembly)
+    memory->num_segments = 1;  // Inizia con un segmento
+    memory->segments = m3_malloc(sizeof(MemorySegment));
+    if (!memory->segments) return m3Err_mallocFailed;
+    
+    // Alloca il primo segmento
+    memory->segments[0].data = m3_malloc(memory->segment_size);
+    if (!memory->segments[0].data) {
+        m3_free(memory->segments);
+        return m3Err_mallocFailed;
+    }
+    memory->segments[0].is_allocated = true;
+    
+    // Inizializza le regioni all'interno del primo segmento
+    memory->linear.base = memory->segments[0].data;
+    memory->linear.size = initial_linear;
+    
+    memory->stack.base = (u8*)memory->segments[0].data + memory->segment_size;
+    memory->stack.size = initial_stack;
+    
+    memory->total_size = memory->segment_size;
+    
+    return NULL; // aka success
+}*/
+
+static const int DEBUG_TOP_MEMORY = 1;
+
+M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
+    if (!io_runtime) return m3Err_nullRuntime;
+    
+    M3Memory* memory = &io_runtime->memory;
+    if (!memory) return m3Err_mallocFailed;
+
+    // Validate page count against maximum
+    if (i_numPages > memory->maxPages) {
+        return m3Err_wasmMemoryOverflow;
+    }
+
+    // Calculate new total size in bytes
+    size_t newPageBytes = (size_t)i_numPages * memory->pageSize;
+    if (newPageBytes / memory->pageSize != i_numPages) {
+        return m3Err_mallocFailed;  // Overflow check
+    }
+
+    #if d_m3MaxLinearMemoryPages > 0
+    if (i_numPages > d_m3MaxLinearMemoryPages) {
+        return m3Err_mallocFailed;
+    }
+    #endif
+
+    // Apply memory limit if set
+    if (io_runtime->memoryLimit && newPageBytes > io_runtime->memoryLimit) {
+        newPageBytes = io_runtime->memoryLimit;
+        i_numPages = newPageBytes / memory->pageSize;
+    }
+
+    // Calculate required segments based on new size
+    size_t new_num_segments = (newPageBytes + memory->segment_size - 1) / memory->segment_size;
+    
+    // Handle initial allocation
+    if (!memory->segments) {
+        memory->segments = current_allocator->malloc(new_num_segments * sizeof(MemorySegment));
+        if (!memory->segments) {
+            return m3Err_mallocFailed;
+        }
+        
+        // Initialize new segments
+        for (size_t i = 0; i < new_num_segments; i++) {
+            memory->segments[i].data = NULL;
+            memory->segments[i].is_allocated = false;
+            memory->segments[i].stack_size = 0;
+            memory->segments[i].linear_size = 0;
+        }
+    }
+    // Handle resize
+    else if (new_num_segments != memory->num_segments) {
+        // Reallocate segment array
+        MemorySegment* new_segments = current_allocator->realloc(
+            memory->segments,
+            new_num_segments * sizeof(MemorySegment)
+        );
+        
+        if (!new_segments) {
+            return m3Err_mallocFailed;
+        }
+        
+        memory->segments = new_segments;
+
+        if (new_num_segments > memory->num_segments) {
+            // Initialize newly added segments
+            for (size_t i = memory->num_segments; i < new_num_segments; i++) {
+                memory->segments[i].data = NULL;
+                memory->segments[i].is_allocated = false;
+                memory->segments[i].stack_size = 0;
+                memory->segments[i].linear_size = 0;
+            }
+        } else {
+            // Free memory from removed segments
+            for (size_t i = new_num_segments; i < memory->num_segments; i++) {
+                if (memory->segments[i].is_allocated && memory->segments[i].data) {
+                    current_allocator->free(memory->segments[i].data);
+                    memory->segments[i].is_allocated = false;
+                    memory->segments[i].data = NULL;
+                }
+            }
+        }
+    }
+
+    // Update memory regions
+    size_t total_linear_size = newPageBytes * 3/4;  // 75% for linear memory
+    size_t total_stack_size = newPageBytes - total_linear_size;  // 25% for stack
+
+    // Update linear memory region
+    memory->linear.size = total_linear_size;
+    if (memory->linear.current_offset > total_linear_size) {
+        memory->linear.current_offset = total_linear_size;
+    }
+
+    // Update stack region
+    memory->stack.size = total_stack_size;
+    if (memory->stack.current_offset > total_stack_size) {
+        memory->stack.current_offset = total_stack_size;
+    }
+    
+    // Update memory metadata
+    memory->num_segments = new_num_segments;
+    memory->numPages = i_numPages;
+    memory->total_size = newPageBytes;
+
+    return m3Err_none;
+}
+
+
+void FreeMemory(IM3Runtime io_runtime) {
+    if(DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory called");
+    
+    M3Memory* memory = &io_runtime->memory;
+
+    if (memory->segments) {
+        // Libera la memoria di ogni segmento allocato
+        for (size_t i = 0; i < memory->num_segments; i++) {
+            if (memory->segments[i].is_allocated && memory->segments[i].data) {
+                m3_Free_Impl(memory->segments[i].data, false);
+            }
+        }
+        // Libera l'array dei segmenti
+        m3_Free_Impl(memory->segments, false);
+        memory->segments = NULL;
+        memory->num_segments = 0;
+    }
+
+    memory->numPages = 0;
+    memory->maxPages = 0;
+}
+
+
 ///
 ///
 ///

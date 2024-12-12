@@ -20,7 +20,6 @@ d_m3BeginExternC
 
 //---------------------------------------------------------------------------------------------------------------------------------
 
-// Disabled
 typedef struct M3MemoryInfo //todo: study its usage
 {
     u32     initPages;
@@ -28,8 +27,6 @@ typedef struct M3MemoryInfo //todo: study its usage
     u32     pageSize;
 }
 M3MemoryInfo;
-
-
 
 /* // Old M3Memory implementation
 typedef struct M3Memory
@@ -226,6 +223,11 @@ void *                      v_FindFunction              (IM3Module i_module, con
 IM3CodePage                 AcquireCodePage             (IM3Runtime io_runtime);
 IM3CodePage                 AcquireCodePageWithCapacity (IM3Runtime io_runtime, u32 i_lineCount);
 void                        ReleaseCodePage             (IM3Runtime io_runtime, IM3CodePage i_codePage);
+
+// IM3Runtime memory
+void                        InitRuntime                 (IM3Runtime io_runtime, u32 i_stackSizeInBytes);
+void                        Runtime_Release             (IM3Runtime io_runtime);
+M3Result                    ResizeMemory                (IM3Runtime io_runtime, u32 i_numPages);
 
 d_m3EndExternC
 

@@ -6,6 +6,8 @@
 #include "wasm3.h"
 #include "m3_exception.h"
 
+#include "esp_heap_caps.h"
+
 #define WASM_SEGMENT_SIZE 4096 // 4096 * x // btw move the definition elsewhere
 #define WASM_PAGE_SIZE 65536 //todo: think about
 #define WASM_ENABLE_SPI_MEM 0
@@ -38,10 +40,11 @@ typedef struct M3Memory_t {
     //M3MemoryHeader*       mallocated;    
     IM3Runtime              runtime;
 
-    //u32                     initPages; // initPages or numPages?
+    // From M3MemoryInfo
+    u32                     initPages; // initPages or numPages?
     u32                     numPages;
     u32                     maxPages;
-    //u32                     pageSize;
+    u32                     pageSize;
 
     // Segmentation
     MemorySegment* segments;    // Array di segmenti
@@ -53,7 +56,7 @@ typedef struct M3Memory_t {
     // Fragmentation
     M3MemoryRegion stack;      // Regione dello stack (cresce verso il basso)
     M3MemoryRegion linear;     // Regione della memoria lineare (cresce verso l'alto)
-    //u8* stack_pointer;         // SP corrente // delegated to M3MemoryPoint
+    //u8* stack_pointer;         // SP corrente // delegated to M3MemoryPoint    
 
 } M3Memory;
 
@@ -76,9 +79,6 @@ typedef M3MemoryPoint *          IM3MemoryPoint;
 IM3Memory m3_NewMemory();
 IM3MemoryPoint m3_GetMemoryPoint(IM3Memory mem);
 
-void                        InitRuntime                 (IM3Runtime io_runtime, u32 i_stackSizeInBytes);
-void                        Runtime_Release             (IM3Runtime io_runtime);
-M3Result                    ResizeMemory                (IM3Runtime io_runtime, u32 i_numPages);
 
 bool IsStackAddress(M3Memory* memory, u8* addr);
 bool IsLinearAddress(M3Memory* memory, u8* addr);

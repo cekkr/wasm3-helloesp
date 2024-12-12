@@ -8,7 +8,11 @@
 // Allow using opcodes for compilation process
 #define M3_COMPILE_OPCODES
 
+#include "m3_env.h"
 #include "m3_compile.h"
+#include "m3_exec.h"
+#include "m3_exception.h"
+#include "m3_info.h"
 
 //----- EMIT --------------------------------------------------------------------------------------------------------------
 
