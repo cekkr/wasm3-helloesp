@@ -205,7 +205,6 @@ IM3Memory m3_NewStack(){
     return memory;
 }
 
-
 IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes, void * i_userdata)
 {
     ESP_LOGI("WASM3", "m3_NewRuntime called");
@@ -220,12 +219,13 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
         runtime->userdata = i_userdata;
 
         //runtime->originStack = m3_Int_Malloc ("Wasm Stack", i_stackSizeInBytes + 4*sizeof (m3slot_t)); // TODO: more precise stack checks
-        runtime->originStack = m3_NewStack();        
+        //runtime->originStack = m3_NewStack(); // (not implemented) ad hoc M3Memory for stack
+        runtime->originStack = 0;
 
         if (runtime->originStack)
         {
-            runtime->originStack->runtime = runtime;
-            runtime->originStack->max_size = i_stackSizeInBytes;
+            //runtime->originStack->runtime = runtime;
+            //runtime->originStack->max_size = i_stackSizeInBytes;
 
             runtime->stack = runtime->originStack;
             runtime->maxStackSize = i_stackSizeInBytes; // is it important save it here?
