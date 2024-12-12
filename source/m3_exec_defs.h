@@ -30,7 +30,8 @@ static inline u8* m3SegmentedMemAccess(IM3Memory mem, u64 offset, size_t size)
     if(WASM_DEBUG_SEGMENTED_MEM_ACCESS) ESP_LOGI("WASM3", "m3SegmentedMemAccess call");
     
     // Verifica che l'accesso sia nei limiti della memoria totale
-    if (offset + size > mem->total_size) return NULL;
+    if (mem->total_size > 0 && offset + size > mem->total_size) 
+        return NULL;
 
     size_t segment_index = offset / mem->segment_size;
     size_t segment_offset = offset % mem->segment_size;
