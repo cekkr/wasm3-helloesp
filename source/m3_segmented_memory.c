@@ -483,9 +483,14 @@ void split_region(RegionManager* mgr, MemoryRegion* region, size_t size) {
     mgr->total_regions++;
 }
 
+const bool WASM_DEBUG_SEGMENTED_MEMORY = true;
+
 // Updated malloc to handle segment loading
 void* m3_malloc(M3Memory* memory, size_t size) {
+    if(WASM_DEBUG_SEGMENTED_MEMORY) ESP_LOGI("WASM3", "m3_malloc called");
+
     if (!memory || size == 0) {
+        ESP_LOGE("WASM3", "m3_malloc: memory NULL or size = %d", size);
         return NULL;
     }
     
