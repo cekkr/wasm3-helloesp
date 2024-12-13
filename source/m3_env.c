@@ -293,19 +293,6 @@ void *  _FreeModule  (IM3Module i_module, void * i_info)
 }
 
 
-void  Runtime_Release  (IM3Runtime i_runtime)
-{
-    ForEachModule (i_runtime, _FreeModule, NULL);                   d_m3Assert (i_runtime->numActiveCodePages == 0);
-
-    Environment_ReleaseCodePages (i_runtime->environment, i_runtime->pagesOpen);
-    Environment_ReleaseCodePages (i_runtime->environment, i_runtime->pagesFull);
-
-    m3_Int_Free (i_runtime->originStack);
-
-    void* memory_ptr = &i_runtime->memory;
-    m3_FreeMemory (memory_ptr);
-}
-
 static const int DEBUG_TOP_MEMORY = 1;
 void FreeMemory(IM3Memory memory) {
     if(DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory called");
@@ -325,6 +312,20 @@ void FreeMemory(IM3Memory memory) {
 
     //memory->numPages = 0;
     memory->maxPages = 0;
+}
+
+
+void  Runtime_Release  (IM3Runtime i_runtime)
+{
+    ForEachModule (i_runtime, _FreeModule, NULL);                   d_m3Assert (i_runtime->numActiveCodePages == 0);
+
+    Environment_ReleaseCodePages (i_runtime->environment, i_runtime->pagesOpen);
+    Environment_ReleaseCodePages (i_runtime->environment, i_runtime->pagesFull);
+
+    m3_Int_Free (i_runtime->originStack);
+
+    void* memory_ptr = &i_runtime->memory;
+    FreeMemory (memory_ptr);
 }
 
 void  m3_FreeRuntime  (IM3Runtime i_runtime)
