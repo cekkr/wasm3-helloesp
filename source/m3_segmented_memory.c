@@ -227,13 +227,13 @@ u8* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size)
         //ESP_LOGI("WASM3", "m3SegmentedMemAccess: mem = %p", (void*)mem);  
     }
 
+    return resolve_pointer(mem, ptr);
+
     // Verifica che l'accesso sia nei limiti della memoria totale
     if (mem->total_size > 0 && offset + size > mem->total_size){
         ESP_LOGE("WASM3", "m3SegmentedMemAccess: requested memory exceeds total size");
         return NULL;
-    }
-
-    return resolve_pointer(mem, ptr);
+    }    
 
     size_t segment_index = offset / mem->segment_size;
     size_t segment_offset = offset % mem->segment_size;
