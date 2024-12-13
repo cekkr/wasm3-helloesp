@@ -198,7 +198,6 @@ M3Result AddSegment(M3Memory* memory) {
     
     if(WASM_DEBUG_ADD_SEGMENT){
          ESP_LOGI("WASM3", "AddSegment: memory->segments[%d]=%p", new_idx, memory->segments[new_idx]);
-         ESP_LOGI("WASM3", "AddSegment: flush");
     }
 
         // Verifica che il puntatore sia valido prima di usarlo
