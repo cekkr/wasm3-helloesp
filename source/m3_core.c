@@ -204,7 +204,7 @@ static const bool REALLOC_USE_MALLOC_IF_NEW = false;
 void* default_realloc(void* ptr, size_t new_size) {
     if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_realloc called for %p (size: %u)", ptr, new_size);
 
-    size_t aligned_size = DEFAULT_ALLOC_ALIGNMENT ? (size + 7) & ~7 : size; 
+    size_t aligned_size = DEFAULT_ALLOC_ALIGNMENT ? (new_size + 7) & ~7 : new_size; 
 
     TRY {
         if((!ptr) || !ultra_safe_ptr_valid(ptr)){
