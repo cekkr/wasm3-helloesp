@@ -55,22 +55,7 @@ bool allocate_segment(M3Memory* memory, size_t segment_index) {
     }
 
     // Prima prova ad allocare in SPIRAM se abilitata
-    void* ptr = WASM_ENABLE_SPI_MEM ? 
-                heap_caps_malloc(memory->segment_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : 
-                NULL;
-
-    // Se l'allocazione in SPIRAM fallisce o non è disponibile, prova la memoria interna
-    if (!ptr) {
-        ptr = heap_caps_malloc(memory->segment_size, 
-                             MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
-        
-        if (WASM_DEBUG_SEGMENTED_MEM_MAN && !ptr) {
-            ESP_LOGE("WASM3", "Failed to allocate segment in internal memory");
-        }
-    }
-    else if (WASM_DEBUG_SEGMENTED_MEM_MAN) {
-        ESP_LOGI("WASM3", "Segment allocated in SPIRAM");
-    }
+    void* ptr = default_malloc(memory->segment_size);
 
     if (ptr) {
         // Inizializza il segmento con zeri
@@ -449,7 +434,8 @@ MemoryRegion* allocate_region(M3Memory* memory, size_t size) {
     size_t continuous_segments = 0;
     
     for (size_t i = 0; i < memory->num_segments; i++) {
-        if (!memory->segments[i]->is_allocated) {
+        MemorySegment* segment = &memory->segments[i];
+        if (!segment->is_allocated) {
             if (continuous_segments == 0) {
                 start_segment = i;
             }
