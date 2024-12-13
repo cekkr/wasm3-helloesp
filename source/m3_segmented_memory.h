@@ -75,12 +75,12 @@ IM3Memory m3_NewMemory();
 IM3Memory m3_InitMemory(IM3Memory memory);
 //IM3MemoryPoint m3_GetMemoryPoint(IM3Memory mem);
 
-M3Result AddSegment(M3Memory* memory);
+M3Result AddSegment(M3Memory* memory, size_t set_num_segments);
 u8* GetEffectiveAddress(M3Memory* memory, size_t offset);
 M3Result GrowMemory(M3Memory* memory, size_t additional_size);
 
 ////////////////////////////////
-bool allocate_segment(M3Memory* memory, size_t segment_index);
+bool allocate_segment_data(M3Memory* memory, size_t segment_index);
 static void* GetMemorySegment(IM3Memory memory, u32 offset);
 ////////////////////////////////////////////////////////////////
 

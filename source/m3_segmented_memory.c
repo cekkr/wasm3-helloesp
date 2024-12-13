@@ -41,15 +41,15 @@ IM3Memory m3_NewMemory(){
     return memory;
 }
 
-bool allocate_segment(M3Memory* memory, size_t segment_index) {
+bool allocate_segment_data(M3Memory* memory, size_t segment_index) {
     if (!memory || segment_index >= memory->num_segments) {
-        ESP_LOGI("WASM3", "allocate_segment: memory null or segment_index > num_segments (%d > %d)", segment_index, memory->num_segments);
+        ESP_LOGI("WASM3", "allocate_segment_data: memory null or segment_index > num_segments (%d > %d)", segment_index, memory->num_segments);
         return false;
     }
 
     if (WASM_DEBUG_SEGMENTED_MEM_MAN) {
-        ESP_LOGI("WASM3", "allocate_segment: Allocating segment %zu of size %zu", segment_index, memory->segment_size);
-        ESP_LOGI("WASM3", "allocate_segment: flush");
+        ESP_LOGI("WASM3", "allocate_segment_data: Allocating segment %zu of size %zu", segment_index, memory->segment_size);
+        ESP_LOGI("WASM3", "allocate_segment_data: flush");
     }
 
     MemorySegment* segment = memory->segments[segment_index];
@@ -121,12 +121,10 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
     size_t needed_segments = (new_total + memory->segment_size - 1) / memory->segment_size;
     size_t additional_segments = needed_segments - current_used_segments;
     
-    // Alloca nuovi segmenti se necessario
-    for (size_t i = 0; i < additional_segments; i++) {
-        M3Result result = AddSegment(memory);
-        if (result != NULL) {
-            return result;
-        }
+
+    M3Result result = AddSegment(memory, additional_segments);
+    if (result != NULL) {
+        return result;
     }
     
     memory->total_size = new_total;
@@ -154,52 +152,67 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
 
 // Funzione per aggiungere un nuovo segmento
 const bool WASM_DEBUG_ADD_SEGMENT = true;
-M3Result AddSegment(M3Memory* memory) {
-    size_t new_idx = memory->num_segments++;
-    size_t new_size = (memory->num_segments) * sizeof(MemorySegment*);
-    
-    // Riallocare l'array di puntatori
-    MemorySegment** new_segments = m3_Def_Realloc(memory->segments, new_size);
-    if (!new_segments) {
-        memory->num_segments--;
-        return m3Err_mallocFailed;
-    }
-    memory->segments = new_segments;
-    
-    // Allocare la nuova struttura MemorySegment
-    memory->segments[new_idx] = m3_Def_Malloc(sizeof(MemorySegment));
-    if (!memory->segments[new_idx]) {
-        memory->num_segments--;
-        return m3Err_mallocFailed;
-    }
-    
-    if(WASM_DEBUG_ADD_SEGMENT){
-         ESP_LOGI("WASM3", "AddSegment: memory->segments[%d]=%p", new_idx, memory->segments[new_idx]);
+M3Result AddSegment(M3Memory* memory, size_t set_num_segments) {
+    size_t original_num_segments = memory->num_segments;
+
+    size_t new_segments = set_num_segments;
+    if(new_segments == 0){
+        new_segments = memory->num_segments++;
     }
 
-        // Verifica che il puntatore sia valido prima di usarlo
-    if (!ultra_safe_ptr_valid(memory->segments[new_idx])) {
-        ESP_LOGE("WASM3", "AddSegment: Invalid pointer at memory->segments[%d]", new_idx);
-        return m3Err_mallocFailed;
-    }
+    size_t new_size = (new_segments + 1) * sizeof(MemorySegment*);
     
-    // Verifica che possiamo effettivamente accedere alla struttura
-    MemorySegment* seg = memory->segments[new_idx];
-    if(WASM_DEBUG_ADD_SEGMENT) ESP_LOGI("WASM3", "AddSegment: Can access segment structure");
+    size_t new_idx = 0;
+    for(; new_idx < new_segments; new_idx++){
+        // Riallocare l'array di puntatori
+        MemorySegment** new_segments = m3_Def_Realloc(memory->segments, new_size);
+        if (!new_segments) {
+            memory->num_segments--;
+            return m3Err_mallocFailed;
+        }
+        memory->segments = new_segments;
+        
+        // Allocare la nuova struttura MemorySegment
+        memory->segments[new_idx] = m3_Def_Malloc(sizeof(MemorySegment));
+        if (!memory->segments[new_idx]) {
+            goto backToOriginal;
+        }
+        
+        if(WASM_DEBUG_ADD_SEGMENT){
+            ESP_LOGI("WASM3", "AddSegment: memory->segments[%d]=%p", new_idx, memory->segments[new_idx]);
+        }
 
-    // Allocare i dati del segmento
-    seg->data = m3_Def_Malloc(memory->segment_size);
-    if (!seg->data) {
-        m3_Def_Free(seg);
-        memory->num_segments--;
+            // Verifica che il puntatore sia valido prima di usarlo
+        if (!ultra_safe_ptr_valid(memory->segments[new_idx])) {
+            ESP_LOGE("WASM3", "AddSegment: Invalid pointer at memory->segments[%d]", new_idx);
+            goto backToOriginal;
+        }
+        
+        // Verifica che possiamo effettivamente accedere alla struttura
+        MemorySegment* seg = memory->segments[new_idx];
+        if(WASM_DEBUG_ADD_SEGMENT) ESP_LOGI("WASM3", "AddSegment: Can access segment structure");
+
+        // Allocare i dati del segmento
+        seg->data = m3_Def_Malloc(memory->segment_size);
+        if (!seg->data) {            
+            goto backToOriginal;
+        }
+        
+        seg->is_allocated = true;
+        seg->size = memory->segment_size;
+        memory->total_size += memory->segment_size;
+        
+        return NULL;
+
+        backToOriginal:
+
+        for(; new_idx >= original_num_segments; new_idx--){
+            MemorySegment* seg = memory->segments[new_idx];
+            m3_Def_Free(seg);
+        }
+
         return m3Err_mallocFailed;
     }
-    
-    seg->is_allocated = true;
-    seg->size = memory->segment_size;
-    memory->total_size += memory->segment_size;
-    
-    return NULL;
 }
 
 // Funzione per trovare segmento e offset di un indirizzo
@@ -270,7 +283,7 @@ u8* m3SegmentedMemAccess(IM3Memory mem, iptr offset, size_t size)
     // Alloca tutti i segmenti necessari se non sono già allocati
     for (size_t i = segment_index; i <= end_segment; i++) {
         if (!mem->segments[i]->is_allocated) {
-            if (!allocate_segment(mem, i)) {
+            if (!allocate_segment_data(mem, i)) {
                 ESP_LOGE("WASM3", "Failed to allocate segment %zu on access", i);
                 return NULL;
             }
@@ -448,15 +461,10 @@ MemoryRegion* allocate_region(M3Memory* memory, size_t size) {
             
             if (continuous_segments >= required_segments) {
                 // Found enough continuous segments
-                for (size_t j = 0; j < required_segments; j++) {
-                    if (!allocate_segment(memory, start_segment + j)) {
-                        // Rollback previous allocations on failure
-                        while (j > 0) {
-                            j--;
-                            memory->segments[start_segment + j]->is_allocated = false;
-                        }
-                        return NULL;
-                    }
+                M3Result res = AddSegment(segment, required_segments);
+                if(res != NULL){
+                    ESP_LOGE("WASM3", "Failed to add segment: %s", m3ResultToString(res));
+                    return NULL;
                 }
                 
                 // Create new region

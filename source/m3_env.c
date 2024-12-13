@@ -576,7 +576,7 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
         // Alloca segmenti iniziali
         for (size_t i = 0; i < num_segments; i++) {
             if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "InitMemory: AddSegment");
-            result = AddSegment(&io_runtime->memory);
+            result = AddSegment(&io_runtime->memory, 0);
             if (result) {
                 ESP_LOGE("WASM3", "InitMemory: AddSegment failed");
                 // Cleanup in caso di errore
