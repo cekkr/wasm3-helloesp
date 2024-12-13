@@ -49,7 +49,7 @@ bool allocate_segment(M3Memory* memory, size_t segment_index) {
 
     if (WASM_DEBUG_SEGMENTED_MEM_MAN) {
         ESP_LOGI("WASM3", "allocate_segment: Allocating segment %zu of size %zu", segment_index, memory->segment_size);
-        ESPI_LOGI("WASM3", "allocate_segment: flush");
+        ESP_LOGI("WASM3", "allocate_segment: flush");
     }
 
     MemorySegment* segment = memory->segments[segment_index];
