@@ -306,6 +306,26 @@ void  Runtime_Release  (IM3Runtime i_runtime)
     m3_FreeMemory (memory_ptr);
 }
 
+static const int DEBUG_TOP_MEMORY = 1;
+void FreeMemory(IM3Memory memory) {
+    if(DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory called");
+
+    if (memory->segments) {
+        // Libera la memoria di ogni segmento allocato
+        for (size_t i = 0; i < memory->num_segments; i++) {
+            if (memory->segments[i].is_allocated && memory->segments[i].data) {
+                m3_Int_Free(memory->segments[i].data);
+            }
+        }
+        // Libera l'array dei segmenti
+        m3_Int_Free(memory->segments);
+        memory->segments = NULL;
+        memory->num_segments = 0;
+    }
+
+    //memory->numPages = 0;
+    memory->maxPages = 0;
+}
 
 void  m3_FreeRuntime  (IM3Runtime i_runtime)
 {
@@ -314,7 +334,7 @@ void  m3_FreeRuntime  (IM3Runtime i_runtime)
         m3_PrintProfilerInfo ();
 
         Runtime_Release (i_runtime);
-        m3_Int_Free (i_runtime);
+        FreeMemory (i_runtime);
     }
 }
 
@@ -408,8 +428,6 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
 ///
 ///
 
-static const int DEBUG_TOP_MEMORY = 1;
-
 M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
     if (!io_runtime) return m3Err_nullRuntime;
     
@@ -500,29 +518,6 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
     }
 
     return m3Err_none;
-}
-
-
-void FreeMemory(IM3Runtime io_runtime) {
-    if(DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory called");
-    
-    M3Memory* memory = &io_runtime->memory;
-
-    if (memory->segments) {
-        // Libera la memoria di ogni segmento allocato
-        for (size_t i = 0; i < memory->num_segments; i++) {
-            if (memory->segments[i].is_allocated && memory->segments[i].data) {
-                m3_Free_Impl(memory->segments[i].data, false);
-            }
-        }
-        // Libera l'array dei segmenti
-        m3_Free_Impl(memory->segments, false);
-        memory->segments = NULL;
-        memory->num_segments = 0;
-    }
-
-    //memory->numPages = 0;
-    memory->maxPages = 0;
 }
 
 // Memory initialization M3Runtime - M3Module

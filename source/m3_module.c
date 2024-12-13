@@ -92,7 +92,7 @@ _try {
             ESP_LOGI("WASM", "PreallocFunctions: first time module->functions allocation");
         }
 
-        io_module->functions = m3_Int_ReallocArray (M3Function, io_module->functions, i_totalFunctions, io_module->allFunctions);
+        io_module->functions = m3_ReallocArray (&io_module->runtime->memory, io_module->functions, M3Function, i_totalFunctions);
         io_module->allFunctions = i_totalFunctions;
 
         if(WASM_DEBUG_PREALLOCFUNCTIONS) ESP_LOGI("WASM", "PreallocFunctions: allFunctions updated to %lu", io_module->allFunctions);

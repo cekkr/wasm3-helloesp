@@ -11,6 +11,7 @@
 #include "m3_code.h"
 #include "m3_compile.h"
 #include "m3_function.h"
+#include "m3_pointers.h"
 
 d_m3BeginExternC
 

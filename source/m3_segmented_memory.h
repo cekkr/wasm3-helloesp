@@ -5,7 +5,7 @@
 
 #include "wasm3.h"
 #include "m3_exception.h"
-#include "m3_pointers.h"
+//#include "m3_pointers.h"
 
 #include "esp_heap_caps.h"
 
@@ -85,6 +85,8 @@ static void* GetMemorySegment(IM3Memory memory, u32 offset);
 
 bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size);
 u8* GetSegmentPtr(IM3Memory memory, u64 offset, u32 size);
+
+u8* m3SegmentedMemAccess(IM3Memory mem, iptr offset, size_t size);
 
 /// Regions
 void* m3_malloc(M3Memory* memory, size_t size);

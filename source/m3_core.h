@@ -15,7 +15,6 @@
 
 #include "wasm3.h"
 #include "m3_config.h"
-#include "m3_pointers.h"
 #include "m3_exception.h"
 #include "m3_segmented_memory.h"
 
@@ -130,22 +129,9 @@ static inline void * m3_Realloc (ccstr_t name, void * i_ptr, size_t i_newSize, s
     return result;
 }
 
-#define     m3_AllocStruct(STRUCT)                  (STRUCT *)m3_AllocStruct_Impl  (#STRUCT, sizeof (STRUCT))
-#define     m3_AllocArray(STRUCT, NUM)              (STRUCT *)m3_AllocArray_Impl   (#STRUCT, NUM, sizeof (STRUCT))
-#define     m3_ReallocArray(STRUCT, PTR, NEW, OLD)  (STRUCT *)m3_ReallocArray_Impl (#STRUCT, (void *)(PTR), (NEW), (OLD), sizeof (STRUCT))
-#define     m3_Free(P)                              do { void* p = (void*)(P);                                  \
-                                                        if (p) { fprintf(stderr, PRIts ";heap:FreeMem;;;;%p;\n", m3_GetTimestamp(), p); }     \
-                                                        m3_Free_Impl (p); (P) = NULL; } while(0)
-#else
-#define     m3_Malloc(NAME, SIZE)                   m3_Malloc_Impl(SIZE)
-#define     m3_Realloc(NAME, PTR, NEW, OLD)         m3_Realloc_Impl(PTR, NEW, OLD)
-#define     m3_AllocStruct(STRUCT)                  (STRUCT *)m3_Malloc_Impl (sizeof (STRUCT))
-#define     m3_AllocArray(STRUCT, NUM)              (STRUCT *)m3_Malloc_Impl (sizeof (STRUCT) * (NUM))
-#define     m3_ReallocArray(STRUCT, PTR, NEW, OLD)  (STRUCT *)m3_Realloc_Impl ((void *)(PTR), sizeof (STRUCT) * (NEW), sizeof (STRUCT) * (OLD))
-//#define     m3_Free(P)                              do { m3_Free_Impl ((void*)(P)); (P) = NULL; } while(0)
-#define     m3_Free(P)                              do { m3_Free_Impl((void*)(P), false); (P) = NULL; } while(0)
-#define     m3_FreeMemory(P)                        do { m3_Free_Impl((void*)(P), true); (P) = NULL; } while(0)
 #endif
+// there was an #else statement
+
 
 M3Result    NormalizeType           (u8 * o_type, i8 i_convolutedWasmType);
 

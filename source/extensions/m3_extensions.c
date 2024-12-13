@@ -17,7 +17,7 @@
 
 IM3Module  m3_NewModule  (IM3Environment i_environment)
 {
-    IM3Module module = m3_AllocStruct (M3Module);
+    IM3Module module = m3_Int_AllocStruct (M3Module);
 
     if (module)
     {
@@ -66,7 +66,7 @@ _   (ReadLEB_u32 (& size, & bytes, end));
     {
         // add slot to function type table in the module
         u32 funcTypeIndex = i_module->numFuncTypes++;
-        i_module->funcTypes = m3_ReallocArray (IM3FuncType, i_module->funcTypes, i_module->numFuncTypes, funcTypeIndex);
+        i_module->funcTypes = m3_ReallocArray (&i_module->runtime->memory, i_module->funcTypes, IM3FuncType, funcTypeIndex);
         _throwifnull (i_module->funcTypes);
 
         // add functype object to the environment
@@ -101,7 +101,7 @@ _       (Module_AddFunction (i_module, funcTypeIndex, NULL));
 _   (CompileFunction (function));
 
     _catch:
-    m3_Free (ftype);
+    m3_Int_Free (ftype);
 
     return result;
 }

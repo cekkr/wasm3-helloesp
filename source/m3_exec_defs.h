@@ -23,47 +23,6 @@ d_m3BeginExternC
 /// Segmented memory management
 ///
 
-static bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
-
-static u8* m3SegmentedMemAccess(IM3Memory mem, iptr offset, size_t size) 
-{
-    if(mem == NULL){
-        ESP_LOGE("WASM3", "m3SegmentedMemAccess called with null memory pointer");     
-        backtrace();
-        return NULL;
-    }
-
-    if(WASM_DEBUG_SEGMENTED_MEM_ACCESS){ 
-        ESP_LOGI("WASM3", "m3SegmentedMemAccess call");         
-        ESP_LOGI("WASM3", "m3SegmentedMemAccess: mem = %p", (void*)mem);
-        ESP_LOGI("WASM3", "m3SegmentedMemAccess: well... I'm going to crash!");    
-    }
-
-    // Verifica che l'accesso sia nei limiti della memoria totale
-    if (mem->total_size > 0 && offset + size > mem->total_size) 
-        return NULL;
-
-    size_t segment_index = offset / mem->segment_size;
-    size_t segment_offset = offset % mem->segment_size;
-    
-    // Verifica se stiamo accedendo attraverso più segmenti
-    size_t end_segment = (offset + size - 1) / mem->segment_size;
-    
-    // Alloca tutti i segmenti necessari se non sono già allocati
-    for (size_t i = segment_index; i <= end_segment; i++) {
-        if (!mem->segments[i].is_allocated) {
-            if (!allocate_segment(mem, i)) {
-                ESP_LOGE("WASM3", "Failed to allocate segment %zu on access", i);
-                return NULL;
-            }
-            if(WASM_DEBUG_SEGMENTED_MEM_ACCESS) ESP_LOGI("WASM3", "Lazy allocated segment %zu on access", i);
-        }
-    }
-    
-    // Ora possiamo essere sicuri che il segmento è allocato
-    return ((u8*)mem->segments[segment_index].data) + segment_offset;
-}
-
 // Deprecated: direct memory access impossible with segmentation
 //# define m3MemData(mem)                 m3SegmentedMemAccess((M3Memory*)(mem), 0, ((M3Memory*)(mem))->total_size)
 

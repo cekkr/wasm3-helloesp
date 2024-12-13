@@ -78,7 +78,7 @@ void  FreeCodePages  (IM3CodePage * io_list)
 #if d_m3RecordBacktraces
         m3_Free (page->info.mapping);
 #endif // d_m3RecordBacktraces
-        m3_Free (page);
+        m3_Int_Free (page);
         page = next;
     }
 

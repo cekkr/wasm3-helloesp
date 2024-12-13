@@ -2,6 +2,7 @@
 
 #include "m3_segmented_memory.h"
 #include "m3_exception.h"
+#include "m3_core.h"
 
 ///
 /// Pointer validation
@@ -52,11 +53,23 @@ ptr_status_t validate_ptr_for_free(const void* ptr);
 ///
 
 #define     m3_Int_Malloc(NAME, SIZE)                   default_malloc(SIZE)
-//#define     m3_Int_Malloc(SIZE)                         default_malloc(SIZE)
-#define     m3_Int_Realloc(NAME, PTR, NEW, OLD)         default_realloc(PTR, NEW, OLD)
-//#define     m3_Int_Realloc(PTR, NEW, OLD)               default_realloc(PTR, NEW, OLD)
+#define     m3_Int_Realloc(NAME, PTR, NEW, OLD)         default_realloc(PTR, NEW)
 #define     m3_Int_AllocStruct(STRUCT)                  (STRUCT *)default_malloc (sizeof (STRUCT))
 #define     m3_Int_AllocArray(STRUCT, NUM)              (STRUCT *)default_malloc (sizeof (STRUCT) * (NUM))
 #define     m3_Int_ReallocArray(STRUCT, PTR, NEW, OLD)  (STRUCT *)default_realloc ((void *)(PTR), sizeof (STRUCT) * (NEW)) // , sizeof (STRUCT) * (OLD)
-#define     m3_Int_Free(P)                              do { default_free((void*)(P)); (P) = NULL; } while(0)
+#define     m3_Int_Free(P)                              default_free(P)
 
+/*#define     m3_AllocStruct(STRUCT)                  (STRUCT *)m3_AllocStruct_Impl  (#STRUCT, sizeof (STRUCT))
+#define     m3_AllocArray(STRUCT, NUM)              (STRUCT *)m3_AllocArray_Impl   (#STRUCT, NUM, sizeof (STRUCT))
+#define     m3_ReallocArray(STRUCT, PTR, NEW, OLD)  (STRUCT *)m3_ReallocArray_Impl (#STRUCT, (void *)(PTR), (NEW), (OLD), sizeof (STRUCT))
+#define     m3_Free(P)                              do { void* p = (void*)(P);                                  \
+                                                        if (p) { fprintf(stderr, PRIts ";heap:FreeMem;;;;%p;\n", m3_GetTimestamp(), p); }     \
+                                                        m3_Free_Impl (p); (P) = NULL; } while(0)*/
+
+#define     m3_Malloc(MEM, SIZE)                   m3_malloc(MEM, SIZE)
+#define     m3_Realloc(MEM, PTR, NEW)               m3_realloc(MEM, PTR, NEW)
+#define     m3_AllocStruct(MEM, STRUCT)                  (STRUCT *)m3_malloc (sizeof (STRUCT))
+#define     m3_AllocArray(MEM, PTR, STRUCT, NUM)              (STRUCT *)m3_malloc (sizeof (STRUCT) * (NUM))
+#define     m3_ReallocArray(MEM, PTR, STRUCT, NEW)      ((STRUCT *)m3_realloc (MEM, PTR, sizeof (STRUCT) * (NEW)))
+#define     m3_Free(MEM, PTR)                              m3_free(MEM, PTR)
+//#define     m3_FreeMemory(P)                        do { m3_free((void*)(P), true); (P) = NULL; } while(0) 
