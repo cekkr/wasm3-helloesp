@@ -133,6 +133,7 @@ void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
 static const int ALLOC_SHIFT_OF = 0; // 4
 static const bool WASM_DEBUG_ALLOCS = false;
 static const bool CHECK_MEMORY_AVAILABLE = false;
+static const bool DEFAULT_ALLOC_ALIGNMENT = false;
 
 void* default_malloc(size_t size) {
     if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_malloc called size: %u", size);
@@ -142,17 +143,19 @@ void* default_malloc(size_t size) {
             print_memory_info();
         }
 
-        void* ptr = WASM_ENABLE_SPI_MEM ? heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
+        size_t aligned_size = DEFAULT_ALLOC_ALIGNMENT ? (size + 7) & ~7 : size; 
+
+        void* ptr = WASM_ENABLE_SPI_MEM ? heap_caps_malloc(aligned_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
         if (ptr == NULL) {
-            ptr = heap_caps_malloc(size + ALLOC_SHIFT_OF, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL); // | MALLOC_CAP_INTERNAL
+            ptr = heap_caps_malloc(aligned_size + ALLOC_SHIFT_OF, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL); // | MALLOC_CAP_INTERNAL
 
             if (ptr) {
-                memset(ptr, 0, size + ALLOC_SHIFT_OF);  // Zero-fill con padding
+                memset(ptr, 0, aligned_size + ALLOC_SHIFT_OF);  // Zero-fill con padding
             }
         }
 
         if(ptr == NULL){
-            ESP_LOGE("WASM3", "Failed to allocate memory of size %d", size);
+            ESP_LOGE("WASM3", "Failed to allocate memory of size %d", aligned_size);
             esp_backtrace_print(100);
         }
 
@@ -201,28 +204,30 @@ static const bool REALLOC_USE_MALLOC_IF_NEW = false;
 void* default_realloc(void* ptr, size_t new_size) {
     if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_realloc called for %p (size: %u)", ptr, new_size);
 
+    size_t aligned_size = DEFAULT_ALLOC_ALIGNMENT ? (size + 7) & ~7 : size; 
+
     TRY {
         if((!ptr) || !ultra_safe_ptr_valid(ptr)){
-            ptr = default_malloc(new_size);
+            ptr = default_malloc(aligned_size);
             return ptr;
         }
 
-        void* new_ptr = WASM_ENABLE_SPI_MEM ? heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
+        void* new_ptr = WASM_ENABLE_SPI_MEM ? heap_caps_realloc(ptr, aligned_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
         if (new_ptr == NULL) {
             if(REALLOC_USE_MALLOC_IF_NEW && ptr == NULL){
-                new_ptr = default_malloc(new_size);
+                new_ptr = default_malloc(aligned_size);
             }
             else {
-                new_ptr = heap_caps_realloc(ptr, new_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL); //  
+                new_ptr = heap_caps_realloc(ptr, aligned_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL); //  
             }
 
             if(new_ptr) {
-                memset(new_ptr, 0, new_size);
+                memset(new_ptr, 0, aligned_size);
             }
         }
 
         if (new_ptr == NULL){
-            ESP_LOGE("WASM3", "Failed to reallocate memory of size %zu", new_size);
+            ESP_LOGE("WASM3", "Failed to reallocate memory of size %zu", aligned_size);
             //esp_backtrace_print(100);
         }
 
