@@ -131,7 +131,7 @@ void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
 // Allocatore di default che usa heap_caps
 //static const int WASM_ENABLE_SPI_MEM = 0;
 static const int ALLOC_SHIFT_OF = 0; // 4
-static const bool WASM_DEBUG_ALLOCS = true;
+static const bool WASM_DEBUG_ALLOCS = false;
 static const bool CHECK_MEMORY_AVAILABLE = false;
 static const bool DEFAULT_ALLOC_ALIGNMENT = false;
 
