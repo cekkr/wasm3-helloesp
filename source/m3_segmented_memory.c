@@ -176,6 +176,7 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
 }*/
 
 // Funzione per aggiungere un nuovo segmento
+const bool WASM_DEBUG_ADD_SEGMENT = true;
 M3Result AddSegment(M3Memory* memory) {
     size_t new_size = (memory->num_segments + 1) * sizeof(MemorySegment);
     MemorySegment* new_segments = m3_Def_Realloc(memory->segments, new_size);
@@ -184,6 +185,9 @@ M3Result AddSegment(M3Memory* memory) {
     memory->segments = new_segments;
     
     size_t new_idx = memory->num_segments;
+
+    if(WASM_DEBUG_ADD_SEGMENT) ESP_LOGI("WASM3", "AddSegment: new_idx = %lx", new_idx);
+
     memory->segments[new_idx].data = m3_Def_Malloc(memory->segment_size);
     if (!memory->segments[new_idx].data) return m3Err_mallocFailed;
     

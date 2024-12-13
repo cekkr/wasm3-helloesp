@@ -121,7 +121,7 @@ void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
     }
 
     /// Old implementation
-    void * ptr = m3_Malloc("CopyMem", i_size);
+    void * ptr = m3_Def_Malloc(i_size);
     if (ptr) {
         memcpy (ptr, i_from, i_size);
     }

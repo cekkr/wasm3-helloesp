@@ -532,9 +532,10 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
 }
 
 // Memory initialization M3Runtime - M3Module
-//const bool WASM_DEBUG_INIT_MEMORY = true;
+const bool WASM_DEBUG_INIT_MEMORY = true;
 M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .h
 {
+    if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "InitMemory called");
     M3Result result = m3Err_none;
 
     if (not i_module->memoryImported)
@@ -554,6 +555,7 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
         size_t num_segments = (initial_size + io_runtime->memory.segment_size - 1) / io_runtime->memory.segment_size;
         
         // Alloca array dei segmenti
+        if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "InitMemory: Malloc MemorySegment");
         io_runtime->memory.segments = m3_Def_Malloc(num_segments * sizeof(MemorySegment));
         if (!io_runtime->memory.segments)
             return m3Err_mallocFailed;
@@ -565,14 +567,19 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
         
         // Alloca segmenti iniziali
         for (size_t i = 0; i < num_segments; i++) {
+            if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "InitMemory: AddSegment");
             result = AddSegment(&io_runtime->memory);
             if (result) {
+                ESP_LOGE("WASM3", "InitMemory: AddSegment failed");
                 // Cleanup in caso di errore
                 for (size_t j = 0; j < io_runtime->memory.num_segments; j++) {
                     if (io_runtime->memory.segments[j].is_allocated) {
+                        if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "InitMemory: free segment data");
                         m3_Def_Free(io_runtime->memory.segments[j].data);
                     }
                 }
+
+                if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "InitMemory: free segments");
                 m3_Def_Free(io_runtime->memory.segments);
                 return result;
             }
