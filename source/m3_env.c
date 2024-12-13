@@ -303,8 +303,8 @@ void FreeMemory(IM3Memory memory) {
     if (memory->segments) {
         // Libera la memoria di ogni segmento allocato
         for (size_t i = 0; i < memory->num_segments; i++) {
-            if (memory->segments[i].is_allocated && memory->segments[i].data) {
-                m3_Def_Free(memory->segments[i].data);
+            if (memory->segments[i]->is_allocated && memory->segments[i]->data) {
+                m3_Def_Free(memory->segments[i]->data);
             }
         }
         // Libera l'array dei segmenti
@@ -480,9 +480,9 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
         
         // Initialize new segments
         for (size_t i = 0; i < new_num_segments; i++) {
-            memory->segments[i].data = NULL;
-            memory->segments[i].is_allocated = false;
-            memory->segments[i].size = memory->segment_size;
+            memory->segments[i]->data = NULL;
+            memory->segments[i]->is_allocated = false;
+            memory->segments[i]->size = memory->segment_size;
         }
     }
     // Handle resize
@@ -502,17 +502,17 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
         if (new_num_segments > memory->num_segments) {
             // Initialize new segments
             for (size_t i = memory->num_segments; i < new_num_segments; i++) {
-                memory->segments[i].data = NULL;
-                memory->segments[i].is_allocated = false;
-                memory->segments[i].size = memory->segment_size;
+                memory->segments[i]->data = NULL;
+                memory->segments[i]->is_allocated = false;
+                memory->segments[i]->size = memory->segment_size;
             }
         } else {
             // Free memory from removed segments
             for (size_t i = new_num_segments; i < memory->num_segments; i++) {
-                if (memory->segments[i].is_allocated && memory->segments[i].data) {
-                    current_allocator->free(memory->segments[i].data);
-                    memory->segments[i].is_allocated = false;
-                    memory->segments[i].data = NULL;
+                if (memory->segments[i]->is_allocated && memory->segments[i]->data) {
+                    current_allocator->free(memory->segments[i]->data);
+                    memory->segments[i]->is_allocated = false;
+                    memory->segments[i]->data = NULL;
                 }
             }
         }
@@ -524,8 +524,8 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
     memory->total_size = newPageBytes;
 
     // Reset current pointer if needed
-    if (!memory->current_ptr && memory->segments[0].data) {
-        memory->current_ptr = memory->segments[0].data;
+    if (!memory->current_ptr && memory->segments[0]->data) {
+        memory->current_ptr = memory->segments[0]->data;
     }
 
     return m3Err_none;
@@ -573,9 +573,9 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
                 ESP_LOGE("WASM3", "InitMemory: AddSegment failed");
                 // Cleanup in caso di errore
                 for (size_t j = 0; j < io_runtime->memory.num_segments; j++) {
-                    if (io_runtime->memory.segments[j].is_allocated) {
+                    if (io_runtime->memory.segments[j]->is_allocated) {
                         if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "InitMemory: free segment data");
-                        m3_Def_Free(io_runtime->memory.segments[j].data);
+                        m3_Def_Free(io_runtime->memory.segments[j]->data);
                     }
                 }
 
@@ -585,7 +585,7 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
             }
         }
         
-        io_runtime->memory.current_ptr = io_runtime->memory.segments[0].data;
+        io_runtime->memory.current_ptr = io_runtime->memory.segments[0]->data;
 
         init_region_manager(&io_runtime->memory.region_mgr, WASM_M3MEMORY_REGION_MIN_SIZE);
     }
@@ -669,7 +669,7 @@ _       (EvaluateExpression(io_module, &segmentOffset, c_m3Type_i32, &start,
             // Alloca tutti i segmenti necessari se non sono già allocati
             for (size_t seg = start_segment; seg <= end_segment; seg++)
             {
-                if (!io_memory->segments[seg].is_allocated) {
+                if (!io_memory->segments[seg]->is_allocated) {
                     if (!allocate_segment(io_memory, seg)) {
                         _throw("failed to allocate memory segment");
                     }
@@ -690,7 +690,7 @@ _       (EvaluateExpression(io_module, &segmentOffset, c_m3Type_i32, &start,
                     io_memory->segment_size - segment_offset
                 );
                 
-                u8* dest = ((u8*)io_memory->segments[current_segment].data) + segment_offset;
+                u8* dest = ((u8*)io_memory->segments[current_segment]->data) + segment_offset;
                 memcpy(dest, segment->data + src_offset, bytes_to_copy);
                 
                 remaining -= bytes_to_copy;
@@ -1484,30 +1484,30 @@ uint8_t* m3_GetMemory(IM3Runtime i_runtime, uint32_t* o_memorySizeInBytes, uint3
                 for (size_t i = 0; i < i_runtime->memory.num_segments; i++)
                 {
                     // Alloca il segmento se non è già allocato
-                    if (!i_runtime->memory.segments[i].is_allocated)
+                    if (!i_runtime->memory.segments[i]->is_allocated)
                     {
                         //size_t seg_size = (i == i_runtime->memory.num_segments - 1) ? (size - (i * i_runtime->memory.segment_size)) :  i_runtime->memory.segment_size;
                         size_t seg_size = i_runtime->memory.segment_size;
 
-                        i_runtime->memory.segments[i].data = current_allocator->malloc(seg_size);
-                        if (!i_runtime->memory.segments[i].data)
+                        i_runtime->memory.segments[i]->data = current_allocator->malloc(seg_size);
+                        if (!i_runtime->memory.segments[i]->data)
                         {
                             // Fallimento: libera tutto e ritorna NULL
                             for (size_t j = 0; j < i; j++) {
-                                current_allocator->free(i_runtime->memory.segments[j].data);
+                                current_allocator->free(i_runtime->memory.segments[j]->data);
                             }
                             current_allocator->free(memory);
                             return NULL;
                         }
-                        i_runtime->memory.segments[i].is_allocated = true;
-                        //i_runtime->memory.segments[i].size = seg_size;
-                        memset(i_runtime->memory.segments[i].data, 0, seg_size);
+                        i_runtime->memory.segments[i]->is_allocated = true;
+                        //i_runtime->memory.segments[i]->size = seg_size;
+                        memset(i_runtime->memory.segments[i]->data, 0, seg_size);
                     }
                     
                     // Copia i dati dal segmento al blocco contiguo
                     size_t offset = i * i_runtime->memory.segment_size;
                     memcpy(memory + offset, 
-                           i_runtime->memory.segments[i].data,
+                           i_runtime->memory.segments[i]->data,
                            i_runtime->memory.segment_size);
                 }
             }

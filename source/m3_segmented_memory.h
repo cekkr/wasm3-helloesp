@@ -46,7 +46,7 @@ typedef struct M3Memory_t {
     u32 pageSize;
 
     // Segmentation
-    MemorySegment* segments;    // Array of segments
+    MemorySegment** segments;    // Array of segments
     size_t num_segments;        // Current number of segments
     size_t total_size;         // Current total size
     size_t max_size;           // Maximum allowed size

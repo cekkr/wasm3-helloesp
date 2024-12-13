@@ -58,7 +58,7 @@ bool allocate_segment(M3Memory* memory, size_t segment_index) {
     }
 
     // Se il segmento è già allocato, restituisci true
-    if (memory->segments[segment_index].is_allocated) {
+    if (memory->segments[segment_index]->is_allocated) {
         return true;
     }
 
@@ -89,8 +89,8 @@ bool allocate_segment(M3Memory* memory, size_t segment_index) {
         // Inizializza il segmento con zeri
         memset(ptr, 0, memory->segment_size);
         
-        memory->segments[segment_index].data = ptr;
-        memory->segments[segment_index].is_allocated = true;
+        memory->segments[segment_index]->data = ptr;
+        memory->segments[segment_index]->is_allocated = true;
         
         if (WASM_DEBUG_SEGMENTED_MEM_MAN) {
             ESP_LOGI("WASM3", "Segment %zu successfully allocated", segment_index);
@@ -106,8 +106,8 @@ void* GetMemorySegment(IM3Memory memory, u32 offset)
 {
     size_t segment_index = offset / memory->segment_size;
     size_t segment_offset = offset % memory->segment_size;
-    MemorySegment segment = memory->segments[segment_index];
-    return (u8*)segment.data + segment_offset;
+    MemorySegment* segment = memory->segments[segment_index];
+    return (u8*)segment->data + segment_offset;
 }
 
 bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size)
@@ -121,13 +121,13 @@ u8* GetSegmentPtr(IM3Memory memory, u64 offset, u32 size)
     size_t segment_offset = offset % memory->segment_size;
     
     if (M3_UNLIKELY(segment_index >= memory->num_segments ||
-                    !memory->segments[segment_index].is_allocated ||
+                    !memory->segments[segment_index]->is_allocated ||
                     segment_offset + size > memory->segment_size))
     {
         return NULL;
     }
     
-    return ((u8*)memory->segments[segment_index].data) + segment_offset;
+    return ((u8*)memory->segments[segment_index]->data) + segment_offset;
 }
 
 M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
@@ -156,7 +156,7 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
     
     // Aggiorna il current_ptr se non ancora inizializzato
     if (!memory->current_ptr && memory->num_segments > 0) {
-        memory->current_ptr = memory->segments[0].data;
+        memory->current_ptr = memory->segments[0]->data;
     }
     
     return NULL;
@@ -179,26 +179,33 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
 const bool WASM_DEBUG_ADD_SEGMENT = true;
 M3Result AddSegment(M3Memory* memory) {
     size_t new_idx = memory->num_segments++;
-    size_t new_size = (memory->num_segments) * sizeof(MemorySegment);
-    MemorySegment* new_segments = m3_Def_Realloc(memory->segments, new_size);
-    if (!new_segments) return m3Err_mallocFailed;
+    size_t new_size = (memory->num_segments) * sizeof(MemorySegment*);
     
+    // Riallocare l'array di puntatori
+    MemorySegment** new_segments = m3_Def_Realloc(memory->segments, new_size);
+    if (!new_segments) {
+        memory->num_segments--;
+        return m3Err_mallocFailed;
+    }
     memory->segments = new_segments;
-        
-    if(WASM_DEBUG_ADD_SEGMENT) {
-        ESP_LOGI("WASM3", "AddSegment: new_idx = %d", new_idx);
-        ESP_LOGI("WASM3", "AddSegment: new_size = %d", new_size);
-        ESP_LOGI("WASM3", "AddSegment: memory->segment_size = %d", memory->segment_size);
-        ESP_LOGI("WASM3", "AddSegment: FLUSH");
+    
+    // Allocare la nuova struttura MemorySegment
+    memory->segments[new_idx] = m3_Def_Malloc(sizeof(MemorySegment));
+    if (!memory->segments[new_idx]) {
+        memory->num_segments--;
+        return m3Err_mallocFailed;
     }
     
-    memset(&memory->segments[new_idx], 0, sizeof(MemorySegment));
-
-    memory->segments[new_idx].data = m3_Def_Malloc(memory->segment_size);
-    if (!memory->segments[new_idx].data) return m3Err_mallocFailed;
+    // Allocare i dati del segmento
+    memory->segments[new_idx]->data = m3_Def_Malloc(memory->segment_size);
+    if (!memory->segments[new_idx]->data) {
+        m3_Def_Free(memory->segments[new_idx]);
+        memory->num_segments--;
+        return m3Err_mallocFailed;
+    }
     
-    memory->segments[new_idx].is_allocated = true;
-    memory->segments[new_idx].size = memory->segment_size;
+    memory->segments[new_idx]->is_allocated = true;
+    memory->segments[new_idx]->size = memory->segment_size;
     memory->total_size += memory->segment_size;
     
     return NULL;
@@ -207,10 +214,10 @@ M3Result AddSegment(M3Memory* memory) {
 // Funzione per trovare segmento e offset di un indirizzo
 bool GetSegmentAndOffset(M3Memory* memory, u8* addr, size_t* seg_idx, size_t* offset) {
     for (size_t i = 0; i < memory->num_segments; i++) {
-        if (!memory->segments[i].is_allocated) continue;
+        if (!memory->segments[i]->is_allocated) continue;
         
-        u8* seg_start = memory->segments[i].data;
-        u8* seg_end = seg_start + memory->segments[i].size;
+        u8* seg_start = memory->segments[i]->data;
+        u8* seg_end = seg_start + memory->segments[i]->size;
         
         if (addr >= seg_start && addr < seg_end) {
             *seg_idx = i;
@@ -233,12 +240,12 @@ u8* GetEffectiveAddress(M3Memory* memory, size_t offset) {
     size_t segment_offset = offset % memory->segment_size;
     
     if (segment_idx >= memory->num_segments || 
-        !memory->segments[segment_idx].is_allocated ||
-        segment_offset >= memory->segments[segment_idx].size) {
+        !memory->segments[segment_idx]->is_allocated ||
+        segment_offset >= memory->segments[segment_idx]->size) {
         return NULL;
     }
     
-    return (u8*)memory->segments[segment_idx].data + segment_offset;
+    return (u8*)memory->segments[segment_idx]->data + segment_offset;
 }
 
 const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
@@ -271,7 +278,7 @@ u8* m3SegmentedMemAccess(IM3Memory mem, iptr offset, size_t size)
     
     // Alloca tutti i segmenti necessari se non sono già allocati
     for (size_t i = segment_index; i <= end_segment; i++) {
-        if (!mem->segments[i].is_allocated) {
+        if (!mem->segments[i]->is_allocated) {
             if (!allocate_segment(mem, i)) {
                 ESP_LOGE("WASM3", "Failed to allocate segment %zu on access", i);
                 return NULL;
@@ -281,7 +288,7 @@ u8* m3SegmentedMemAccess(IM3Memory mem, iptr offset, size_t size)
     }
     
     // Ora possiamo essere sicuri che il segmento è allocato
-    return ((u8*)mem->segments[segment_index].data) + segment_offset;
+    return ((u8*)mem->segments[segment_index]->data) + segment_offset;
 }
 
 ///
@@ -393,8 +400,8 @@ void m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
     
     while (n > 0) {
         // Calculate current segment boundaries
-        size_t src_offset = (size_t)s - (size_t)memory->segments[0].data;
-        size_t dest_offset = (size_t)d - (size_t)memory->segments[0].data;
+        size_t src_offset = (size_t)s - (size_t)memory->segments[0]->data;
+        size_t dest_offset = (size_t)d - (size_t)memory->segments[0]->data;
         
         // Get source and destination segments
         u8* src_ptr = m3SegmentedMemAccess(memory, src_offset, 1);
@@ -426,7 +433,7 @@ void m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
 
 // Helper to check if a region spans multiple segments
 bool is_cross_segment_region(M3Memory* memory, void* start, size_t size) {
-    size_t start_offset = (size_t)start - (size_t)memory->segments[0].data;
+    size_t start_offset = (size_t)start - (size_t)memory->segments[0]->data;
     size_t end_offset = start_offset + size - 1;
     return (start_offset / memory->segment_size) != (end_offset / memory->segment_size);
 }
@@ -441,7 +448,7 @@ MemoryRegion* allocate_region(M3Memory* memory, size_t size) {
     size_t continuous_segments = 0;
     
     for (size_t i = 0; i < memory->num_segments; i++) {
-        if (!memory->segments[i].is_allocated) {
+        if (!memory->segments[i]->is_allocated) {
             if (continuous_segments == 0) {
                 start_segment = i;
             }
@@ -454,7 +461,7 @@ MemoryRegion* allocate_region(M3Memory* memory, size_t size) {
                         // Rollback previous allocations on failure
                         while (j > 0) {
                             j--;
-                            memory->segments[start_segment + j].is_allocated = false;
+                            memory->segments[start_segment + j]->is_allocated = false;
                         }
                         return NULL;
                     }
@@ -533,7 +540,7 @@ void* m3_malloc(M3Memory* memory, size_t size) {
     MemoryRegion* region = find_free_region(&memory->region_mgr, size);
     if (region) {
         // Ensure all segments in region are loaded
-        size_t start_offset = (size_t)region->start - (size_t)memory->segments[0].data;
+        size_t start_offset = (size_t)region->start - (size_t)memory->segments[0]->data;
         for (size_t offset = 0; offset < region->size; offset += memory->segment_size) {
             if (!m3SegmentedMemAccess(memory, start_offset + offset, 1)) {
                 return NULL;
@@ -613,7 +620,7 @@ void m3_free(M3Memory* memory, void* ptr) {
     while (current) {
         if (current->start == ptr) {
             // Mark segments as unallocated if no other regions use them
-            size_t start_offset = (size_t)current->start - (size_t)memory->segments[0].data;
+            size_t start_offset = (size_t)current->start - (size_t)memory->segments[0]->data;
             size_t end_offset = start_offset + current->size;
             
             for (size_t offset = start_offset; offset < end_offset; offset += memory->segment_size) {
@@ -624,7 +631,7 @@ void m3_free(M3Memory* memory, void* ptr) {
                 MemoryRegion* other = memory->region_mgr.head;
                 while (other) {
                     if (other != current && !other->is_free) {
-                        size_t other_start = (size_t)other->start - (size_t)memory->segments[0].data;
+                        size_t other_start = (size_t)other->start - (size_t)memory->segments[0]->data;
                         size_t other_end = other_start + other->size;
                         
                         if (offset >= other_start && offset < other_end) {
@@ -636,7 +643,7 @@ void m3_free(M3Memory* memory, void* ptr) {
                 }
                 
                 if (!segment_in_use) {
-                    memory->segments[segment_index].is_allocated = false;
+                    memory->segments[segment_index]->is_allocated = false;
                 }
             }
             

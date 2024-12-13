@@ -285,8 +285,8 @@ void* m3_Malloc_Impl(size_t i_size) {
 
     // Inizializza tutti i segmenti come non allocati
     for (size_t i = 0; i < memory->num_segments; i++) {
-        memory->segments[i].data = NULL;
-        memory->segments[i].is_allocated = false;
+        memory->segments[i]->data = NULL;
+        memory->segments[i]->is_allocated = false;
         //memory->segment_size = 0; //???
     }
 
@@ -307,9 +307,9 @@ void m3_Free_Impl(void* io_ptr, bool isMemory) {
         if (memory->segments) {
             // Libera solo i segmenti effettivamente allocati
             for (size_t i = 0; i < memory->num_segments; i++) {
-                if (memory->segments[i].is_allocated && memory->segments[i].data) {
-                    if(is_ptr_freeable(&memory->segments[i].data))
-                        current_allocator->free(memory->segments[i].data);
+                if (memory->segments[i]->is_allocated && memory->segments[i]->data) {
+                    if(is_ptr_freeable(&memory->segments[i]->data))
+                        current_allocator->free(memory->segments[i]->data);
                 }
             }
 
@@ -339,24 +339,24 @@ void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize) {
 
             // Riallocare l'array dei segmenti se necessario
             if (new_num_segments != memory->num_segments) {
-                MemorySegment* new_segments = current_allocator->realloc(
+                MemorySegment** new_segments = current_allocator->realloc(
                     memory->segments,
-                    new_num_segments * sizeof(MemorySegment)
+                    new_num_segments * sizeof(MemorySegment*)
                 );
 
                 if (!new_segments) return NULL;
                 
                 // Inizializza i nuovi segmenti se stiamo crescendo
                 for (size_t i = memory->num_segments; i < new_num_segments; i++) {
-                    new_segments[i].data = NULL;
-                    new_segments[i].is_allocated = false;
+                    new_segments[i]->data = NULL;
+                    new_segments[i]->is_allocated = false;
                     //new_segments[i].size = 0;
                 }
 
                 // Libera i segmenti in eccesso se stiamo riducendo
                 for (size_t i = new_num_segments; i < memory->num_segments; i++) {
-                    if (new_segments[i].is_allocated && new_segments[i].data) {
-                        current_allocator->free(new_segments[i].data);
+                    if (new_segments[i]->is_allocated && new_segments[i]->data) {
+                        current_allocator->free(new_segments[i]->data);
                     }
                 }
 
@@ -391,15 +391,15 @@ void* m3_CopyMem(const void* i_from, size_t i_size) {
 
     // Copia solo i segmenti che sono effettivamente allocati
     for (size_t i = 0; i < src_memory->num_segments && i < dst_memory->num_segments; i++) {
-        if (src_memory->segments[i].is_allocated) {
+        if (src_memory->segments[i]->is_allocated) {
             // Alloca e copia il segmento
             if (allocate_segment(dst_memory, i)) {
                 size_t copy_size = M3_MIN(
                     src_memory->segment_size,
                     dst_memory->segment_size
                 );
-                memcpy(dst_memory->segments[i].data,
-                       src_memory->segments[i].data,
+                memcpy(dst_memory->segments[i]->data,
+                       src_memory->segments[i]->data,
                        copy_size);
             }
         }

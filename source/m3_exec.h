@@ -703,7 +703,7 @@ d_m3Op (MemGrow) //todo: convert it to new memory model
             // Alloca il nuovo array di segmenti
             MemorySegment* newSegments = current_allocator->realloc(
                 memory->segments,
-                newNumSegments * sizeof(MemorySegment)
+                newNumSegments * sizeof(MemorySegment*)
             );
             
             if (newSegments) {
@@ -759,8 +759,8 @@ d_m3Op (MemCopy)
     
     while (remaining > 0)
     {
-        if (M3_UNLIKELY(!_mem->segments[src_segment].is_allocated ||
-                        !_mem->segments[dst_segment].is_allocated))
+        if (M3_UNLIKELY(!_mem->segments[src_segment]->is_allocated ||
+                        !_mem->segments[dst_segment]->is_allocated))
         {
             return m3Err_mallocFailed;
         }
@@ -769,8 +769,8 @@ d_m3Op (MemCopy)
         size_t dst_available = _mem->segment_size - dst_offset;
         size_t copy_size = min3(remaining, src_available, dst_available);
         
-        u8* src_ptr = (u8*)_mem->segments[src_segment].data + src_offset;
-        u8* dst_ptr = (u8*)_mem->segments[dst_segment].data + dst_offset;
+        u8* src_ptr = (u8*)_mem->segments[src_segment]->data + src_offset;
+        u8* dst_ptr = (u8*)_mem->segments[dst_segment]->data + dst_offset;
         
         memmove(dst_ptr, src_ptr, copy_size);
         
@@ -806,7 +806,7 @@ d_m3Op (MemFill)
     while (remaining > 0)
     {
         // Verifica che il segmento sia allocato
-        if (M3_UNLIKELY(!_mem->segments[start_segment].is_allocated))
+        if (M3_UNLIKELY(!_mem->segments[start_segment]->is_allocated))
         {
             return m3Err_mallocFailed;
         }
@@ -816,7 +816,7 @@ d_m3Op (MemFill)
         size_t bytes_to_write = (remaining < bytes_in_segment) ? remaining : bytes_in_segment;
         
         // Esegui il fill nel segmento corrente
-        u8* segment_data = (u8*)_mem->segments[start_segment].data;
+        u8* segment_data = (u8*)_mem->segments[start_segment]->data;
         memset(segment_data + start_offset, (u8)byte, bytes_to_write);
         
         // Aggiorna i contatori
@@ -891,14 +891,14 @@ d_m3Op  (Entry)
             // realloc new segments
             memory->num_segments = end_segment;
             ESP_LOGI("WASM3", "(Entry): Going to reallocate %u memory->segments", end_segment);
-            if(current_allocator->realloc(memory->segments, memory->num_segments * sizeof(MemorySegment)) == NULL){
+            if(current_allocator->realloc(memory->segments, memory->num_segments * sizeof(MemorySegment*)) == NULL){
                 forwardTrap(error_details(m3Err_mallocFailed, "during segments realloc in (Entry)"));
                 return NULL;
             }
         }
 
         for (size_t i = start_segment; i <= end_segment; i++) {
-            if (!memory->segments[i].is_allocated) {
+            if (!memory->segments[i]->is_allocated) {
                 if (!allocate_segment(memory, i)) {
                     forwardTrap(error_details(m3Err_mallocFailed, "during allocate_segment in (Entry)"));
                     return NULL;
@@ -919,7 +919,7 @@ d_m3Op  (Entry)
             );
             
             memset(
-                ((u8*)memory->segments[seg_idx].data) + seg_offset,
+                ((u8*)memory->segments[seg_idx]->data) + seg_offset,
                 0x0,
                 bytes_to_clear
             );
@@ -945,7 +945,7 @@ d_m3Op  (Entry)
                 );
                 
                 memcpy(
-                    ((u8*)memory->segments[seg_idx].data) + seg_offset,
+                    ((u8*)memory->segments[seg_idx]->data) + seg_offset,
                     src,
                     bytes_to_copy
                 );
