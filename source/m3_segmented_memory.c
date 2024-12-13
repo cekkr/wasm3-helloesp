@@ -67,34 +67,6 @@ bool allocate_segment_data(M3Memory* memory, size_t segment_index) {
     return false;
 }
 
-void* GetMemorySegment(IM3Memory memory, u32 offset)
-{
-    size_t segment_index = offset / memory->segment_size;
-    size_t segment_offset = offset % memory->segment_size;
-    MemorySegment* segment = memory->segments[segment_index];
-    return (u8*)segment->data + segment_offset;
-}
-
-bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size)
-{
-    return (offset + size) <= memory->total_size;
-}
-
-u8* GetSegmentPtr(IM3Memory memory, u64 offset, u32 size)
-{
-    size_t segment_index = offset / memory->segment_size;
-    size_t segment_offset = offset % memory->segment_size;
-    
-    if (M3_UNLIKELY(segment_index >= memory->num_segments ||
-                    !memory->segments[segment_index]->is_allocated ||
-                    segment_offset + size > memory->segment_size))
-    {
-        return NULL;
-    }
-    
-    return ((u8*)memory->segments[segment_index]->data) + segment_offset;
-}
-
 M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
     if (!memory) return m3Err_nullMemory;
     
@@ -206,6 +178,36 @@ M3Result AddSegment(M3Memory* memory, size_t set_num_segments) {
 const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
 
 const bool WASM_DEBUG_MEM_ACCESS = true;
+void* resolve_pointer(M3Memory* memory, void* ptr) {
+    // Prima verifica che la memoria sia valida
+    if (!memory || !memory->segments || memory->num_segments == 0) {
+        return ptr;
+    }
+
+    // Calcola il range della memoria segmentata
+    void* seg_start = memory->segments[0]->data;
+    void* seg_end = memory->segments[memory->num_segments - 1]->data + memory->segment_size;
+
+    // Se il puntatore è nel range della memoria segmentata
+    if (ptr >= seg_start && ptr < seg_end) {
+        // Calcola l'offset dall'inizio della memoria segmentata
+        size_t offset = (uintptr_t)ptr - (uintptr_t)seg_start;
+        
+        // Trova il segmento corretto
+        size_t segment_index = offset / memory->segment_size;
+        size_t segment_offset = offset % memory->segment_size;
+        
+        // Verifica che il segmento sia allocato
+        if (segment_index < memory->num_segments && memory->segments[segment_index]->is_allocated) {
+            // Ritorna il puntatore effettivo nel segmento
+            return (uint8_t*)memory->segments[segment_index]->data + segment_offset;
+        }
+    }
+    
+    // Se non è nella memoria segmentata, ritorna il puntatore originale
+    return ptr;
+}
+
 u8* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size) 
 {
     u32 offset = (u32)ptr;
@@ -226,8 +228,12 @@ u8* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size)
     }
 
     // Verifica che l'accesso sia nei limiti della memoria totale
-    if (mem->total_size > 0 && offset + size > mem->total_size) 
+    if (mem->total_size > 0 && offset + size > mem->total_size){
+        ESP_LOGE("WASM3", "m3SegmentedMemAccess: requested memory exceeds total size");
         return NULL;
+    }
+
+    return resolve_pointer(mem, ptr);
 
     size_t segment_index = offset / mem->segment_size;
     size_t segment_offset = offset % mem->segment_size;
@@ -248,6 +254,11 @@ u8* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size)
     
     // Ora possiamo essere sicuri che il segmento è allocato
     return ((u8*)mem->segments[segment_index]->data) + segment_offset;
+}
+
+bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size)
+{
+    return (offset + size) <= memory->total_size;
 }
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
