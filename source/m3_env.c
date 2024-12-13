@@ -16,7 +16,7 @@ static const bool WASM_DEBUG_NEW_ENV = false;
 IM3Environment  m3_NewEnvironment  ()
 {
     if(WASM_DEBUG_NEW_ENV) ESP_LOGI("WASM3", "m3_NewEnvironment called");
-    init_globalMemory();
+    //init_globalMemory();
     if(WASM_DEBUG_NEW_ENV) ESP_LOGI("WASM3", "m3_NewEnvironment: init_globalMemory called");
 
     IM3Environment env = m3_Def_AllocStruct (M3Environment);
@@ -219,7 +219,7 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
 
     if (runtime)
     {        
-        m3_InitMemory(&runtime->memory);
+        IM3Memory memory = m3_InitMemory(&runtime->memory);
 
         m3_ResetErrorInfo(runtime);
         if(WASM_DEBUG_NEW_RUNTIME) ESP_LOGI("WASM3", "m3_NewRuntime: m3_ResetErrorInfo done");
@@ -234,7 +234,7 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
 
         /// Preparing the stack is no more necessary      
 
-        runtime->originStack = m3_Malloc (&runtime->memory, i_stackSizeInBytes + 4*sizeof (m3slot_t)); // TODO: more precise stack checks
+        runtime->originStack = m3_Malloc (memory, i_stackSizeInBytes + 4*sizeof (m3slot_t)); // TODO: more precise stack checks
         //runtime->originStack = m3_NewStack(); // (not implemented) ad hoc M3Memory for stack
         //runtime->originStack = m3_Def_Malloc (i_stackSizeInBytes + 4*sizeof (m3slot_t)); // default malloc
 
@@ -448,88 +448,8 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
     M3Memory* memory = &io_runtime->memory;
     if (!memory) return m3Err_mallocFailed;
 
-    // Validate page count
-    if (i_numPages > memory->maxPages) {
-        return m3Err_wasmMemoryOverflow;
-    }
-
-    // Calculate new size in bytes
-    size_t newPageBytes = (size_t)i_numPages * memory->pageSize;
-    if (newPageBytes / memory->pageSize != i_numPages) {
-        return m3Err_mallocFailed;  // Overflow check
-    }
-
-    #if d_m3MaxLinearMemoryPages > 0
-    if (i_numPages > d_m3MaxLinearMemoryPages) {
-        return m3Err_mallocFailed;
-    }
-    #endif
-
-    // Apply memory limit if set
-    if (io_runtime->memoryLimit && newPageBytes > io_runtime->memoryLimit) {
-        newPageBytes = io_runtime->memoryLimit;
-        i_numPages = newPageBytes / memory->pageSize;
-    }
-
-    // Calculate required segments for new size
-    size_t new_num_segments = (newPageBytes + memory->segment_size - 1) / memory->segment_size;
-    
-    // Handle initial allocation
-    if (!memory->segments) {
-        memory->segments = current_allocator->malloc(new_num_segments * sizeof(MemorySegment));
-        if (!memory->segments) {
-            return m3Err_mallocFailed;
-        }
-        
-        // Initialize new segments
-        for (size_t i = 0; i < new_num_segments; i++) {
-            memory->segments[i]->data = NULL;
-            memory->segments[i]->is_allocated = false;
-            memory->segments[i]->size = memory->segment_size;
-        }
-    }
-    // Handle resize
-    else if (new_num_segments != memory->num_segments) {
-        // Reallocate segment array
-        MemorySegment* new_segments = current_allocator->realloc(
-            memory->segments,
-            new_num_segments * sizeof(MemorySegment)
-        );
-        
-        if (!new_segments) {
-            return m3Err_mallocFailed;
-        }
-        
-        memory->segments = new_segments;
-
-        if (new_num_segments > memory->num_segments) {
-            // Initialize new segments
-            for (size_t i = memory->num_segments; i < new_num_segments; i++) {
-                memory->segments[i]->data = NULL;
-                memory->segments[i]->is_allocated = false;
-                memory->segments[i]->size = memory->segment_size;
-            }
-        } else {
-            // Free memory from removed segments
-            for (size_t i = new_num_segments; i < memory->num_segments; i++) {
-                if (memory->segments[i]->is_allocated && memory->segments[i]->data) {
-                    current_allocator->free(memory->segments[i]->data);
-                    memory->segments[i]->is_allocated = false;
-                    memory->segments[i]->data = NULL;
-                }
-            }
-        }
-    }
-
-    // Update memory metadata
-    memory->num_segments = new_num_segments;
-    //memory->numPages = i_numPages;
-    memory->total_size = newPageBytes;
-
-    // Reset current pointer if needed
-    if (!memory->current_ptr && memory->segments[0]->data) {
-        memory->current_ptr = memory->segments[0]->data;
-    }
+    // Useless function due to segmentation memory
+    ESP_LOGI("WASM3", "ResizeMemory called (%d)", i_numPages);
 
     return m3Err_none;
 }
@@ -547,56 +467,20 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
             ESP_LOGE("WASM3", "InitMemory: o_runtime->memory.segment_size == 0");
         }
 
-        //m3_InitMemory(&io_runtime->memory);
-
-        // Imposta i parametri di base della memoria
-        u32 maxPages = i_module->memoryInfo.maxPages;
-        u32 pageSize = i_module->memoryInfo.pageSize;
-        io_runtime->memory.maxPages = maxPages ? maxPages : 65536;
-        io_runtime->memory.pageSize = pageSize ? pageSize : d_m3DefaultMemPageSize;
+        m3_InitMemory(&io_runtime->memory);
         
         // Calcola dimensioni totali
-        io_runtime->memory.max_size = (size_t)io_runtime->memory.maxPages * io_runtime->memory.pageSize;
+        io_runtime->memory.max_size = 0;
         io_runtime->memory.segment_size = WASM_SEGMENT_SIZE;
         
         // Calcola numero iniziale di segmenti necessari
-        size_t initial_size = (size_t)i_module->memoryInfo.initPages * io_runtime->memory.pageSize;
+        u32 pageSize = i_module->memoryInfo.pageSize;
+        pageSize = pageSize ? pageSize : 65536;
+        size_t initial_size = (size_t)i_module->memoryInfo.initPages * pageSize;
         size_t num_segments = (initial_size + io_runtime->memory.segment_size - 1) / io_runtime->memory.segment_size;
-        
-        // Alloca array dei segmenti
+
         if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "InitMemory: Malloc MemorySegment");
-        io_runtime->memory.segments = m3_Def_Malloc(num_segments * sizeof(MemorySegment));
-        if (!io_runtime->memory.segments)
-            return m3Err_mallocFailed;
-            
-        // Inizializza struttura memoria
-        io_runtime->memory.num_segments = 0;  // Verrà incrementato da AddSegment
-        io_runtime->memory.total_size = 0;    // Verrà incrementato da AddSegment
-        io_runtime->memory.current_ptr = NULL;
-        
-        // Alloca segmenti iniziali
-        for (size_t i = 0; i < num_segments; i++) {
-            if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "InitMemory: AddSegment");
-            result = AddSegment(&io_runtime->memory, 0);
-            if (result) {
-                ESP_LOGE("WASM3", "InitMemory: AddSegment failed");
-                // Cleanup in caso di errore
-                for (size_t j = 0; j < io_runtime->memory.num_segments; j++) {
-                    if (io_runtime->memory.segments[j]->is_allocated) {
-                        if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "InitMemory: free segment data");
-                        m3_Def_Free(io_runtime->memory.segments[j]->data);
-                    }
-                }
-
-                if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "InitMemory: free segments");
-                m3_Def_Free(io_runtime->memory.segments);
-                return result;
-            }
-        }
-        
-        io_runtime->memory.current_ptr = io_runtime->memory.segments[0]->data;
-
-        //init_region_manager(&io_runtime->memory.region_mgr, WASM_M3MEMORY_REGION_MIN_SIZE);
+        result = AddSegment(&io_runtime->memory, num_segments);
     }
 
     return result;

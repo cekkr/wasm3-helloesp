@@ -94,22 +94,23 @@ ptr_status_t validate_ptr_for_free(const void* ptr);
 
 #else 
 
+/*
 #define     m3_Int_Malloc(SIZE)                         m3_Malloc(&globalMemory, SIZE)
 #define     m3_Int_Realloc(PTR, NEW)                    m3_Realloc(&globalMemory, PTR, NEW)
 #define     m3_Int_AllocStruct(STRUCT)                  m3_AllocStruct(&globalMemory, STRUCT)     
 #define     m3_Int_AllocArray(STRUCT, NUM)              m3_AllocArray(&globalMemory, STRUCT, NUM)   
 #define     m3_Int_ReallocArray(STRUCT, PTR, NEW)       m3_ReallocArray(&globalMemory, PTR, STRUCT, NEW) // , sizeof (STRUCT) * (OLD)
 #define     m3_Int_Free(PTR)                              m3_Free(&globalMemory, PTR)
-
+*/
 #endif
 
+/*
 /// Global memory
 
 static M3Memory globalMemory = {0};
 static void init_globalMemory(){
     if(globalMemory.segment_size == 0){
-        globalMemory.segment_size = WASM_SEGMENT_SIZE;
-        globalMemory.segments = m3_Int_AllocArray(MemorySegment, WASM_INIT_SEGMENTS);  
-        init_region_manager(&globalMemory.region_mgr, WASM_M3MEMORY_REGION_MIN_SIZE);
+        m3_InitMemory(&globalMemory);
     }
 }
+*/

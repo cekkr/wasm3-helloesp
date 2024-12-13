@@ -115,9 +115,9 @@ void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
     if(DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_CopyMem");
     
     if(INT_MEM_SEGMENTED){
-        void* ptr_dest;
+        /*void* ptr_dest;
         m3_memcpy(globalMemory, i_from, ptr_dest, i_size);
-        return ptr_dest;
+        return ptr_dest;*/
     }
 
     /// Old implementation
@@ -207,9 +207,15 @@ void* default_realloc(void* ptr, size_t new_size) {
     size_t aligned_size = DEFAULT_ALLOC_ALIGNMENT ? (new_size + 7) & ~7 : new_size;
 
     TRY {
-        if((!ptr) || !ultra_safe_ptr_valid(ptr)){
+        if(!ptr){
             ptr = default_malloc(aligned_size);
             return ptr;
+        }
+
+        if(!ultra_safe_ptr_valid(ptr)){
+            ESP_LOGW("WASM3", "default_free: is_ptr_freeable check failed for pointer");
+            backtrace();
+            return;
         }
 
         // Ottieni la dimensione originale del blocco

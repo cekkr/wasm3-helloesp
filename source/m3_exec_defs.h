@@ -35,7 +35,7 @@ d_m3BeginExternC
     *((type*)(m3SegmentedMemAccess(mem, pc, sizeof(type)))))
 #else
 #define MEMACCESS(type, mem, pc) \
-    *(type*)m3SegmentedMemAccess(mem, (iptr)pc, sizeof(type))
+    *(type*)m3SegmentedMemAccess(mem, pc, sizeof(type))
 #endif
  
 

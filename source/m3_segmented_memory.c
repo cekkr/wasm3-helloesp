@@ -5,31 +5,36 @@
 
 #define WASM_DEBUG_SEGMENTED_MEM_MAN 1
 
-const bool WASM_DEBUG_M3_INIT_MEMORY = true;
-IM3Memory m3_InitMemory(IM3Memory memory){
 
-    if(memory == NULL){
-        ESP_LOGE("WASM3", "m3_InitMemory: Memory is null");
-        return NULL;
-    }
+// Funzioni helper migliorate
+static MemoryChunk* get_chunk_header(void* ptr) {
+    return (MemoryChunk*)((char*)ptr - sizeof(MemoryChunk));
+}
 
-    memory->segments = m3_Def_AllocArray(MemorySegment*, WASM_INIT_SEGMENTS);    
-    memory->max_size = 0; 
-    memory->num_segments = WASM_INIT_SEGMENTS;
+static void* get_chunk_data(MemoryChunk* chunk) {
+    return (void*)((char*)chunk + sizeof(MemoryChunk));
+}
+
+static size_t align_size(size_t size) {
+    return ((size + sizeof(MemoryChunk) + (WASM_CHUNK_SIZE-1)) & ~(WASM_CHUNK_SIZE-1));
+}
+
+// Inizializzazione migliorata
+IM3Memory m3_InitMemory(IM3Memory memory) {
+    if (!memory) return NULL;
+    
+    memory->segments = m3_Def_AllocArray(MemorySegment*, 1);
+    memory->max_size = 0;
+    memory->num_segments = 0;
     memory->total_size = 0;
-    memory->segment_size = WASM_SEGMENT_SIZE;
-    //memory->point = 0;
-
-    if(WASM_DEBUG_M3_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: memory->segment_size= %d", memory->segment_size);
-
-    // What are used for pages?
-    //memory->numPages = 0;
+    memory->segment_size = 1;
     memory->maxPages = M3Memory_MaxPages;
-
-    init_region_manager(&memory->region_mgr, WASM_M3MEMORY_REGION_MIN_SIZE);
-
-    m3_malloc(memory, 1); // allocate symbolic memory
-
+    
+    // Inizializza cache dei chunk liberi
+    memory->num_free_buckets = 32; // Numero di bucket per diverse size
+    memory->free_chunks = calloc(memory->num_free_buckets, sizeof(MemoryChunk*));
+    
+    AddSegment(memory, 1);
     return memory;
 }
 
@@ -121,7 +126,6 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
     size_t needed_segments = (new_total + memory->segment_size - 1) / memory->segment_size;
     size_t additional_segments = needed_segments - current_used_segments;
     
-
     M3Result result = AddSegment(memory, additional_segments);
     if (result != NULL) {
         return result;
@@ -129,30 +133,18 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
     
     memory->total_size = new_total;
     
-    // Aggiorna il current_ptr se non ancora inizializzato
-    if (!memory->current_ptr && memory->num_segments > 0) {
-        memory->current_ptr = memory->segments[0]->data;
-    }
-    
     return NULL;
 }
-
-/*IM3MemoryPoint m3_GetMemoryPoint(IM3Memory mem){
-    IM3MemoryPoint point = m3_Def_AllocStruct (M3MemoryPoint);
-
-    if(point == NULL){
-        ESP_LOGE("WASM3", "m3_GetMemoryPoint: Memory allocation failed");
-        return NULL;
-    }
-
-    point->memory = mem;
-    point->offset = 0;
-    return point;
-}*/
 
 // Funzione per aggiungere un nuovo segmento
 const bool WASM_DEBUG_ADD_SEGMENT = true;
 M3Result AddSegment(M3Memory* memory, size_t set_num_segments) {
+    if(memory->segment_size == 0){
+        ESP_LOGE("WASM3", "AddSegment: memory->segment_size is zero");
+        backtrace();
+        return m3Err_nullMemory;
+    }
+
     size_t original_num_segments = memory->num_segments;
 
     size_t new_segments = set_num_segments;
@@ -162,15 +154,18 @@ M3Result AddSegment(M3Memory* memory, size_t set_num_segments) {
 
     size_t new_size = (new_segments + 1) * sizeof(MemorySegment*);
     
-    size_t new_idx = 0;
-    for(; new_idx < new_segments; new_idx++){
-        // Riallocare l'array di puntatori
+    if(new_segments > memory->num_segments){
         MemorySegment** new_segments = m3_Def_Realloc(memory->segments, new_size);
         if (!new_segments) {
-            memory->num_segments--;
+            memory->num_segments = original_num_segments;
             return m3Err_mallocFailed;
         }
+
         memory->segments = new_segments;
+    }
+
+    size_t new_idx = 0;
+    for(; new_idx < new_segments; new_idx++){   
         
         // Allocare la nuova struttura MemorySegment
         memory->segments[new_idx] = m3_Def_Malloc(sizeof(MemorySegment));
@@ -254,9 +249,9 @@ u8* GetEffectiveAddress(M3Memory* memory, size_t offset) {
 
 const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
 
-u8* m3SegmentedMemAccess(IM3Memory mem, iptr offset, size_t size) 
+u8* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size) 
 {
-    //return (u8*)offset;
+    u32 offset = (u32)ptr;
 
     if(mem == NULL){
         ESP_LOGE("WASM3", "m3SegmentedMemAccess called with null memory pointer");     
@@ -293,106 +288,6 @@ u8* m3SegmentedMemAccess(IM3Memory mem, iptr offset, size_t size)
     
     // Ora possiamo essere sicuri che il segmento è allocato
     return ((u8*)mem->segments[segment_index]->data) + segment_offset;
-}
-
-///
-/// Memory region
-///
-
-// Initialize region manager
-void init_region_manager(RegionManager* mgr, size_t min_size) {
-    mgr->head = NULL;
-    mgr->min_region_size = min_size;
-    mgr->total_regions = 0;
-}
-
-// Create new region for a segment
-MemoryRegion* create_region(void* start, size_t size) {
-    MemoryRegion* region = malloc(sizeof(MemoryRegion));
-    if (!region) return NULL;
-    
-    region->start = start;
-    region->size = size;
-    region->is_free = true;
-    region->next = NULL;
-    region->prev = NULL;
-    
-    return region;
-}
-
-// Add region to manager
-void add_region(RegionManager* mgr, MemoryRegion* region) {
-    if (!mgr->head) {
-        mgr->head = region;
-    } else {
-        // Insert sorted by address
-        MemoryRegion* current = mgr->head;
-        while (current->next && current->next->start < region->start) {
-            current = current->next;
-        }
-        
-        region->next = current->next;
-        region->prev = current;
-        if (current->next) {
-            current->next->prev = region;
-        }
-        current->next = region;
-    }
-    mgr->total_regions++;
-}
-
-// Try to merge adjacent free regions
-void coalesce_regions(RegionManager* mgr, MemoryRegion* region) {
-    // Try to merge with next region
-    if (region->next && region->next->is_free) {
-        region->size += region->next->size;
-        MemoryRegion* to_remove = region->next;
-        region->next = to_remove->next;
-        if (to_remove->next) {
-            to_remove->next->prev = region;
-        }
-        free(to_remove);
-        mgr->total_regions--;
-    }
-    
-    // Try to merge with previous region
-    if (region->prev && region->prev->is_free) {
-        region->prev->size += region->size;
-        region->prev->next = region->next;
-        if (region->next) {
-            region->next->prev = region->prev;
-        }
-        free(region);
-        mgr->total_regions--;
-    }
-}
-
-// Find a free region of sufficient size
-MemoryRegion* find_free_region(RegionManager* mgr, size_t size) {
-    MemoryRegion* current = mgr->head;
-    while (current) {
-        if (current->is_free && current->size >= size) {
-            // Split region if remaining size is worth it
-            if (current->size >= size + mgr->min_region_size) {
-                MemoryRegion* new_region = create_region(
-                    (char*)current->start + size,
-                    current->size - size
-                );
-                current->size = size;
-                
-                new_region->next = current->next;
-                new_region->prev = current;
-                if (current->next) {
-                    current->next->prev = new_region;
-                }
-                current->next = new_region;
-                mgr->total_regions++;
-            }
-            return current;
-        }
-        current = current->next;
-    }
-    return NULL;
 }
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -435,222 +330,193 @@ void m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
     }
 }
 
-// Helper to check if a region spans multiple segments
-bool is_cross_segment_region(M3Memory* memory, void* start, size_t size) {
-    size_t start_offset = (size_t)start - (size_t)memory->segments[0]->data;
-    size_t end_offset = start_offset + size - 1;
-    return (start_offset / memory->segment_size) != (end_offset / memory->segment_size);
-}
+const bool WASM_DEBUG_SEGMENTED_MEMORY = false;
 
-// Updated region allocation to handle non-resident segments
-MemoryRegion* allocate_region(M3Memory* memory, size_t size) {
-    size_t aligned_size = ((size + 7) & ~7);  // 8-byte alignment
-    size_t required_segments = (aligned_size + memory->segment_size - 1) / memory->segment_size;
+// Allocazione con supporto alla riutilizzazione
+void* m3_malloc(IM3Memory memory, size_t size) {
+    if (!memory || size == 0) return NULL;
     
-    // Find continuous range of segments
-    size_t start_segment = 0;
-    size_t continuous_segments = 0;
+    size_t aligned_size = align_size(size);
+    size_t bucket = log2(aligned_size);
     
+    // Cerca chunk libero nella cache
+    if (bucket < memory->num_free_buckets && memory->free_chunks[bucket]) {
+        MemoryChunk* chunk = memory->free_chunks[bucket];
+        memory->free_chunks[bucket] = chunk->next;
+        chunk->is_free = false;
+        return get_chunk_data(chunk);
+    }
+    
+    // Cerca chunk libero nei segmenti esistenti
     for (size_t i = 0; i < memory->num_segments; i++) {
-        MemorySegment* segment = &memory->segments[i];
-        if (!segment->is_allocated) {
-            if (continuous_segments == 0) {
-                start_segment = i;
-            }
-            continuous_segments++;
-            
-            if (continuous_segments >= required_segments) {
-                // Found enough continuous segments
-                M3Result res = AddSegment(segment, required_segments);
-                if(res != NULL){
-                    ESP_LOGE("WASM3", "Failed to add segment: %s", res);
-                    return NULL;
+        MemoryChunk* chunk = memory->segments[i]->first_chunk;
+        while (chunk) {
+            if (chunk->is_free && chunk->size >= aligned_size) {
+                // Split se necessario
+                if (chunk->size >= aligned_size + WASM_CHUNK_SIZE) {
+                    MemoryChunk* new_chunk = (MemoryChunk*)((char*)chunk + aligned_size);
+                    new_chunk->size = chunk->size - aligned_size;
+                    new_chunk->is_free = true;
+                    new_chunk->next = chunk->next;
+                    new_chunk->prev = chunk;
+                    
+                    chunk->size = aligned_size;
+                    chunk->next = new_chunk;
+                    
+                    // Aggiungi nuovo chunk alla cache
+                    size_t new_bucket = log2(new_chunk->size);
+                    if (new_bucket < memory->num_free_buckets) {
+                        new_chunk->next = memory->free_chunks[new_bucket];
+                        memory->free_chunks[new_bucket] = new_chunk;
+                    }
                 }
                 
-                // Create new region
-                void* region_start = GetMemorySegment(memory, start_segment * memory->segment_size);
-                MemoryRegion* region = create_region(region_start, aligned_size);
-                return region;
+                chunk->is_free = false;
+                return get_chunk_data(chunk);
             }
-        } else {
-            continuous_segments = 0;
+            chunk = chunk->next;
         }
     }
     
-    // Need to grow memory
-    size_t additional_segments = required_segments - continuous_segments;
-    M3Result result = GrowMemory(memory, additional_segments * memory->segment_size);
-    if (result != m3Err_none) {
-        return NULL;
-    }
+    // Allocazione nuovo segmento se necessario
+    size_t needed_size = ((aligned_size + memory->segment_size - 1) / memory->segment_size) 
+                        * memory->segment_size;
     
-    // Retry allocation after growth
-    return allocate_region(memory, size);
+    M3Result result = GrowMemory(memory, needed_size);
+    if (result != m3Err_none) return NULL;
+    
+    // Inizializza nuovo chunk nel nuovo segmento
+    MemorySegment* seg = memory->segments[memory->num_segments - 1];
+    MemoryChunk* chunk = (MemoryChunk*)seg->data;
+    chunk->size = aligned_size;
+    chunk->is_free = false;
+    chunk->next = NULL;
+    chunk->prev = NULL;
+    seg->first_chunk = chunk;
+    
+    return get_chunk_data(chunk);
 }
 
-// Split a region into two parts
-void split_region(RegionManager* mgr, MemoryRegion* region, size_t size) {
-    if (!mgr || !region || size >= region->size) {
-        return;
-    }
-    
-    // Create new region for the remaining space
-    MemoryRegion* new_region = create_region(
-        (char*)region->start + size,
-        region->size - size
-    );
-    
-    if (!new_region) {
-        return;
-    }
-    
-    // Set properties for new region
-    new_region->is_free = true;
-    
-    // Insert new region into the linked list
-    new_region->next = region->next;
-    new_region->prev = region;
-    if (region->next) {
-        region->next->prev = new_region;
-    }
-    region->next = new_region;
-    
-    // Update size of original region
-    region->size = size;
-    
-    // Update region count
-    mgr->total_regions++;
-}
-
-const bool WASM_DEBUG_SEGMENTED_MEMORY = true;
-
-// Updated malloc to handle segment loading
-void* m3_malloc(M3Memory* memory, size_t size) {
-    if(WASM_DEBUG_SEGMENTED_MEMORY) {
-        ESP_LOGI("WASM3", "m3_malloc called");
-        ESP_LOGI("WASM3", "m3_malloc: memory->segment_size = %zu", memory->segment_size);
-    }
-
-    if (!memory || size == 0) {
-        ESP_LOGE("WASM3", "m3_malloc: memory NULL or size = %d", size);
-        return NULL;
-    }
-    
-    // Try to find existing free region
-    MemoryRegion* region = find_free_region(&memory->region_mgr, size);
-    if (region) {
-        // Ensure all segments in region are loaded
-        size_t start_offset = (size_t)region->start - (size_t)memory->segments[0]->data;
-        for (size_t offset = 0; offset < region->size; offset += memory->segment_size) {
-            if (!m3SegmentedMemAccess(memory, start_offset + offset, 1)) {
-                return NULL;
-            }
-        }
-        region->is_free = false;
-        return region->start;
-    }
-    
-    // Allocate new region
-    region = allocate_region(memory, size);
-    if (!region) {
-        return NULL;
-    }
-    
-    add_region(&memory->region_mgr, region);
-    region->is_free = false;
-    return region->start;
-}
-
-// Updated realloc to handle cross-segment copies
+// Realloc ottimizzata
 void* m3_realloc(M3Memory* memory, void* ptr, size_t new_size) {
-    if (!memory) {
-        return NULL;
-    }
-    
-    if (!ptr) {
-        return m3_malloc(memory, new_size);
-    }
-    
+    if (!memory) return NULL;
+    if (!ptr) return m3_malloc(memory, new_size);
     if (new_size == 0) {
         m3_free(memory, ptr);
         return NULL;
     }
     
-    // Find current region
-    MemoryRegion* current = memory->region_mgr.head;
-    while (current && current->start != ptr) {
-        current = current->next;
-    }
+    MemoryChunk* chunk = get_chunk_header(ptr);
+    size_t aligned_new_size = align_size(new_size);
     
-    if (!current) {
-        return NULL;  // Invalid pointer
-    }
-    
-    size_t aligned_size = ((new_size + 7) & ~7);
-    
-    // If current region is big enough, just return same pointer
-    if (current->size >= aligned_size) {
-        // Could split if remaining size is large enough
-        if (current->size >= aligned_size + memory->region_mgr.min_region_size) {
-            split_region(&memory->region_mgr, current, aligned_size);
+    // Se la nuova size è minore, split il chunk
+    if (aligned_new_size <= chunk->size) {
+        if (chunk->size >= aligned_new_size + WASM_CHUNK_SIZE) {
+            MemoryChunk* new_chunk = (MemoryChunk*)((char*)chunk + aligned_new_size);
+            new_chunk->size = chunk->size - aligned_new_size;
+            new_chunk->is_free = true;
+            new_chunk->next = chunk->next;
+            new_chunk->prev = chunk;
+            
+            chunk->size = aligned_new_size;
+            chunk->next = new_chunk;
+            
+            // Aggiungi alla cache
+            size_t bucket = log2(new_chunk->size);
+            if (bucket < memory->num_free_buckets) {
+                new_chunk->next = memory->free_chunks[bucket];
+                memory->free_chunks[bucket] = new_chunk;
+            }
         }
         return ptr;
     }
     
-    // Need to allocate new region
-    void* new_ptr = m3_malloc(memory, new_size);
-    if (!new_ptr) {
-        return NULL;
+    // Prova a unire con chunk successivo se libero
+    if (chunk->next && chunk->next->is_free && 
+        chunk->size + chunk->next->size >= aligned_new_size) {
+        // Rimuovi chunk successivo dalla cache
+        size_t bucket = log2(chunk->next->size);
+        if (bucket < memory->num_free_buckets) {
+            MemoryChunk** curr = &memory->free_chunks[bucket];
+            while (*curr && *curr != chunk->next) curr = &(*curr)->next;
+            if (*curr) *curr = chunk->next->next;
+        }
+        
+        chunk->size += chunk->next->size;
+        chunk->next = chunk->next->next;
+        if (chunk->next) chunk->next->prev = chunk;
+        
+        // Split se necessario
+        if (chunk->size >= aligned_new_size + WASM_CHUNK_SIZE) {
+            MemoryChunk* new_chunk = (MemoryChunk*)((char*)chunk + aligned_new_size);
+            new_chunk->size = chunk->size - aligned_new_size;
+            new_chunk->is_free = true;
+            new_chunk->next = chunk->next;
+            new_chunk->prev = chunk;
+            
+            chunk->size = aligned_new_size;
+            chunk->next = new_chunk;
+            
+            // Aggiungi alla cache
+            bucket = log2(new_chunk->size);
+            if (bucket < memory->num_free_buckets) {
+                new_chunk->next = memory->free_chunks[bucket];
+                memory->free_chunks[bucket] = new_chunk;
+            }
+        }
+        return ptr;
     }
     
-    // Copy data using cross-segment aware memcpy
-    m3_memcpy(memory, new_ptr, ptr, MIN(current->size, new_size));
-    m3_free(memory, ptr);
+    // Alloca nuovo chunk e copia dati
+    void* new_ptr = m3_malloc(memory, new_size);
+    if (!new_ptr) return NULL;
     
+    memcpy(new_ptr, ptr, chunk->size - sizeof(MemoryChunk));
+    m3_free(memory, ptr);
     return new_ptr;
 }
 
-// Free remains mostly the same but needs to handle segment deallocation
+// Free con supporto alla coalescenza e cache
 void m3_free(M3Memory* memory, void* ptr) {
-    if (!memory || !ptr) {
-        return;
+    if (!memory || !ptr) return;
+    
+    MemoryChunk* chunk = get_chunk_header(ptr);
+    chunk->is_free = true;
+    
+    // Unisci con chunk adiacenti se liberi
+    if (chunk->next && chunk->next->is_free) {
+        // Rimuovi dalla cache
+        size_t bucket = log2(chunk->next->size);
+        if (bucket < memory->num_free_buckets) {
+            MemoryChunk** curr = &memory->free_chunks[bucket];
+            while (*curr && *curr != chunk->next) curr = &(*curr)->next;
+            if (*curr) *curr = chunk->next->next;
+        }
+        
+        chunk->size += chunk->next->size;
+        chunk->next = chunk->next->next;
+        if (chunk->next) chunk->next->prev = chunk;
     }
     
-    MemoryRegion* current = memory->region_mgr.head;
-    while (current) {
-        if (current->start == ptr) {
-            // Mark segments as unallocated if no other regions use them
-            size_t start_offset = (size_t)current->start - (size_t)memory->segments[0]->data;
-            size_t end_offset = start_offset + current->size;
-            
-            for (size_t offset = start_offset; offset < end_offset; offset += memory->segment_size) {
-                size_t segment_index = offset / memory->segment_size;
-                bool segment_in_use = false;
-                
-                // Check if any other region uses this segment
-                MemoryRegion* other = memory->region_mgr.head;
-                while (other) {
-                    if (other != current && !other->is_free) {
-                        size_t other_start = (size_t)other->start - (size_t)memory->segments[0]->data;
-                        size_t other_end = other_start + other->size;
-                        
-                        if (offset >= other_start && offset < other_end) {
-                            segment_in_use = true;
-                            break;
-                        }
-                    }
-                    other = other->next;
-                }
-                
-                if (!segment_in_use) {
-                    memory->segments[segment_index]->is_allocated = false;
-                }
-            }
-            
-            current->is_free = true;
-            coalesce_regions(&memory->region_mgr, current);
-            return;
+    if (chunk->prev && chunk->prev->is_free) {
+        // Rimuovi dalla cache
+        size_t bucket = log2(chunk->prev->size);
+        if (bucket < memory->num_free_buckets) {
+            MemoryChunk** curr = &memory->free_chunks[bucket];
+            while (*curr && *curr != chunk->prev) curr = &(*curr)->next;
+            if (*curr) *curr = chunk->prev->next;
         }
-        current = current->next;
+        
+        chunk->prev->size += chunk->size;
+        chunk->prev->next = chunk->next;
+        if (chunk->next) chunk->next->prev = chunk->prev;
+        chunk = chunk->prev;
+    }
+    
+    // Aggiungi alla cache
+    size_t bucket = log2(chunk->size);
+    if (bucket < memory->num_free_buckets) {
+        chunk->next = memory->free_chunks[bucket];
+        memory->free_chunks[bucket] = chunk;
     }
 }

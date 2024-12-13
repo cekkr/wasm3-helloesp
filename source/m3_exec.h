@@ -46,7 +46,7 @@ d_m3BeginExternC
 #define rewrite_op(OP)              *((void**)(_pc-1)) = (void*)(OP)
 
 // Legge un valore immediato dal program counter e lo incrementa
-#define immediate(TYPE)             *(TYPE*)m3SegmentedMemAccess(_mem, (iptr)_pc++, sizeof(TYPE))
+#define immediate(TYPE)             *(TYPE*)m3SegmentedMemAccess(_mem, _pc++, sizeof(TYPE))
 
 // Salta un valore immediato nel program counter
 #define skip_immediate(TYPE)        (_pc++)
