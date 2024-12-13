@@ -179,11 +179,25 @@ const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
 
 const bool WASM_DEBUG_MEM_ACCESS = true;
 
-void* resolve_pointer(M3Memory* memory, void* ptr) {
-    // Verifiche base
-    if (!memory || !memory->segments || memory->num_segments == 0) {
-        ESP_LOGI("WASM3", "resolve_pointer: memory is empty");
-        goto returnOriginal;
+void* resolve_pointer(IM3Memory memory, void* ptr) {
+    ESP_LOGI("WASM3", "resolve_pointer start");
+    
+    // Verifiche base più dettagliate
+    if (!memory) {
+        ESP_LOGE("WASM3", "memory is NULL");
+        return ptr;
+    }
+    
+    ESP_LOGI("WASM3", "memory->num_segments: %d", memory->num_segments);
+    
+    if (!memory->segments) {
+        ESP_LOGE("WASM3", "memory->segments is NULL");
+        return ptr;
+    }
+    
+    if (memory->num_segments == 0) {
+        ESP_LOGE("WASM3", "memory->num_segments is 0");
+        return ptr;
     }
 
     // Dobbiamo trovare il primo e l'ultimo segmento valido
@@ -192,6 +206,11 @@ void* resolve_pointer(M3Memory* memory, void* ptr) {
     
     // Trova il primo segmento allocato
     for (size_t i = 0; i < memory->num_segments; i++) {
+        if (!memory->segments[i]) {
+            ESP_LOGE("WASM3", "memory->segments[%d] is NULL", i);
+            return ptr;
+        }
+        
         if (memory->segments[i] && memory->segments[i]->data) {
             seg_start = memory->segments[i]->data;
             break;
