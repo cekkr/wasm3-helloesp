@@ -12,12 +12,10 @@
 
 d_m3BeginExternC
 
-/*
-# define m3MemData(mem)                 (u8*)(((M3MemoryPoint*)(mem))->offset) //todo: get memory at offset
+
+//# define m3MemData(mem)                 (u8*)(((M3MemoryPoint*)(mem))->offset) //todo: get memory at offset
 # define m3MemRuntime(mem)              (((M3Memory*)(mem))->runtime)
 # define m3MemInfo(mem)                 (&(((M3Memory*)(mem))->runtime->memory))
-*/
-
 
 ///
 /// Segmented memory management
@@ -26,16 +24,10 @@ d_m3BeginExternC
 // Deprecated: direct memory access impossible with segmentation
 //# define m3MemData(mem)                 m3SegmentedMemAccess((M3Memory*)(mem), 0, ((M3Memory*)(mem))->total_size)
 
-// Accesso al runtime
-# define m3MemRuntime(mem)             ((M3Memory*)(mem))->runtime
-
-// Accesso alle informazioni di memoria
-# define m3MemInfo(mem)                (&((M3Memory*)(mem))->runtime->memory)
-
 // Helper macro per accesso sicuro a offset specifici
 # define m3MemAccessAt(mem, off, sz)   m3SegmentedMemAccess((M3Memory*)(mem), (off), (sz))
 
-#define TRACK_MEMACCESS
+//#define TRACK_MEMACCESS
 #ifdef TRACK_MEMACCESS
 #define STRINGIFY(x) #x
 #define MEMACCESS(type, mem, pc) \    

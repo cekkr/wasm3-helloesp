@@ -18,15 +18,20 @@
 #include "m3_exception.h"
 #include "m3_segmented_memory.h"
 
-/* // Try to deprecate it
+/*typedef struct {
+    uint32_t ptr;
+    uint8_t is_wrapper;
+} safe_ptr_t;
+
+// Modifica della struttura di memoria esistente
 typedef struct M3MemoryHeader
 {
-    IM3Runtime      runtime;
-    void *          maxStack;
-    size_t          length;
-}
-M3MemoryHeader;
-*/
+    M3Runtime *      runtime;
+    safe_ptr_t       base;          // invece di uint8_t* base
+    size_t           current;
+    size_t           max;
+    bool             mallocated;
+} M3MemoryHeader;*/
 
 
 #define d_m3CodePageFreeLinesThreshold      4+2       // max is: select _sss & CallIndirect + 2 for bridge

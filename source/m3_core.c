@@ -231,28 +231,6 @@ void m3_SetMemoryAllocator(MemoryAllocator* allocator) {
     current_allocator = allocator ? allocator : &default_allocator;
 }
 
-// Funzione per allocare un segmento specifico
-/*bool allocate_segment(M3Memory* memory, size_t segment_index) {
-    if (segment_index >= memory->num_segments || 
-        memory->segments[segment_index].is_allocated) {
-        return false;
-    }
-
-    size_t segment_size = (segment_index == memory->num_segments - 1) ?
-        (memory->total_size - (segment_index * memory->segment_size)) :
-        memory->segment_size;
-
-    void* data = current_allocator->malloc(segment_size);
-    if (!data) return false;
-
-    memory->segments[segment_index].data = data;
-    memory->segments[segment_index].is_allocated = true;
-    memory->segments[segment_index].size = segment_size;
-    memset(data, 0, segment_size);
-
-    return true;
-}*/
-
 const bool WASM_DEBUG_MALLOC_IMPL_BACKTRACE = false;
 void* m3_Malloc_Impl(size_t i_size) {
     if(WASM_DEBUG_MALLOC_IMPL_BACKTRACE) esp_backtrace_print(100);
