@@ -5,30 +5,6 @@
 
 #define WASM_DEBUG_SEGMENTED_MEM_MAN 1
 
-IM3Memory m3_NewMemory(){
-    IM3Memory memory = m3_Def_AllocStruct (M3Memory);
-
-    if(memory == NULL){
-        ESP_LOGE("WASM3", "m3_NewMemory: Memory allocation failed");
-        return NULL;
-    }
-
-    memory->segments = m3_Def_AllocArray(MemorySegment, WASM_INIT_SEGMENTS);    
-    memory->max_size = 0; 
-    memory->num_segments = 0;
-    memory->total_size = 0;
-    memory->segment_size = WASM_SEGMENT_SIZE;
-    //memory->point = 0;
-
-    // What are used for pages?
-    //memory->numPages = 0;
-    memory->maxPages = M3Memory_MaxPages;
-
-    init_region_manager(&memory->region_mgr, WASM_M3MEMORY_REGION_MIN_SIZE);
-
-    return memory;
-}
-
 const bool WASM_DEBUG_M3_INIT_MEMORY = true;
 IM3Memory m3_InitMemory(IM3Memory memory){
 
@@ -37,9 +13,9 @@ IM3Memory m3_InitMemory(IM3Memory memory){
         return NULL;
     }
 
-    memory->segments = m3_Def_AllocArray(MemorySegment, WASM_INIT_SEGMENTS);    
+    memory->segments = m3_Def_AllocArray(MemorySegment*, WASM_INIT_SEGMENTS);    
     memory->max_size = 0; 
-    memory->num_segments = 0;
+    memory->num_segments = WASM_INIT_SEGMENTS;
     memory->total_size = 0;
     memory->segment_size = WASM_SEGMENT_SIZE;
     //memory->point = 0;
@@ -51,6 +27,14 @@ IM3Memory m3_InitMemory(IM3Memory memory){
     memory->maxPages = M3Memory_MaxPages;
 
     init_region_manager(&memory->region_mgr, WASM_M3MEMORY_REGION_MIN_SIZE);
+
+    return memory;
+}
+
+IM3Memory m3_NewMemory(){
+    IM3Memory memory = m3_Def_AllocStruct (M3Memory);
+
+    m3_InitMemory(memory);
 
     return memory;
 }
