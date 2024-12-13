@@ -10,7 +10,7 @@
 
 #define WASM_ENABLE_SPI_MEM 0
 
-#define WASM_INIT_SEGMENTS 8
+#define WASM_INIT_SEGMENTS 2
 #define WASM_SEGMENT_SIZE 4096
 #define WASM_CHUNK_SIZE 32  // Dimensione minima di un chunk di memoria
 #define M3Memory_MaxPages 1024
