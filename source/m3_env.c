@@ -342,7 +342,7 @@ void  m3_FreeRuntime  (IM3Runtime i_runtime)
 const bool WASM_DEBUG_EvaluateExpression = false;
 M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type, bytes_t * io_bytes, cbytes_t i_end)
 {
-    ESP_LOGI("WASM3", "Evaluate expression called");
+    ESP_LOGI("WASM3", "EvaluateExpression called");
     M3Result result = m3Err_none;
 
     // OPTZ: use a simplified interpreter for expressions
@@ -378,13 +378,16 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
     o->block.depth = -1;  // so that root compilation depth = 0
 
     //  OPTZ: this code page could be erased after use.  maybe have 'empty' list in addition to full and open?
+    ESP_LOGI("WASM3", "EvaluateExpression: AcquireCodePage");
     o->page = AcquireCodePage (& runtime);  // AcquireUnusedCodePage (...)
 
     if (o->page)
     {
         IM3FuncType ftype = runtime.environment->retFuncTypes[i_type];
 
+        ESP_LOGI("WASM3", "EvaluateExpression: GetPagePC");
         pc_t m3code = GetPagePC (o->page);
+        ESP_LOGI("WASM3", "EvaluateExpression: CompileBlock");
         result = CompileBlock (o, ftype, c_waOp_block);
 
         if (not result && o->maxStackSlots >= runtime.numStackSlots) {
@@ -393,14 +396,17 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
 
         if (not result)
         {
-# if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
+            ESP_LOGI("WASM3", "EvaluateExpression: RunCode");
+
+            # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
             m3ret_t r = RunCode (m3code, stack, &runtime.memory, d_m3OpDefaultArgs, d_m3BaseCstr); // NULL or &runtime.memory?
-# else
+            # else
             m3ret_t r = RunCode (m3code, stack, &runtime.memory, d_m3OpDefaultArgs); 
-# endif
+            # endif
             
             if (r == 0)
-            {                                                                               m3log (runtime, "expression result: %s", SPrintValue (stack, i_type));
+            {                                                                               
+                m3log (runtime, "expression result: %s", SPrintValue (stack, i_type));
                 if (SizeOfType (i_type) == sizeof (u32))
                 {
                     * (u32 *) o_expressed = * ((u32 *) stack);
@@ -854,8 +860,7 @@ _catch:
     return result;
 }
 
-IM3Global  m3_FindGlobal  (IM3Module               io_module,
-                           const char * const      i_globalName)
+IM3Global  m3_FindGlobal  (IM3Module               io_module, const char * const      i_globalName)
 {
     // Search exports
     for (u32 i = 0; i < io_module->numGlobals; ++i)

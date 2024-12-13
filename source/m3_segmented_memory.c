@@ -7,7 +7,6 @@
 
 IM3Memory m3_NewMemory(){
     IM3Memory memory = m3_Int_AllocStruct (M3Memory);
-    memory->segment_size = WASM_SEGMENT_SIZE;
 
     if(memory == NULL){
         ESP_LOGE("WASM3", "m3_NewMemory: Memory allocation failed");
@@ -214,6 +213,8 @@ const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
 
 u8* m3SegmentedMemAccess(IM3Memory mem, iptr offset, size_t size) 
 {
+    //return (u8*)offset;
+
     if(mem == NULL){
         ESP_LOGE("WASM3", "m3SegmentedMemAccess called with null memory pointer");     
         backtrace();
