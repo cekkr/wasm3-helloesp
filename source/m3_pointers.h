@@ -52,11 +52,11 @@ ptr_status_t validate_ptr_for_free(const void* ptr);
 /// Internal
 ///
 
-#define     m3_Int_Malloc(NAME, SIZE)                   default_malloc(SIZE)
-#define     m3_Int_Realloc(NAME, PTR, NEW, OLD)         default_realloc(PTR, NEW)
+#define     m3_Int_Malloc(SIZE)                         default_malloc(SIZE)
+#define     m3_Int_Realloc(PTR, NEW)                    default_realloc(PTR, NEW)
 #define     m3_Int_AllocStruct(STRUCT)                  (STRUCT *)default_malloc (sizeof (STRUCT))
 #define     m3_Int_AllocArray(STRUCT, NUM)              (STRUCT *)default_malloc (sizeof (STRUCT) * (NUM))
-#define     m3_Int_ReallocArray(STRUCT, PTR, NEW, OLD)  (STRUCT *)default_realloc ((void *)(PTR), sizeof (STRUCT) * (NEW)) // , sizeof (STRUCT) * (OLD)
+#define     m3_Int_ReallocArray(STRUCT, PTR, NEW)       (STRUCT *)default_realloc (PTR, sizeof (STRUCT) * (NEW)) // , sizeof (STRUCT) * (OLD)
 #define     m3_Int_Free(P)                              default_free(P)
 
 /*#define     m3_AllocStruct(STRUCT)                  (STRUCT *)m3_AllocStruct_Impl  (#STRUCT, sizeof (STRUCT))

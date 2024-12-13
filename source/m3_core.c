@@ -744,7 +744,7 @@ M3Result  Read_utf8  (cstr_t * o_utf8, bytes_t * io_bytes, cbytes_t i_end)
 
             if (end <= i_end)
             {
-                char * utf8 = (char *)m3_Int_Malloc ("UTF8", utf8Length + 1);
+                char * utf8 = (char *)m3_Int_Malloc (utf8Length + 1);
 
                 if (utf8)
                 {

@@ -544,7 +544,7 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
         size_t num_segments = (initial_size + io_runtime->memory.segment_size - 1) / io_runtime->memory.segment_size;
         
         // Alloca array dei segmenti
-        io_runtime->memory.segments = m3_Int_Malloc("memory.segments", num_segments * sizeof(MemorySegment));
+        io_runtime->memory.segments = m3_Int_Malloc(num_segments * sizeof(MemorySegment));
         if (!io_runtime->memory.segments)
             return m3Err_mallocFailed;
             
@@ -718,7 +718,7 @@ _           (ReadLEB_u32 (& numElements, & bytes, end));
             // make sure the table isn't shrunk.
             if (endElement > io_module->table0Size)
             {
-                io_module->table0 = m3_Int_ReallocArray (IM3Function, io_module->table0, endElement, io_module->table0Size);
+                m3_Int_ReallocArray (IM3Function, io_module->table0, endElement);
                 io_module->table0Size = (u32) endElement;
             }
             _throwifnull(io_module->table0);

@@ -156,13 +156,13 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
 // Funzione per aggiungere un nuovo segmento
 M3Result AddSegment(M3Memory* memory) {
     size_t new_size = (memory->num_segments + 1) * sizeof(MemorySegment);
-    MemorySegment* new_segments = m3_Int_Realloc("MemorySegment new_segments", memory->segments, new_size, 1);
+    MemorySegment* new_segments = m3_Int_Realloc(memory->segments, new_size);
     if (!new_segments) return m3Err_mallocFailed;
     
     memory->segments = new_segments;
     
     size_t new_idx = memory->num_segments;
-    memory->segments[new_idx].data = m3_Int_Malloc("memory->segments[new_idx].data", memory->segment_size);
+    memory->segments[new_idx].data = m3_Int_Malloc(memory->segment_size);
     if (!memory->segments[new_idx].data) return m3Err_mallocFailed;
     
     memory->segments[new_idx].is_allocated = true;
