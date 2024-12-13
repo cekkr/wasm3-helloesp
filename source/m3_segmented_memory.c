@@ -43,17 +43,20 @@ IM3Memory m3_NewMemory(){
 
 bool allocate_segment(M3Memory* memory, size_t segment_index) {
     if (!memory || segment_index >= memory->num_segments) {
+        ESP_LOGI("WASM3", "allocate_segment: memory null or segment_index > num_segments (%d > %d)", segment_index, memory->num_segments);
         return false;
     }
 
-    // Se il segmento è già allocato, restituisci true
-    if (memory->segments[segment_index]->is_allocated) {
-        return true;
+    if (WASM_DEBUG_SEGMENTED_MEM_MAN) {
+        ESP_LOGI("WASM3", "allocate_segment: Allocating segment %zu of size %zu", segment_index, memory->segment_size);
+        ESPI_LOGI("WASM3", "allocate_segment: flush");
     }
 
-    if (WASM_DEBUG_SEGMENTED_MEM_MAN) {
-        ESP_LOGI("WASM3", "Allocating segment %zu of size %zu", 
-                 segment_index, memory->segment_size);
+    MemorySegment* segment = memory->segments[segment_index];
+
+    // Se il segmento è già allocato, restituisci true
+    if (segment->is_allocated) {
+        return true;
     }
 
     // Prima prova ad allocare in SPIRAM se abilitata
@@ -63,8 +66,8 @@ bool allocate_segment(M3Memory* memory, size_t segment_index) {
         // Inizializza il segmento con zeri
         memset(ptr, 0, memory->segment_size);
         
-        memory->segments[segment_index]->data = ptr;
-        memory->segments[segment_index]->is_allocated = true;
+        segment->data = ptr;
+        segment->is_allocated = true;
         
         if (WASM_DEBUG_SEGMENTED_MEM_MAN) {
             ESP_LOGI("WASM3", "Segment %zu successfully allocated", segment_index);
