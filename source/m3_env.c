@@ -9,6 +9,7 @@
 #include <limits.h>
 
 #include "m3_env.h"
+#include "m3_segmented_memory.h"
 
 static const bool WASM_DEBUG_NEW_ENV = false;
 
@@ -675,13 +676,8 @@ _       (EvaluateExpression(io_module, &segmentOffset, c_m3Type_i32, &start,
             size_t end_segment = (segmentOffset + segment->size - 1) / io_memory->segment_size;
             
             // Alloca tutti i segmenti necessari se non sono già allocati
-            for (size_t seg = start_segment; seg <= end_segment; seg++)
-            {
-                if (!io_memory->segments[seg]->is_allocated) {
-                    if (!allocate_segment(io_memory, seg)) {
-                        _throw("failed to allocate memory segment");
-                    }
-                }
+            if (!allocate_segment_data(io_memory, end_segment)) {
+                _throw("failed to allocate memory segment");
             }
             
             // Copia i dati attraverso i segmenti

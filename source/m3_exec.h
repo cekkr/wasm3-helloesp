@@ -897,13 +897,9 @@ d_m3Op  (Entry)
             }
         }
 
-        for (size_t i = start_segment; i <= end_segment; i++) {
-            if (!memory->segments[i]->is_allocated) {
-                if (!allocate_segment(memory, i)) {
-                    forwardTrap(error_details(m3Err_mallocFailed, "during allocate_segment in (Entry)"));
-                    return NULL;
-                }
-            }
+        if (!allocate_segment_data(memory, end_segment)) {
+            forwardTrap(error_details(m3Err_mallocFailed, "during allocate_segment_data in (Entry)"));
+            return NULL;
         }
         
         // Zero-inizializza i locali attraverso i segmenti
