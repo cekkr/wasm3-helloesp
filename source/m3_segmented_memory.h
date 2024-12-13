@@ -18,6 +18,12 @@
 
 typedef u32 iptr;
 
+typedef struct MemorySegment {    
+    void* data;           // Actual data pointer
+    bool is_allocated;    // Allocation flag
+    size_t size;         // Segment size
+} MemorySegment;
+
 typedef struct MemoryRegion {
     void* start;          // Start address of region
     size_t size;         // Size of region
