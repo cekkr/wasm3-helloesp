@@ -463,7 +463,7 @@ MemoryRegion* allocate_region(M3Memory* memory, size_t size) {
                 // Found enough continuous segments
                 M3Result res = AddSegment(segment, required_segments);
                 if(res != NULL){
-                    ESP_LOGE("WASM3", "Failed to add segment: %s", m3ResultToString(res));
+                    ESP_LOGE("WASM3", "Failed to add segment: %s", res);
                     return NULL;
                 }
                 
