@@ -188,6 +188,7 @@ M3Result AddSegment(M3Memory* memory) {
     if(WASM_DEBUG_ADD_SEGMENT) {
         ESP_LOGI("WASM3", "AddSegment: new_idx = %d", new_idx);
         ESP_LOGI("WASM3", "AddSegment: new_size = %d", new_size);
+        ESP_LOGI("WASM3", "AddSegment: memory->segment_size = %d", memory->segment_size);
         ESP_LOGI("WASM3", "AddSegment: FLUSH");
     }
     
