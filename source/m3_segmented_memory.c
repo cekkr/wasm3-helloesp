@@ -185,19 +185,19 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
     // Verifiche base più dettagliate
     if (!memory) {
         ESP_LOGE("WASM3", "memory is NULL");
-        return ptr;
+        goto returnOriginal;
     }
     
     ESP_LOGI("WASM3", "memory->num_segments: %d", memory->num_segments);
     
     if (!memory->segments) {
         ESP_LOGE("WASM3", "memory->segments is NULL");
-        return ptr;
+        goto returnOriginal;
     }
     
     if (memory->num_segments == 0) {
         ESP_LOGE("WASM3", "memory->num_segments is 0");
-        return ptr;
+        goto returnOriginal;
     }
 
     // Dobbiamo trovare il primo e l'ultimo segmento valido
@@ -208,7 +208,7 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
     for (size_t i = 0; i < memory->num_segments; i++) {
         if (!memory->segments[i]) {
             ESP_LOGE("WASM3", "memory->segments[%d] is NULL", i);
-            return ptr;
+            goto returnOriginal;
         }
         
         if (memory->segments[i] && memory->segments[i]->data) {
@@ -262,6 +262,11 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
     if(WASM_DEBUG_MEM_ACCESS){ 
         ESP_LOGI("WASM3", "resolve_pointer: returning original pointer %p", ptr);
         ESP_LOGI("WASM3", "resolve_pointer: returning M3Memory pointer");
+    }
+
+    if(is_ptr_valid(ptr)){
+        ESP_LOGE("WASM3", "resolve_pointer: invalid pointer %p", ptr);
+        return NULL;
     }
 
     return ptr;
