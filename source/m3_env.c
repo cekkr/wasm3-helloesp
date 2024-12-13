@@ -234,7 +234,7 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
 
         /// Preparing the stack is no more necessary      
 
-        runtime->originStack = m3_Malloc (memory, i_stackSizeInBytes + 4*sizeof (m3slot_t)); // TODO: more precise stack checks
+        runtime->originStack = m3_Malloc (memory, i_stackSizeInBytes + 4 * sizeof (m3slot_t)); // TODO: more precise stack checks
         //runtime->originStack = m3_NewStack(); // (not implemented) ad hoc M3Memory for stack
         //runtime->originStack = m3_Def_Malloc (i_stackSizeInBytes + 4*sizeof (m3slot_t)); // default malloc
 

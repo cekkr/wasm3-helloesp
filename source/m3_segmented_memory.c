@@ -35,6 +35,14 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     memory->free_chunks = calloc(memory->num_free_buckets, sizeof(MemoryChunk*));
     
     AddSegment(memory, 1);
+
+    u32 ptr1 = m3_malloc(memory, 1);
+    u32 ptr2 = m3_malloc(memory, 1);
+
+    if (WASM_DEBUG_SEGMENTED_MEM_MAN) {
+        ESP_LOGI("WASM3", "m3_InitMemory: allocated %d and %d", ptr1, ptr2);
+    }
+
     return memory;
 }
 
