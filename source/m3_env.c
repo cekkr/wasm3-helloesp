@@ -214,7 +214,7 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
     if(WASM_DEBUG_NEW_RUNTIME) ESP_LOGI("WASM3", "m3_NewRuntime called");
 
     IM3Runtime runtime = m3_Def_AllocStruct (M3Runtime);
-    if(WASM_DEBUG_NEW_RUNTIME) ESP_LOGI("WASM3", "m3_NewRuntime: m3_Int_AllocStruct done");
+    if(WASM_DEBUG_NEW_RUNTIME) ESP_LOGI("WASM3", "m3_NewRuntime: m3_Def_AllocStruct done");
 
     if (runtime)
     {        
@@ -554,7 +554,7 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
         size_t num_segments = (initial_size + io_runtime->memory.segment_size - 1) / io_runtime->memory.segment_size;
         
         // Alloca array dei segmenti
-        io_runtime->memory.segments = m3_Int_Malloc(num_segments * sizeof(MemorySegment));
+        io_runtime->memory.segments = m3_Def_Malloc(num_segments * sizeof(MemorySegment));
         if (!io_runtime->memory.segments)
             return m3Err_mallocFailed;
             
