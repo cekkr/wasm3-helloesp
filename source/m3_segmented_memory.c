@@ -19,32 +19,6 @@ static size_t align_size(size_t size) {
     return ((size + sizeof(MemoryChunk) + (WASM_CHUNK_SIZE-1)) & ~(WASM_CHUNK_SIZE-1));
 }
 
-// Inizializzazione migliorata
-IM3Memory m3_InitMemory(IM3Memory memory) {
-    if (!memory) return NULL;
-    
-    memory->segments = m3_Def_AllocArray(MemorySegment*, 1);
-    memory->max_size = 0;
-    memory->num_segments = 0;
-    memory->total_size = 0;
-    memory->segment_size = 1;
-    memory->maxPages = M3Memory_MaxPages;
-    
-    // Inizializza cache dei chunk liberi
-    memory->num_free_buckets = 32; // Numero di bucket per diverse size
-    memory->free_chunks = calloc(memory->num_free_buckets, sizeof(MemoryChunk*));
-    
-    AddSegment(memory, 1);
-
-    u32 ptr1 = m3_malloc(memory, 1);
-    u32 ptr2 = m3_malloc(memory, 1);
-
-    if (WASM_DEBUG_SEGMENTED_MEM_MAN) {
-        ESP_LOGI("WASM3", "m3_InitMemory: allocated %d and %d", ptr1, ptr2);
-    }
-
-    return memory;
-}
 
 IM3Memory m3_NewMemory(){
     IM3Memory memory = m3_Def_AllocStruct (M3Memory);
@@ -149,12 +123,6 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
 // Funzione per aggiungere un nuovo segmento
 const bool WASM_DEBUG_ADD_SEGMENT = true;
 M3Result AddSegment(M3Memory* memory, size_t set_num_segments) {
-    if(memory->segment_size == 0){
-        ESP_LOGE("WASM3", "AddSegment: memory->segment_size is zero");
-        backtrace();
-        return m3Err_nullMemory;
-    }
-
     size_t original_num_segments = memory->num_segments;
 
     size_t new_segments = set_num_segments;
@@ -165,6 +133,7 @@ M3Result AddSegment(M3Memory* memory, size_t set_num_segments) {
     size_t new_size = (new_segments + 1) * sizeof(MemorySegment*);
     
     if(new_segments > memory->num_segments){
+        if(WASM_DEBUG_ADD_SEGMENT) ESP_LOGI("WASM3", "Adding segments (%d)", new_segments);
         MemorySegment** new_segments = m3_Def_Realloc(memory->segments, new_size);
         if (!new_segments) {
             memory->num_segments = original_num_segments;
@@ -174,7 +143,7 @@ M3Result AddSegment(M3Memory* memory, size_t set_num_segments) {
         memory->segments = new_segments;
     }
 
-    size_t new_idx = 0;
+    size_t new_idx = memory->segment_size;
     for(; new_idx < new_segments; new_idx++){   
         
         // Allocare la nuova struttura MemorySegment
@@ -342,69 +311,168 @@ void m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
 
 const bool WASM_DEBUG_SEGMENTED_MEMORY = false;
 
-// Allocazione con supporto alla riutilizzazione
+IM3Memory m3_InitMemory(IM3Memory memory) {
+    if (!memory) return NULL;
+    
+    // Inizializza strutture base
+    memory->segments = m3_Def_AllocArray(MemorySegment*, 1);
+    if (!memory->segments) return NULL;
+    
+    memory->max_size = WASM_SEGMENT_SIZE * M3Memory_MaxPages;
+    memory->num_segments = 0;
+    memory->total_size = 0;
+    memory->segment_size = WASM_SEGMENT_SIZE;
+    memory->maxPages = M3Memory_MaxPages;
+    
+    // Inizializza cache dei chunk liberi
+    memory->num_free_buckets = 32;
+    memory->free_chunks = calloc(memory->num_free_buckets, sizeof(MemoryChunk*));
+    if (!memory->free_chunks) {
+        m3_Def_Free(memory->segments);
+        return NULL;
+    }
+    
+    // Alloca primo segmento
+    M3Result result = AddSegment(memory, WASM_INIT_SEGMENTS);
+    if (result != m3Err_none) {
+        ESP_LOGE("WASM3", "m3_InitMemory: Failed to add segment");
+        m3_Def_Free(memory->segments);
+        free(memory->free_chunks);
+        return NULL;
+    }
+    
+    // Inizializza il primo chunk nel primo segmento
+    MemorySegment* first_seg = memory->segments[0];
+    if (!first_seg || !first_seg->data) {
+        m3_Def_Free(memory->segments);
+        free(memory->free_chunks);
+        return NULL;
+    }
+    
+    MemoryChunk* first_chunk = (MemoryChunk*)first_seg->data;
+    first_chunk->size = first_seg->size;
+    first_chunk->is_free = true;
+    first_chunk->next = NULL;
+    first_chunk->prev = NULL;
+    first_seg->first_chunk = first_chunk;
+    
+    // Aggiungi il primo chunk alla cache
+    size_t bucket = log2(first_chunk->size);
+    if (bucket < memory->num_free_buckets) {
+        first_chunk->next = NULL;
+        memory->free_chunks[bucket] = first_chunk;
+    }
+
+    /// Test init
+    u32 ptr1 = m3_malloc(memory, 1);
+    u32 ptr2 = m3_malloc(memory, 1);
+
+    if (WASM_DEBUG_SEGMENTED_MEM_MAN) {
+        ESP_LOGI("WASM3", "m3_InitMemory: allocated %d and %d", ptr1, ptr2);
+    }
+    
+    return memory;
+}
+
 void* m3_malloc(IM3Memory memory, size_t size) {
     if (!memory || size == 0) return NULL;
     
-    size_t aligned_size = align_size(size);
+    // Include header size nella dimensione richiesta
+    size_t total_size = size + sizeof(MemoryChunk);
+    size_t aligned_size = align_size(total_size);
     size_t bucket = log2(aligned_size);
     
-    // Cerca chunk libero nella cache
-    if (bucket < memory->num_free_buckets && memory->free_chunks[bucket]) {
-        MemoryChunk* chunk = memory->free_chunks[bucket];
-        memory->free_chunks[bucket] = chunk->next;
-        chunk->is_free = false;
-        return get_chunk_data(chunk);
+    // Debug log
+    if (WASM_DEBUG_SEGMENTED_MEMORY) {
+        ESP_LOGI("WASM3", "m3_malloc: requesting size=%zu, aligned_size=%zu, bucket=%zu", 
+                 size, aligned_size, bucket);
     }
     
-    // Cerca chunk libero nei segmenti esistenti
-    for (size_t i = 0; i < memory->num_segments; i++) {
-        MemoryChunk* chunk = memory->segments[i]->first_chunk;
-        while (chunk) {
-            if (chunk->is_free && chunk->size >= aligned_size) {
-                // Split se necessario
-                if (chunk->size >= aligned_size + WASM_CHUNK_SIZE) {
-                    MemoryChunk* new_chunk = (MemoryChunk*)((char*)chunk + aligned_size);
-                    new_chunk->size = chunk->size - aligned_size;
-                    new_chunk->is_free = true;
-                    new_chunk->next = chunk->next;
-                    new_chunk->prev = chunk;
-                    
-                    chunk->size = aligned_size;
-                    chunk->next = new_chunk;
-                    
-                    // Aggiungi nuovo chunk alla cache
-                    size_t new_bucket = log2(new_chunk->size);
-                    if (new_bucket < memory->num_free_buckets) {
-                        new_chunk->next = memory->free_chunks[new_bucket];
-                        memory->free_chunks[new_bucket] = new_chunk;
-                    }
-                }
-                
-                chunk->is_free = false;
-                return get_chunk_data(chunk);
+    // Cerca chunk libero nella cache
+    MemoryChunk* found_chunk = NULL;
+    if (bucket < memory->num_free_buckets) {
+        MemoryChunk** curr = &memory->free_chunks[bucket];
+        while (*curr) {
+            if ((*curr)->size >= aligned_size) {
+                found_chunk = *curr;
+                *curr = found_chunk->next;  // Rimuovi dalla lista dei liberi
+                break;
             }
-            chunk = chunk->next;
+            curr = &(*curr)->next;
         }
     }
     
-    // Allocazione nuovo segmento se necessario
-    size_t needed_size = ((aligned_size + memory->segment_size - 1) / memory->segment_size) 
-                        * memory->segment_size;
+    // Se non trovato in cache, cerca nei segmenti
+    if (!found_chunk) {
+        for (size_t i = 0; i < memory->num_segments && !found_chunk; i++) {
+            MemorySegment* seg = memory->segments[i];
+            if (!seg || !seg->data) continue;
+            
+            MemoryChunk* chunk = seg->first_chunk;
+            while (chunk) {
+                if (chunk->is_free && chunk->size >= aligned_size) {
+                    found_chunk = chunk;
+                    // Rimuovi dalla cache se presente
+                    size_t chunk_bucket = log2(chunk->size);
+                    if (chunk_bucket < memory->num_free_buckets) {
+                        MemoryChunk** curr = &memory->free_chunks[chunk_bucket];
+                        while (*curr && *curr != chunk) curr = &(*curr)->next;
+                        if (*curr) *curr = chunk->next;
+                    }
+                    break;
+                }
+                chunk = chunk->next;
+            }
+        }
+    }
     
-    M3Result result = GrowMemory(memory, needed_size);
-    if (result != m3Err_none) return NULL;
+    // Se ancora non trovato, alloca nuovo segmento
+    if (!found_chunk) {
+        size_t needed_segments = (aligned_size + memory->segment_size - 1) / memory->segment_size;
+        M3Result result = AddSegment(memory, needed_segments);
+        if (result != m3Err_none) return NULL;
+        
+        MemorySegment* new_seg = memory->segments[memory->num_segments - 1];
+        if (!new_seg || !new_seg->data) return NULL;
+        
+        found_chunk = (MemoryChunk*)new_seg->data;
+        found_chunk->size = new_seg->size;
+        found_chunk->is_free = true;
+        found_chunk->next = NULL;
+        found_chunk->prev = NULL;
+        new_seg->first_chunk = found_chunk;
+    }
     
-    // Inizializza nuovo chunk nel nuovo segmento
-    MemorySegment* seg = memory->segments[memory->num_segments - 1];
-    MemoryChunk* chunk = (MemoryChunk*)seg->data;
-    chunk->size = aligned_size;
-    chunk->is_free = false;
-    chunk->next = NULL;
-    chunk->prev = NULL;
-    seg->first_chunk = chunk;
+    // Split chunk se necessario
+    if (found_chunk->size > aligned_size + sizeof(MemoryChunk) + WASM_CHUNK_SIZE) {
+        size_t remaining_size = found_chunk->size - aligned_size;
+        MemoryChunk* new_chunk = (MemoryChunk*)((char*)found_chunk + aligned_size);
+        
+        new_chunk->size = remaining_size;
+        new_chunk->is_free = true;
+        new_chunk->next = found_chunk->next;
+        new_chunk->prev = found_chunk;
+        
+        found_chunk->size = aligned_size;
+        found_chunk->next = new_chunk;
+        
+        // Aggiungi nuovo chunk alla cache
+        size_t new_bucket = log2(new_chunk->size);
+        if (new_bucket < memory->num_free_buckets) {
+            new_chunk->next = memory->free_chunks[new_bucket];
+            memory->free_chunks[new_bucket] = new_chunk;
+        }
+    }
     
-    return get_chunk_data(chunk);
+    // Marca come allocato e restituisci puntatore ai dati
+    found_chunk->is_free = false;
+    
+    if (WASM_DEBUG_SEGMENTED_MEMORY) {
+        ESP_LOGI("WASM3", "m3_malloc: returning ptr=%p, chunk=%p", 
+                 get_chunk_data(found_chunk), found_chunk);
+    }
+    
+    return get_chunk_data(found_chunk);
 }
 
 // Realloc ottimizzata
