@@ -30,7 +30,7 @@ void  m3_FreeModule  (IM3Module i_module)
         Module_FreeFunctions (i_module);
 
         m3_Def_Free (i_module->functions);
-        m3_Def_Free (i_module->imports);
+        //m3_Def_Free (i_module->imports);
         m3_Def_Free (i_module->funcTypes);
         m3_Def_Free (i_module->dataSegments);
         m3_Def_Free (i_module->table0);

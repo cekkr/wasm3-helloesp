@@ -72,6 +72,7 @@ typedef M3MemoryPoint *          IM3MemoryPoint;
 
 ////////////////////////////////
 IM3Memory m3_NewMemory();
+IM3Memory m3_InitMemory(IM3Memory memory);
 //IM3MemoryPoint m3_GetMemoryPoint(IM3Memory mem);
 
 M3Result AddSegment(M3Memory* memory);

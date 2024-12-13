@@ -29,6 +29,29 @@ IM3Memory m3_NewMemory(){
     return memory;
 }
 
+IM3Memory m3_InitMemory(IM3Memory memory){
+
+    if(memory == NULL){
+        ESP_LOGE("WASM3", "m3_InitMemory: Memory is null");
+        return NULL;
+    }
+
+    memory->segments = m3_Def_AllocArray(MemorySegment, WASM_INIT_SEGMENTS);    
+    memory->max_size = 0; 
+    memory->num_segments = 0;
+    memory->total_size = 0;
+    memory->segment_size = WASM_SEGMENT_SIZE;
+    //memory->point = 0;
+
+    // What are used for pages?
+    //memory->numPages = 0;
+    memory->maxPages = M3Memory_MaxPages;
+
+    init_region_manager(&memory->region_mgr, WASM_M3MEMORY_REGION_MIN_SIZE);
+
+    return memory;
+}
+
 bool allocate_segment(M3Memory* memory, size_t segment_index) {
     if (!memory || segment_index >= memory->num_segments) {
         return false;

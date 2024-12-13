@@ -43,7 +43,15 @@ d_m3BeginExternC
 ///
 ///
 
+//#define OPERTATIONS_ON_SEGMENTED_MEM
+
+#ifdef OPERTATIONS_ON_SEGMENTED_MEM
 # define d_m3BaseOpSig                  iptr _pc, m3stack_t _sp, M3Memory * _mem, m3reg_t _r0
+#else
+# define d_m3BaseOpSig                  pc_t _pc, m3stack_t _sp, M3Memory * _mem, m3reg_t _r0
+#endif
+
+
 # define d_m3BaseOpArgs                 _sp, _mem, _r0
 # define d_m3BaseOpAllArgs              _pc, _sp, _mem, _r0
 # define d_m3BaseOpDefaultArgs          0
@@ -72,6 +80,8 @@ d_m3BeginExternC
 
 
 #define d_m3RetSig                  static inline m3ret_t vectorcall
+
+#ifdef OPERTATIONS_ON_SEGMENTED_MEM
 
 #if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, cstr_t i_operationName);
@@ -104,6 +114,26 @@ d_m3BeginExternC
 #define nextOpDirect()              return nextOpImpl()
 #define jumpOpDirect(PC)            return jumpOpImpl((iptr)(PC))
 
+#else 
+
+# if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
+    typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, cstr_t i_operationName);
+#    define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, cstr_t i_operationName)
+
+#    define nextOpImpl()            ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs, __FUNCTION__)
+#    define jumpOpImpl(PC)          ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs, __FUNCTION__)
+# else
+    typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
+#    define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
+
+#    define nextOpImpl()            ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs)
+#    define jumpOpImpl(PC)          ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs)
+# endif
+
+#define nextOpDirect()              M3_MUSTTAIL return nextOpImpl()
+#define jumpOpDirect(PC)            M3_MUSTTAIL return jumpOpImpl((pc_t)(PC))
+
+#endif
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
 d_m3RetSig  RunCode  (d_m3OpSig, cstr_t i_operationName)

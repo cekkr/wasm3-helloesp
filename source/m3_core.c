@@ -108,14 +108,17 @@ void print_memory_info(){
 
 
 const bool DEBUG_MEMORY = false;
+const bool INT_MEM_SEGMENTED = false;
 
 void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
 {
     if(DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_CopyMem");
     
-    void* ptr_dest;
-    m3_memcpy(globalMemory, i_from, ptr_dest, i_size);
-    return ptr_dest;
+    if(INT_MEM_SEGMENTED){
+        void* ptr_dest;
+        m3_memcpy(globalMemory, i_from, ptr_dest, i_size);
+        return ptr_dest;
+    }
 
     /// Old implementation
     void * ptr = m3_Malloc("CopyMem", i_size);
