@@ -7,7 +7,7 @@
 
 #include "m3_pointers.h"
 
-static const bool WASM_DEBUG_POINTERS = true;
+static const bool WASM_DEBUG_POINTERS = false;
 static const bool WASM_DEBUG_POINTERS_BACKTRACE = false;
 static const bool WASM_DEBUG_POINTERS_IGNORE_OUTSIDE_HEAP = false; 
 static const bool WASM_POINTERS_CHECK_BOUNDS = false;
@@ -152,8 +152,8 @@ bool safe_free_with_check(void** ptr) {
 
 static jmp_buf g_jmpBuf;
 
-// Wrapper sicuro per m3_Int_Free specifica per WASM3
-bool safe_m3_int_free(void** ptr) {
+// Wrapper sicuro per m3_Def_Free specifica per WASM3
+bool safe_m3_free(void** ptr) {
     if (!ptr || !(*ptr)) {
         return false;
     }
@@ -165,7 +165,7 @@ bool safe_m3_int_free(void** ptr) {
     if (setjmp(g_jmpBuf) == 0) {
         // Tenta l'operazione in un contesto protetto
         if (is_ptr_valid(*ptr)) {
-            m3_Int_Free(*ptr);
+            m3_Def_Free(*ptr);
             *ptr = NULL;
             ESP_LOGD("WASM3", "Successfully freed WASM3 memory at %p", original_ptr);
             return true;

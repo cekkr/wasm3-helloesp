@@ -17,7 +17,7 @@
 
 IM3Module  m3_NewModule  (IM3Environment i_environment)
 {
-    IM3Module module = m3_Int_AllocStruct (M3Module);
+    IM3Module module = m3_Def_AllocStruct (M3Module);
 
     if (module)
     {
@@ -84,7 +84,7 @@ _       (Module_AddFunction (i_module, funcTypeIndex, NULL));
     function->compiled = NULL;
 
     if (function->ownsWasmCode)
-        m3_Int_Free (function->wasm);
+        m3_Def_Free (function->wasm);
 
     size_t numBytes = end - i_wasmBytes;
     function->wasm = m3_CopyMem (i_wasmBytes, numBytes);
@@ -101,7 +101,7 @@ _       (Module_AddFunction (i_module, funcTypeIndex, NULL));
 _   (CompileFunction (function));
 
     _catch:
-    m3_Int_Free (ftype);
+    m3_Def_Free (ftype);
 
     return result;
 }

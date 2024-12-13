@@ -6,14 +6,14 @@
 #define WASM_DEBUG_SEGMENTED_MEM_MAN 1
 
 IM3Memory m3_NewMemory(){
-    IM3Memory memory = m3_Int_AllocStruct (M3Memory);
+    IM3Memory memory = m3_Def_AllocStruct (M3Memory);
 
     if(memory == NULL){
         ESP_LOGE("WASM3", "m3_NewMemory: Memory allocation failed");
         return NULL;
     }
 
-    memory->segments = m3_Int_AllocArray(MemorySegment, WASM_INIT_SEGMENTS);    
+    memory->segments = m3_Def_AllocArray(MemorySegment, WASM_INIT_SEGMENTS);    
     memory->max_size = 0; 
     memory->num_segments = 0;
     memory->total_size = 0;
@@ -140,7 +140,7 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
 }
 
 /*IM3MemoryPoint m3_GetMemoryPoint(IM3Memory mem){
-    IM3MemoryPoint point = m3_Int_AllocStruct (M3MemoryPoint);
+    IM3MemoryPoint point = m3_Def_AllocStruct (M3MemoryPoint);
 
     if(point == NULL){
         ESP_LOGE("WASM3", "m3_GetMemoryPoint: Memory allocation failed");
@@ -155,13 +155,13 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
 // Funzione per aggiungere un nuovo segmento
 M3Result AddSegment(M3Memory* memory) {
     size_t new_size = (memory->num_segments + 1) * sizeof(MemorySegment);
-    MemorySegment* new_segments = m3_Int_Realloc(memory->segments, new_size);
+    MemorySegment* new_segments = m3_Def_Realloc(memory->segments, new_size);
     if (!new_segments) return m3Err_mallocFailed;
     
     memory->segments = new_segments;
     
     size_t new_idx = memory->num_segments;
-    memory->segments[new_idx].data = m3_Int_Malloc(memory->segment_size);
+    memory->segments[new_idx].data = m3_Def_Malloc(memory->segment_size);
     if (!memory->segments[new_idx].data) return m3Err_mallocFailed;
     
     memory->segments[new_idx].is_allocated = true;

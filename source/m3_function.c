@@ -15,7 +15,7 @@
 
 M3Result AllocFuncType (IM3FuncType * o_functionType, u32 i_numTypes)
 {
-    *o_functionType = (IM3FuncType) m3_Int_Malloc (sizeof (M3FuncType) + i_numTypes); 
+    *o_functionType = (IM3FuncType) m3_Def_Malloc (sizeof (M3FuncType) + i_numTypes); 
 
     if(!(*o_functionType)){
         ESP_LOGE("WASM3", "AllocFuncType allocation failed");
@@ -122,9 +122,10 @@ static const bool WASM_DEBUG_FUNCTION_RELEASE = false;
 void  Function_Release  (IM3Function i_function)
 {    
     if(WASM_DEBUG_FUNCTION_RELEASE) ESP_LOGI("WASM3", "Function_Release called");
-    //m3_Int_Free (i_function->constants);
+    //m3_Def_Free (i_function->constants);
 
-    m3_Free(&i_function->module->runtime->memory, (void**)&(i_function->constants));
+    m3_Dyn_Free(&i_function->module->runtime->memory, i_function->constants);
+    //m3_Def_Free(i_function->constants);
 
     for (int i = 0; i < i_function->numNames; i++)
     {
@@ -132,7 +133,8 @@ void  Function_Release  (IM3Function i_function)
         // name can be an alias of fieldUtf8
         if (i_function->names[i] != i_function->import.fieldUtf8)
         {
-            m3_Free(&i_function->module->runtime->memory, (void**)&(i_function->names[i]));
+            m3_Dyn_Free(&i_function->module->runtime->memory, i_function->names[i]);
+            //m3_Def_Free(i_function->names[i]);
         }
     }
 
@@ -141,21 +143,24 @@ void  Function_Release  (IM3Function i_function)
 
     if (i_function->ownsWasmCode){
         if(WASM_DEBUG_FUNCTION_RELEASE) ESP_LOGI("WASM3", "free i_function->wasm");
-        m3_Free(&i_function->module->runtime->memory, (void**)&(i_function->wasm));
+        m3_Dyn_Free(&i_function->module->runtime->memory, i_function->wasm);
+        //m3_Def_Free(i_function->wasm);
     }
 
     // Function_FreeCompiledCode (func);
 
 #   if (d_m3EnableCodePageRefCounting)
     {
-        m3_Free(i_function->module->runtime->memory, i_function->codePageRefs);
+        m3_Dyn_Free(i_function->module->runtime->memory, i_function->codePageRefs);
+        //m3_Def_Free(i_function->codePageRefs);
         i_function->numCodePageRefs = 0;
     }
 
    
 #   endif
 
-    m3_Free(&i_function->module->runtime->memory, (void**)&(i_function));
+    m3_Dyn_Free(&i_function->module->runtime->memory, i_function);
+    //m3_Def_Free(i_function);
 }
 
 
@@ -175,7 +180,7 @@ void  Function_FreeCompiledCode (IM3Function i_function)
             }
         }
 
-        m3_Int_Free (i_function->codePageRefs);
+        m3_Def_Free (i_function->codePageRefs);
 
         Runtime_ReleaseCodePages (i_function->module->runtime);
     }
@@ -345,7 +350,7 @@ M3FuncType* ParseFunctionSignature(const char* signature) {
     
     // Allocate memory for the structure plus the types array
     //size_t totalSize = sizeof(M3FuncType) + ((numRets + numArgs) * sizeof(u8));
-    IM3FuncType funcType = NULL; // (IM3FuncType)m3_Int_Malloc("M3FuncType", totalSize); // or m3_Int_AllocStruct(M3FuncType)
+    IM3FuncType funcType = NULL; // (IM3FuncType)m3_Def_Malloc("M3FuncType", totalSize); // or m3_Def_AllocStruct(M3FuncType)
 
     M3Result result;
     if((result = AllocFuncType(&funcType, numRets + numArgs)) != NULL){
@@ -383,7 +388,7 @@ M3FuncType* ParseFunctionSignature(const char* signature) {
                 break;
             default:
                 ESP_LOGE("WASM3", "ParseFunctionSignature: Invalid return type: %c", signature[i]);
-                m3_Int_Free(funcType);
+                m3_Def_Free(funcType);
                 return NULL;
         }
     }
@@ -408,7 +413,7 @@ M3FuncType* ParseFunctionSignature(const char* signature) {
                     break;
                 default:
                     ESP_LOGE("WASM3", "ParseFunctionSignature: Unknown argument type %c at position %d", signature[i], i);
-                    m3_Int_Free(funcType);
+                    m3_Def_Free(funcType);
                     return NULL;
             }
 
@@ -442,8 +447,8 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName, const c
     }
 
     // Alloca spazio per il nuovo nome della funzione
-    if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "m3_Int_AllocArray function name");
-    char* nameCopy = m3_Int_AllocArray(char, strlen(functionName) + 1);
+    if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "m3_Def_AllocArray function name");
+    char* nameCopy = m3_Def_AllocArray(char, strlen(functionName) + 1);
     if (!nameCopy) {
         return "nameCopy memory allocation failed";
     }

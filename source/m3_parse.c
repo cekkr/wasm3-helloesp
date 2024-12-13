@@ -54,7 +54,7 @@ _   (ReadLEB_u32 (& numTypes, & i_bytes, i_end));                               
     if (numTypes)
     {
         // table of IM3FuncType (that point to the actual M3FuncType struct in the Environment)
-        io_module->funcTypes = m3_Int_AllocArray (IM3FuncType, numTypes);
+        io_module->funcTypes = m3_Def_AllocArray (IM3FuncType, numTypes);
         _throwifnull (io_module->funcTypes);
         io_module->numFuncTypes = numTypes;
 
@@ -112,9 +112,9 @@ _               (NormalizeType (& retType, wasmType));
 
     if (result)
     {
-        m3_Int_Free (ftype);
+        m3_Def_Free (ftype);
         // FIX: M3FuncTypes in the table are leaked
-        m3_Int_Free (io_module->funcTypes);
+        m3_Def_Free (io_module->funcTypes);
         io_module->numFuncTypes = 0;
     }
 
@@ -260,28 +260,28 @@ _       (ReadLEB_u32 (& index, & i_bytes, i_end));                              
         {
             _throwif(m3Err_wasmMalformed, index >= io_module->numGlobals);
             IM3Global global = &(io_module->globals [index]);
-            m3_Int_Free (global->name);
+            m3_Def_Free (global->name);
             global->name = utf8;
             utf8 = NULL; // ownership transferred to M3Global
         }
         else if (exportKind == d_externalKind_memory)
         {
-            m3_Int_Free (io_module->memoryExportName);
+            m3_Def_Free (io_module->memoryExportName);
             io_module->memoryExportName = utf8;
             utf8 = NULL; // ownership transferred to M3Module
         }
         else if (exportKind == d_externalKind_table)
         {
-            m3_Int_Free (io_module->table0ExportName);
+            m3_Def_Free (io_module->table0ExportName);
             io_module->table0ExportName = utf8;
             utf8 = NULL; // ownership transferred to M3Module
         }
 
-        m3_Int_Free (utf8);
+        m3_Def_Free (utf8);
     }
 
 _catch:
-    m3_Int_Free (utf8);
+    m3_Def_Free (utf8);
     return result;
 }
 
@@ -417,7 +417,7 @@ _   (ReadLEB_u32 (& numDataSegments, & i_bytes, i_end));                        
 
     _throwif("too many data segments", numDataSegments > d_m3MaxSaneDataSegments);
 
-    io_module->dataSegments = m3_Int_AllocArray (M3DataSegment, numDataSegments);
+    io_module->dataSegments = m3_Def_AllocArray (M3DataSegment, numDataSegments);
     _throwifnull(io_module->dataSegments);
     io_module->numDataSegments = numDataSegments;
 
@@ -536,7 +536,7 @@ _               (Read_utf8 (& name, & i_bytes, i_end));
 //                          else m3log (parse, "prenamed: %s", io_module->functions [index].name);
                 }
 
-                m3_Int_Free (name);
+                m3_Def_Free (name);
             }
         }
 
@@ -560,7 +560,7 @@ _       (ParseSection_Name(io_module, i_bytes, i_end));
 _       (io_module->environment->customSectionHandler(io_module, name, i_bytes, i_end));
     }
 
-    m3_Int_Free (name);
+    m3_Def_Free (name);
 
     _catch: return result;
 }
@@ -620,7 +620,7 @@ M3Result  m3_ParseModule  (IM3Environment i_environment, IM3Module * o_module, c
     IM3Module module;                                                               m3log (parse, "load module: %d bytes", i_numBytes);
 _try {
     if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule start");
-    module = m3_Int_AllocStruct(M3Module);
+    module = m3_Def_AllocStruct(M3Module);
     if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: module allocated");
     _throwifnull (module);
     module->name = ".unnamed";                                                      m3log (parse, "load module: %d bytes", i_numBytes);

@@ -29,24 +29,24 @@ void  m3_FreeModule  (IM3Module i_module)
 
         Module_FreeFunctions (i_module);
 
-        m3_Int_Free (i_module->functions);
-        //m3_Int_Free (i_module->imports);
-        m3_Int_Free (i_module->funcTypes);
-        m3_Int_Free (i_module->dataSegments);
-        m3_Int_Free (i_module->table0);
+        m3_Def_Free (i_module->functions);
+        m3_Def_Free (i_module->imports);
+        m3_Def_Free (i_module->funcTypes);
+        m3_Def_Free (i_module->dataSegments);
+        m3_Def_Free (i_module->table0);
 
         for (u32 i = 0; i < i_module->numGlobals; ++i)
         {
-            m3_Int_Free (i_module->globals[i].name);
+            m3_Def_Free (i_module->globals[i].name);
             FreeImportInfo(&(i_module->globals[i].import));
         }
-        m3_Int_Free (i_module->globals);
-        m3_Int_Free (i_module->memoryExportName);
-        m3_Int_Free (i_module->table0ExportName);
+        m3_Def_Free (i_module->globals);
+        m3_Def_Free (i_module->memoryExportName);
+        m3_Def_Free (i_module->table0ExportName);
 
         FreeImportInfo(&i_module->memoryImport);
 
-        m3_Int_Free (i_module);
+        m3_Def_Free (i_module);
     }
 }
 
@@ -55,7 +55,7 @@ M3Result  Module_AddGlobal  (IM3Module io_module, IM3Global * o_global, u8 i_typ
 {
 _try {
     u32 index = io_module->numGlobals++;
-    io_module->globals = m3_Int_ReallocArray (M3Global, io_module->globals, io_module->numGlobals);
+    io_module->globals = m3_Def_ReallocArray (M3Global, io_module->globals, io_module->numGlobals);
     _throwifnull (io_module->globals);
     M3Global * global = & io_module->globals [index];
 
@@ -86,14 +86,14 @@ _try {
 
     if(WASM_DEBUG_PREALLOCFUNCTIONS) ESP_LOGI("WASM", "PreallocFunctions: (Total Funcs: %lu, All Funcs: %lu)", i_totalFunctions, io_module->allFunctions);
     if (i_totalFunctions > io_module->allFunctions) {
-        if(WASM_DEBUG_PREALLOCFUNCTIONS) ESP_LOGI("WASM", "PreallocFunctions: m3_Int_ReallocArray");
+        if(WASM_DEBUG_PREALLOCFUNCTIONS) ESP_LOGI("WASM", "PreallocFunctions: m3_Def_ReallocArray");
 
         if(WASM_DEBUG_PREALLOCFUNCTIONS && io_module->functions == NULL){
             ESP_LOGI("WASM", "PreallocFunctions: first time module->functions allocation");
         }
 
-        //io_module->functions = m3_ReallocArray (&io_module->runtime->memory, io_module->functions, M3Function, i_totalFunctions);
-        io_module->functions = m3_Int_ReallocArray (M3Function, io_module->functions, i_totalFunctions);
+        //io_module->functions = m3_Dyn_ReallocArray (&io_module->runtime->memory, io_module->functions, M3Function, i_totalFunctions);
+        io_module->functions = m3_Def_ReallocArray (M3Function, io_module->functions, i_totalFunctions);
         io_module->allFunctions = i_totalFunctions;
 
         if(WASM_DEBUG_PREALLOCFUNCTIONS) ESP_LOGI("WASM", "PreallocFunctions: allFunctions updated to %lu", io_module->allFunctions);
@@ -124,7 +124,7 @@ _   (Module_PreallocFunctions(io_module, io_module->numFunctions));
     IM3Function func = Module_GetFunction (io_module, index);
     
     if(func == NULL){
-        func = m3_Int_AllocStruct(M3Function);
+        func = m3_Def_AllocStruct(M3Function);
     }
 
     func->funcType = ft;
@@ -156,7 +156,7 @@ void  Module_GenerateNames  (IM3Module i_module)
 
         if (func->numNames == 0)
         {
-            char* buff = m3_Int_AllocArray(char, 16);
+            char* buff = m3_Def_AllocArray(char, 16);
             snprintf(buff, 16, "$func%d", i);
             func->names[0] = buff;
             func->numNames = 1;
@@ -168,7 +168,7 @@ void  Module_GenerateNames  (IM3Module i_module)
 
         if (global->name == NULL)
         {
-            char* buff = m3_Int_AllocArray(char, 16);
+            char* buff = m3_Def_AllocArray(char, 16);
             snprintf(buff, 16, "$global%d", i);
             global->name = buff;
         }

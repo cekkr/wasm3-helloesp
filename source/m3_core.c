@@ -835,7 +835,7 @@ void  ClearBacktrace  (IM3Runtime io_runtime)
     while (currentFrame)
     {
         M3BacktraceFrame * nextFrame = currentFrame->next;
-        m3_Free (currentFrame);
+        m3_Def_Free (currentFrame);
         currentFrame = nextFrame;
     }
 

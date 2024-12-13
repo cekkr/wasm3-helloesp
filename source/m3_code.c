@@ -53,7 +53,7 @@ IM3CodePage  NewCodePage  (IM3Runtime i_runtime, u32 i_minNumLines)
         }
         else
         {
-            m3_Free (page);
+            m3_Def_Free (page);
             return NULL;
         }
         page->info.mapping->basePC = GetPageStartPC(page);
@@ -76,7 +76,7 @@ void  FreeCodePages  (IM3CodePage * io_list)
 
         IM3CodePage next = page->info.next;
 #if d_m3RecordBacktraces
-        m3_Free (page->info.mapping);
+        m3_Def_Free (page->info.mapping);
 #endif // d_m3RecordBacktraces
         m3_Def_Free (page);
         page = next;
