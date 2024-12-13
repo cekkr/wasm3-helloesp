@@ -151,7 +151,7 @@ static u8* m3SegmentedMemAccess(IM3Memory mem, iptr offset, size_t size)
 #endif
 
 #define nextOpDirect()              return nextOpImpl()
-#define jumpOpDirect(PC)            return jumpOpImpl((u64)(PC))
+#define jumpOpDirect(PC)            return jumpOpImpl((iptr)(PC))
 
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)

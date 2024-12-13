@@ -25,6 +25,8 @@ IM3Memory m3_NewMemory(){
     //memory->numPages = 0;
     memory->maxPages = M3Memory_MaxPages;
 
+    init_region_manager(&memory->region);
+
     return memory;
 }
 
@@ -105,9 +107,6 @@ u8* GetSegmentPtr(IM3Memory memory, u64 offset, u32 size)
     
     return ((u8*)memory->segments[segment_index].data) + segment_offset;
 }
-
-
-#if M3Memory_Simplified
 
 M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
     if (!memory) return m3Err_nullMemory;
@@ -197,25 +196,6 @@ bool IsValidAddress(M3Memory* memory, u8* addr) {
     return GetSegmentAndOffset(memory, addr, &seg_idx, &offset);
 }
 
-// Funzione per crescere la memoria
-/*M3Result GrowMemory(M3Memory* memory, size_t additional_size) { // older implementation
-    size_t new_total_size = memory->total_size + additional_size;
-    
-    if (memory->max_size > 0 && new_total_size > memory->max_size) {
-        return m3Err_memoryLimit;
-    }
-    
-    // Calcola quanti nuovi segmenti servono
-    size_t needed_segments = (additional_size + memory->segment_size - 1) / memory->segment_size;
-    
-    for (size_t i = 0; i < needed_segments; i++) {
-        M3Result result = AddSegment(memory);
-        if (result != NULL) return result;
-    }
-    
-    return NULL;
-}*/
-
 // Ottieni indirizzo effettivo con controllo dei limiti
 u8* GetEffectiveAddress(M3Memory* memory, size_t offset) {
     size_t segment_idx = offset / memory->segment_size;
@@ -230,201 +210,216 @@ u8* GetEffectiveAddress(M3Memory* memory, size_t offset) {
     return (u8*)memory->segments[segment_idx].data + segment_offset;
 }
 
-#else
-
 ///
-/// Memory fragmentation
+/// Memory region
 ///
 
-// Funzione per verificare se un indirizzo appartiene allo stack
-bool IsStackAddress(M3Memory* memory, u8* addr) {
-    return (addr <= memory->stack.base && 
-            addr >= (memory->stack.base - memory->stack.size));
+// Initialize region manager
+void init_region_manager(RegionManager* mgr, size_t min_size) {
+    mgr->head = NULL;
+    mgr->min_region_size = min_size;
+    mgr->total_regions = 0;
 }
 
-// Funzione per verificare se un indirizzo appartiene alla memoria lineare
-bool IsLinearAddress(M3Memory* memory, u8* addr) {
-    return (addr >= memory->linear.base && 
-            addr < (memory->linear.base + memory->linear.size));
+// Create new region for a segment
+MemoryRegion* create_region(void* start, size_t size) {
+    MemoryRegion* region = malloc(sizeof(MemoryRegion));
+    if (!region) return NULL;
+    
+    region->start = start;
+    region->size = size;
+    region->is_free = true;
+    region->next = NULL;
+    region->prev = NULL;
+    
+    return region;
 }
 
-// Funzione per convertire offset stack in indirizzo assoluto
-u8* GetStackAddress(M3Memory* memory, size_t offset) {
-    return memory->stack.base - offset;
-}
-
-///
-/// Stack/linear differation
-///
-
-// Funzione per aggiungere un nuovo segmento
-M3Result AddSegment(M3Memory* memory) {
-    size_t new_size = (memory->num_segments + 1) * sizeof(MemorySegment);
-    MemorySegment* new_segments = m3_Int_Realloc("MemorySegment new_segments", memory->segments, new_size, 1); // 1 is old size
-    if (!new_segments) return m3Err_mallocFailed;
-    
-    memory->segments = new_segments;
-    
-    // Inizializza il nuovo segmento
-    size_t new_idx = memory->num_segments;
-    memory->segments[new_idx].data = m3_Int_Malloc("memory->segments[new_idx].data", memory->segment_size);
-    if (!memory->segments[new_idx].data) return m3Err_mallocFailed;
-    
-    memory->segments[new_idx].is_allocated = true;
-    memory->num_segments++;
-    memory->total_size += memory->segment_size;
-    
-    return NULL; // aka success
-}
-
-// Funzione per verificare se un indirizzo appartiene allo stack
-bool IsStackAddress(M3Memory* memory, u8* addr) {
-    for (size_t i = 0; i < memory->num_segments; i++) {
-        u8* seg_start = memory->segments[i].data;
-        u8* seg_end = seg_start + memory->segment_size;
-        
-        if (addr >= seg_start && addr < seg_end) {
-            size_t offset = addr - seg_start;
-            size_t total_offset = i * memory->segment_size + offset;
-            
-            // Verifica se l'offset totale è nella regione stack
-            return total_offset >= memory->total_size - memory->stack.size;
-        }
-    }
-    return false;
-}
-
-////////////////////////////////////////////////////////////////
-
-///
-/// New implementation
-///
-
-
-// Get segment and offset for a given address
-static bool GetSegmentAndOffset(M3Memory* memory, u8* addr, size_t* seg_idx, size_t* offset) {
-    for (size_t i = 0; i < memory->num_segments; i++) {
-        if (!memory->segments[i].is_allocated) continue;
-        
-        u8* seg_start = memory->segments[i].data;
-        u8* seg_end = seg_start + memory->segment_size;
-        
-        if (addr >= seg_start && addr < seg_end) {
-            *seg_idx = i;
-            *offset = addr - seg_start;
-            return true;
-        }
-    }
-    return false;
-}
-
-// Unified function to check address type
-AddressType GetAddressType(M3Memory* memory, u8* addr) {
-    size_t seg_idx, offset;
-    
-    if (!GetSegmentAndOffset(memory, addr, &seg_idx, &offset)) {
-        return ADDRESS_INVALID;
-    }
-    
-    MemorySegment* segment = &memory->segments[seg_idx];
-    size_t total_offset = seg_idx * memory->segment_size + offset;
-    
-    if (total_offset >= memory->total_size - memory->stack.size) {
-        return ADDRESS_STACK;
-    }
-    
-    if (total_offset < memory->linear.size) {
-        return ADDRESS_LINEAR;
-    }
-    
-    return ADDRESS_INVALID;
-}
-
-// Unified stack growth function
-M3Result GrowStack(M3Memory* memory, size_t additional_size) {
-    size_t new_stack_size = memory->stack.size + additional_size;
-    
-    // Check if we need a new segment
-    if (memory->linear.size + new_stack_size > memory->total_size) {
-        // Try to allocate new segment first
-        M3Result result = AddSegment(memory);
-        if (result != NULL) {
-            return result;
-        }
-        
-        // Update stack base to end of new segment
-        size_t last_seg = memory->num_segments - 1;
-        memory->stack.base = (u8*)memory->segments[last_seg].data + memory->segment_size;
-        
-        // Update segment metadata
-        memory->segments[last_seg].stack_size = additional_size;
+// Add region to manager
+void add_region(RegionManager* mgr, MemoryRegion* region) {
+    if (!mgr->head) {
+        mgr->head = region;
     } else {
-        // Find segment containing stack top
-        size_t seg_idx = (memory->total_size - memory->stack.size) / memory->segment_size;
-        memory->segments[seg_idx].stack_size += additional_size;
+        // Insert sorted by address
+        MemoryRegion* current = mgr->head;
+        while (current->next && current->next->start < region->start) {
+            current = current->next;
+        }
+        
+        region->next = current->next;
+        region->prev = current;
+        if (current->next) {
+            current->next->prev = region;
+        }
+        current->next = region;
+    }
+    mgr->total_regions++;
+}
+
+// Try to merge adjacent free regions
+void coalesce_regions(RegionManager* mgr, MemoryRegion* region) {
+    // Try to merge with next region
+    if (region->next && region->next->is_free) {
+        region->size += region->next->size;
+        MemoryRegion* to_remove = region->next;
+        region->next = to_remove->next;
+        if (to_remove->next) {
+            to_remove->next->prev = region;
+        }
+        free(to_remove);
+        mgr->total_regions--;
     }
     
-    memory->stack.size = new_stack_size;
+    // Try to merge with previous region
+    if (region->prev && region->prev->is_free) {
+        region->prev->size += region->size;
+        region->prev->next = region->next;
+        if (region->next) {
+            region->next->prev = region->prev;
+        }
+        free(region);
+        mgr->total_regions--;
+    }
+}
+
+// Find a free region of sufficient size
+MemoryRegion* find_free_region(RegionManager* mgr, size_t size) {
+    MemoryRegion* current = mgr->head;
+    while (current) {
+        if (current->is_free && current->size >= size) {
+            // Split region if remaining size is worth it
+            if (current->size >= size + mgr->min_region_size) {
+                MemoryRegion* new_region = create_region(
+                    (char*)current->start + size,
+                    current->size - size
+                );
+                current->size = size;
+                
+                new_region->next = current->next;
+                new_region->prev = current;
+                if (current->next) {
+                    current->next->prev = new_region;
+                }
+                current->next = new_region;
+                mgr->total_regions++;
+            }
+            return current;
+        }
+        current = current->next;
+    }
     return NULL;
 }
 
-// Get effective address with bounds checking
-u8* GetEffectiveAddress(M3Memory* memory, size_t offset) {
-    size_t segment_idx = offset / memory->segment_size;
-    size_t segment_offset = offset % memory->segment_size;
+// Updated malloc to use regions
+void* m3_malloc(M3Memory* memory, size_t size) {
+    if (!memory || size == 0) {
+        return NULL;
+    }
+
+    // Round up size to alignment
+    size_t aligned_size = ((size + 7) & ~7);  // 8-byte alignment
     
-    if (segment_idx >= memory->num_segments || 
-        !memory->segments[segment_idx].is_allocated) {
+    // Try to find existing free region
+    MemoryRegion* region = find_free_region(&memory->region_mgr, aligned_size);
+    
+    if (!region) {
+        // Need to allocate new segment
+        size_t segment_size = ((aligned_size + memory->segment_size - 1) 
+                              / memory->segment_size) * memory->segment_size;
+        
+        int segment_index = create_new_segment(memory, segment_size);
+        if (segment_index == -1) {
+            return NULL;
+        }
+        
+        // Create and add region for new segment
+        region = create_region(memory->segments[segment_index].data, segment_size);
+        if (!region) {
+            return NULL;
+        }
+        add_region(&memory->region_mgr, region);
+    }
+    
+    region->is_free = false;
+    return region->start;
+}
+
+// Updated free to use regions
+void m3_free(M3Memory* memory, void* ptr) {
+    if (!memory || !ptr) {
+        return;
+    }
+
+    // Find region containing this pointer
+    MemoryRegion* current = memory->region_mgr.head;
+    while (current) {
+        if (current->start == ptr) {
+            current->is_free = true;
+            coalesce_regions(&memory->region_mgr, current);
+            return;
+        }
+        current = current->next;
+    }
+}
+
+// Updated realloc to use regions
+void* m3_realloc(M3Memory* memory, void* ptr, size_t new_size) {
+    if (!memory) {
         return NULL;
     }
     
-    // Check if address is in valid region
-    if (offset >= memory->linear.size && 
-        offset < memory->total_size - memory->stack.size) {
+    if (!ptr) {
+        return m3_malloc(memory, new_size);
+    }
+    
+    if (new_size == 0) {
+        m3_free(memory, ptr);
         return NULL;
     }
-    
-    return (u8*)memory->segments[segment_idx].data + segment_offset;
-}
 
-// Memory initialization with proper segmentation
-M3Result InitMemory(M3Memory* memory, size_t initial_stack, size_t initial_linear) {
-    memory->segment_size = WASM_SEGMENT_SIZE;
-    
-    // Calculate required segments
-    size_t total_size = initial_stack + initial_linear;
-    size_t num_segments = (total_size + memory->segment_size - 1) / memory->segment_size;
-    
-    memory->segments = m3_Int_Malloc("memory->segments", num_segments * sizeof(MemorySegment));
-    if (!memory->segments) return m3Err_mallocFailed;
-    
-    // Initialize segments
-    for (size_t i = 0; i < num_segments; i++) {
-        memory->segments[i].data = NULL;
-        memory->segments[i].is_allocated = false;
-        memory->segments[i].stack_size = 0;
-        memory->segments[i].linear_size = 0;
+    // Round up new size
+    size_t aligned_size = ((new_size + 7) & ~7);  // 8-byte alignment
+
+    // Find current region
+    MemoryRegion* current = memory->region_mgr.head;
+    while (current && current->start != ptr) {
+        current = current->next;
     }
     
-    // Allocate first segment
-    if (!allocate_segment(memory, 0)) {
-        m3_Int_Free(memory->segments);
-        return m3Err_mallocFailed;
+    if (!current) {
+        return NULL;  // Invalid pointer
     }
-    
-    // Setup memory regions
-    memory->linear.base = memory->segments[0].data;
-    memory->linear.size = initial_linear;
-    memory->linear.current_offset = 0;
-    
-    memory->stack.base = (u8*)memory->segments[num_segments-1].data + memory->segment_size;
-    memory->stack.size = initial_stack;
-    memory->stack.current_offset = 0;
-    
-    memory->num_segments = num_segments;
-    memory->total_size = num_segments * memory->segment_size;
-    
-    return NULL;
-}
 
-#endif
+    // If current region is big enough, just return same pointer
+    if (current->size >= aligned_size) {
+        // Could split if remaining size is large enough
+        if (current->size >= aligned_size + memory->region_mgr.min_region_size) {
+            MemoryRegion* new_region = create_region(
+                (char*)current->start + aligned_size,
+                current->size - aligned_size
+            );
+            current->size = aligned_size;
+            
+            new_region->next = current->next;
+            new_region->prev = current;
+            if (current->next) {
+                current->next->prev = new_region;
+            }
+            current->next = new_region;
+            memory->region_mgr.total_regions++;
+        }
+        return ptr;
+    }
+
+    // Need to allocate new region
+    void* new_ptr = m3_malloc(memory, new_size);
+    if (!new_ptr) {
+        return NULL;
+    }
+
+    // Copy old data and free old region
+    memcpy(new_ptr, ptr, current->size);
+    m3_free(memory, ptr);
+
+    return new_ptr;
+}
