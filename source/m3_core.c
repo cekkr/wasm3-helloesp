@@ -99,6 +99,9 @@ void print_memory_info(){
     size_t free_internal = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     ESP_LOGI("WASM3", "Internal free memory: %d bytes\n", free_internal);
 
+    size_t spiram_internal = heap_caps_get_free_size(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    ESP_LOGI("WASM3", "SPIRAM free memory: %d bytes\n", spiram_internal);
+
     // Per vedere la frammentazione
     multi_heap_info_t info;
     heap_caps_get_info(&info, MALLOC_CAP_DEFAULT);
@@ -130,9 +133,9 @@ void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
 
 // Allocatore di default che usa heap_caps
 //static const int WASM_ENABLE_SPI_MEM = 0;
-static const int ALLOC_SHIFT_OF = 0; // 4
+static const int ALLOC_SHIFT_OF = 4; // 4
 static const bool WASM_DEBUG_ALLOCS = false;
-static const bool CHECK_MEMORY_AVAILABLE = false;
+static const bool CHECK_MEMORY_AVAILABLE = true;
 static const bool DEFAULT_ALLOC_ALIGNMENT = false;
 
 void* default_malloc(size_t size) {

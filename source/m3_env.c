@@ -235,7 +235,10 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
         /// Preparing the stack is no more necessary      
 
         size_t stackSize = i_stackSizeInBytes + 4 * sizeof (m3slot_t);
-        if(WASM_DEBUG_NEW_RUNTIME) ESP_LOGI("WASM3", "m3_NewRuntime: allocating originStack (%d)", stackSize);
+        if(WASM_DEBUG_NEW_RUNTIME) {
+            ESP_LOGI("WASM3", "m3_NewRuntime: allocating originStack (%d)", stackSize);
+            ESP_LOGI("WASM3", "flush");
+        }
 
         //runtime->originStack = m3_Malloc (memory, i_stackSizeInBytes + 4 * sizeof (m3slot_t)); // TODO: more precise stack checks
         //runtime->originStack = m3_NewStack(); // (not implemented) ad hoc M3Memory for stack        
