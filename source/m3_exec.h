@@ -1389,7 +1389,7 @@ d_m3Op  (Const32)
 
 d_m3Op  (Const64)
 {
-    u64 value = MEMACCESS(u32, _mem, _pc); // * (u64 *)_pc;
+    u64 value = MEMACCESS(u64, _mem, _pc); // * (u64 *)_pc;
     _pc += (M3_SIZEOF_PTR == 4) ? 2 : 1;
     slot (u64) = value;
     nextOp ();

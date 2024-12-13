@@ -76,13 +76,16 @@ static u8* m3SegmentedMemAccess(IM3Memory mem, iptr offset, size_t size)
 // Helper macro per accesso sicuro a offset specifici
 # define m3MemAccessAt(mem, off, sz)   m3SegmentedMemAccess((M3Memory*)(mem), (off), (sz))
 
-#define MEMACCESS(type, mem, pc) \
-    *(type*)m3SegmentedMemAccess(mem, (iptr)pc, sizeof(type))
-
-/*#define STRINGIFY(x) #x
+#define TRACK_MEMACCESS
+#ifdef TRACK_MEMACCESS
+#define STRINGIFY(x) #x
 #define MEMACCESS(type, mem, pc) \    
     (printf("MEM ACCESS type: %s\n", STRINGIFY(type)), \
-    *((type*)(m3SegmentedMemAccess(mem, pc, sizeof(type)))))*/
+    *((type*)(m3SegmentedMemAccess(mem, pc, sizeof(type)))))
+#else
+#define MEMACCESS(type, mem, pc) \
+    *(type*)m3SegmentedMemAccess(mem, (iptr)pc, sizeof(type))
+#endif
  
 
 ///
@@ -123,14 +126,14 @@ static u8* m3SegmentedMemAccess(IM3Memory mem, iptr offset, size_t size)
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, cstr_t i_operationName);
 #    define d_m3Op(NAME)           M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, cstr_t i_operationName)
 
-#    define nextOpImpl()           ((IM3Operation)MEMACCESS(IM3Operation, _mem, _pc))(_pc + 1, d_m3OpArgs, __FUNCTION__)
-#    define jumpOpImpl(PC)         ((IM3Operation)MEMACCESS(IM3Operation, _mem, PC))(PC + 1, d_m3OpArgs, __FUNCTION__)
+#    define nextOpImpl()           (MEMACCESS(IM3Operation, _mem, _pc))(_pc + 1, d_m3OpArgs, __FUNCTION__)
+#    define jumpOpImpl(PC)         (MEMACCESS(IM3Operation, _mem, PC))(PC + 1, d_m3OpArgs, __FUNCTION__)
 #else
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
 #    define d_m3Op(NAME)           M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
 
-#    define nextOpImpl()           ((IM3Operation)MEMACCESS(IM3Operation, _mem, _pc))(_pc + 1, d_m3OpArgs)
-#    define jumpOpImpl(PC)         ((IM3Operation)MEMACCESS(IM3Operation, _mem, PC))(PC + 1, d_m3OpArgs)
+#    define nextOpImpl()           (MEMACCESS(IM3Operation, _mem, _pc))(_pc + 1, d_m3OpArgs)
+#    define jumpOpImpl(PC)         (MEMACCESS(IM3Operation, _mem, PC))(PC + 1, d_m3OpArgs)
 #endif
 
 #define nextOpDirect()              M3_MUSTTAIL return nextOpImpl()
