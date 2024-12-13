@@ -28,6 +28,7 @@ IM3Memory m3_NewMemory(){
     return memory;
 }
 
+//todo: deprecate it
 bool allocate_segment_data(M3Memory* memory, size_t segment_index) {
     if (!memory || segment_index >= memory->num_segments) {
         ESP_LOGI("WASM3", "allocate_segment_data: memory null or segment_index > num_segments (%d > %d)", segment_index, memory->num_segments);
@@ -121,7 +122,7 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
 }
 
 // Funzione per aggiungere un nuovo segmento
-const bool WASM_DEBUG_ADD_SEGMENT = true;
+const bool WASM_DEBUG_ADD_SEGMENT = false;
 M3Result AddSegment(M3Memory* memory, size_t set_num_segments) {
     if(memory->segment_size == 0){
         ESP_LOGE("WASM3", "AddSegment: memory->segment_size is zero");
@@ -202,48 +203,16 @@ M3Result AddSegment(M3Memory* memory, size_t set_num_segments) {
     return m3Err_mallocFailed;
 }
 
-// Funzione per trovare segmento e offset di un indirizzo
-bool GetSegmentAndOffset(M3Memory* memory, u8* addr, size_t* seg_idx, size_t* offset) {
-    for (size_t i = 0; i < memory->num_segments; i++) {
-        if (!memory->segments[i]->is_allocated) continue;
-        
-        u8* seg_start = memory->segments[i]->data;
-        u8* seg_end = seg_start + memory->segments[i]->size;
-        
-        if (addr >= seg_start && addr < seg_end) {
-            *seg_idx = i;
-            *offset = addr - seg_start;
-            return true;
-        }
-    }
-    return false;
-}
-
-// Funzione per verificare validità di un indirizzo
-bool IsValidAddress(M3Memory* memory, u8* addr) {
-    size_t seg_idx, offset;
-    return GetSegmentAndOffset(memory, addr, &seg_idx, &offset);
-}
-
-// Ottieni indirizzo effettivo con controllo dei limiti
-u8* GetEffectiveAddress(M3Memory* memory, size_t offset) {
-    size_t segment_idx = offset / memory->segment_size;
-    size_t segment_offset = offset % memory->segment_size;
-    
-    if (segment_idx >= memory->num_segments || 
-        !memory->segments[segment_idx]->is_allocated ||
-        segment_offset >= memory->segments[segment_idx]->size) {
-        return NULL;
-    }
-    
-    return (u8*)memory->segments[segment_idx]->data + segment_offset;
-}
-
 const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
 
+const bool WASM_DEBUG_MEM_ACCESS = true;
 u8* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size) 
 {
     u32 offset = (u32)ptr;
+
+    if(WASM_DEBUG_MEM_ACCESS){
+        ESP_LOGI("WASM3", "m3SegmentedMemAccess: requested memory %d", offset);
+    }
 
     if(mem == NULL){
         ESP_LOGE("WASM3", "m3SegmentedMemAccess called with null memory pointer");     
@@ -253,8 +222,7 @@ u8* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size)
 
     if(WASM_DEBUG_SEGMENTED_MEM_ACCESS){ 
         ESP_LOGI("WASM3", "m3SegmentedMemAccess call");         
-        ESP_LOGI("WASM3", "m3SegmentedMemAccess: mem = %p", (void*)mem);
-        ESP_LOGI("WASM3", "m3SegmentedMemAccess: well... I'm going to crash!");    
+        //ESP_LOGI("WASM3", "m3SegmentedMemAccess: mem = %p", (void*)mem);  
     }
 
     // Verifica che l'accesso sia nei limiti della memoria totale
