@@ -203,7 +203,7 @@ void* resolve_pointer(M3Memory* memory, void* ptr) {
             uint8_t* res = (uint8_t*)memory->segments[segment_index]->data + segment_offset;
             if(WASM_DEBUG_MEM_ACCESS){ 
                 ESP_LOGI("WASM3", "resolve_pointer: returning M3Memory pointer %p", res);
-                ESP_LOG("WASM3", "resolve_pointer: returning M3Memory pointer");
+                ESP_LOGI("WASM3", "resolve_pointer: returning M3Memory pointer");
             }
             return res;
         }
@@ -212,7 +212,7 @@ void* resolve_pointer(M3Memory* memory, void* ptr) {
     // Se non è nella memoria segmentata, ritorna il puntatore originale
     if(WASM_DEBUG_MEM_ACCESS){ 
         ESP_LOGI("WASM3", "resolve_pointer: returning original pointer %p", ptr);
-        ESP_LOG("WASM3", "resolve_pointer: returning M3Memory pointer");
+        ESP_LOGI("WASM3", "resolve_pointer: returning M3Memory pointer");
     }
 
     return ptr;
