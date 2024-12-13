@@ -540,8 +540,8 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
 
     if (not i_module->memoryImported)
     {
-        if(io_runtime->memory->segment_size == 0){
-            ESP_LOGE("WASM3", "InitMemory: o_runtime->memory->segment_size == 0");
+        if(io_runtime->memory.segment_size == 0){
+            ESP_LOGE("WASM3", "InitMemory: o_runtime->memory.segment_size == 0");
         }
 
         //m3_InitMemory(&io_runtime->memory);
