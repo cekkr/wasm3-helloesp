@@ -25,7 +25,7 @@ IM3Memory m3_NewMemory(){
     //memory->numPages = 0;
     memory->maxPages = M3Memory_MaxPages;
 
-    init_region_manager(&memory->region_mgr);
+    init_region_manager(&memory->region_mgr, WASM_M3MEMORY_REGION_MIN_SIZE);
 
     return memory;
 }

@@ -569,6 +569,8 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
         }
         
         io_runtime->memory.current_ptr = io_runtime->memory.segments[0].data;
+
+        init_region_manager(&io_runtime->memory.region_mgr, WASM_M3MEMORY_REGION_MIN_SIZE);
     }
 
     return result;

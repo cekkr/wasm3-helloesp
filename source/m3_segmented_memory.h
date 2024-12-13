@@ -13,6 +13,7 @@
 #define WASM_INIT_SEGMENTS 16 // useless, due to the use of reallocation
 //#define WASM_PAGE_SIZE 65536 // deprecated
 #define WASM_ENABLE_SPI_MEM 0
+#define WASM_M3MEMORY_REGION_MIN_SIZE 32
 
 #define M3Memory_MaxPages 1024
 
@@ -92,3 +93,5 @@ u8* m3SegmentedMemAccess(IM3Memory mem, iptr offset, size_t size);
 void* m3_malloc(M3Memory* memory, size_t size);
 void m3_free(M3Memory* memory, void* ptr);
 void* m3_realloc(M3Memory* memory, void* ptr, size_t new_size);
+
+void init_region_manager(RegionManager* mgr, size_t min_size);
