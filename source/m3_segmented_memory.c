@@ -132,6 +132,8 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
     }
     
     memory->total_size = new_total;
+
+    m3_malloc(memory, 1); // Allocate memory
     
     return NULL;
 }
