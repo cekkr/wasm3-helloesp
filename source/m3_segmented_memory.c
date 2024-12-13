@@ -29,6 +29,7 @@ IM3Memory m3_NewMemory(){
     return memory;
 }
 
+const bool WASM_DEBUG_M3_INIT_MEMORY = true;
 IM3Memory m3_InitMemory(IM3Memory memory){
 
     if(memory == NULL){
@@ -42,6 +43,8 @@ IM3Memory m3_InitMemory(IM3Memory memory){
     memory->total_size = 0;
     memory->segment_size = WASM_SEGMENT_SIZE;
     //memory->point = 0;
+
+    if(WASM_DEBUG_M3_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: memory->segment_size= %d", memory->segment_size);
 
     // What are used for pages?
     //memory->numPages = 0;

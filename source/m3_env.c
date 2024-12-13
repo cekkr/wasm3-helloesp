@@ -540,7 +540,11 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
 
     if (not i_module->memoryImported)
     {
-        m3_InitMemory(&io_runtime->memory);
+        if(io_runtime->memory->segment_size == 0){
+            ESP_LOGE("WASM3", "InitMemory: o_runtime->memory->segment_size == 0");
+        }
+
+        //m3_InitMemory(&io_runtime->memory);
 
         // Imposta i parametri di base della memoria
         u32 maxPages = i_module->memoryInfo.maxPages;
@@ -589,7 +593,7 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
         
         io_runtime->memory.current_ptr = io_runtime->memory.segments[0]->data;
 
-        init_region_manager(&io_runtime->memory.region_mgr, WASM_M3MEMORY_REGION_MIN_SIZE);
+        //init_region_manager(&io_runtime->memory.region_mgr, WASM_M3MEMORY_REGION_MIN_SIZE);
     }
 
     return result;
