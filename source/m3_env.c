@@ -15,11 +15,14 @@ static const bool WASM_DEBUG_NEW_ENV = false;
 IM3Environment  m3_NewEnvironment  ()
 {
     if(WASM_DEBUG_NEW_ENV) ESP_LOGI("WASM3", "m3_NewEnvironment called");
+    init_globalMemory();
+    if(WASM_DEBUG_NEW_ENV) ESP_LOGI("WASM3", "m3_NewEnvironment: init_globalMemory called");
+
     IM3Environment env = m3_Int_AllocStruct (M3Environment);
-    if(WASM_DEBUG_NEW_ENV) ESP_LOGI("WASM3", "env allocated");
+    if(WASM_DEBUG_NEW_ENV) ESP_LOGI("WASM3", "env allocated");    
 
     if (env)
-    {
+    {                
         _try
         {
             // create FuncTypes for all simple block return ValueTypes

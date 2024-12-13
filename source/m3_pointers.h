@@ -99,10 +99,10 @@ ptr_status_t validate_ptr_for_free(const void* ptr);
 /// Global memory
 
 static M3Memory globalMemory = {0};
-void init_globalMemory(){
+static void init_globalMemory(){
     if(globalMemory.segment_size == 0){
         globalMemory.segment_size = WASM_SEGMENT_SIZE;
-        globalMemory.segments = m3_Int_AllocArray(MemorySegment, WASM_INIT_SEGMENTS);    
+        globalMemory.segments = m3_Int_AllocArray(MemorySegment, WASM_INIT_SEGMENTS);  
         init_region_manager(&globalMemory.region_mgr, WASM_M3MEMORY_REGION_MIN_SIZE);
     }
 }
