@@ -178,15 +178,38 @@ M3Result AddSegment(M3Memory* memory, size_t set_num_segments) {
 const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
 
 const bool WASM_DEBUG_MEM_ACCESS = true;
+
 void* resolve_pointer(M3Memory* memory, void* ptr) {
-    // Prima verifica che la memoria sia valida
+    // Verifiche base
     if (!memory || !memory->segments || memory->num_segments == 0) {
-        return ptr;
+        ESP_LOGI("WASM3", "resolve_pointer: memory is empty");
+        goto returnOriginal;
     }
 
-    // Calcola il range della memoria segmentata
-    void* seg_start = memory->segments[0]->data;
-    void* seg_end = memory->segments[memory->num_segments - 1]->data + memory->segment_size;
+    // Dobbiamo trovare il primo e l'ultimo segmento valido
+    void* seg_start = NULL;
+    void* seg_end = NULL;
+    
+    // Trova il primo segmento allocato
+    for (size_t i = 0; i < memory->num_segments; i++) {
+        if (memory->segments[i] && memory->segments[i]->data) {
+            seg_start = memory->segments[i]->data;
+            break;
+        }
+    }
+    
+    // Se non troviamo nemmeno un segmento valido, ritorna il puntatore originale
+    if (!seg_start) {
+        goto returnOriginal;
+    }
+    
+    // Trova l'ultimo segmento allocato
+    for (size_t i = memory->num_segments - 1; i >= 0; i--) {
+        if (memory->segments[i] && memory->segments[i]->data) {
+            seg_end = (uint8_t*)memory->segments[i]->data + memory->segment_size;
+            break;
+        }
+    }
 
     // Se il puntatore è nel range della memoria segmentata
     if (ptr >= seg_start && ptr < seg_end) {
@@ -197,18 +220,25 @@ void* resolve_pointer(M3Memory* memory, void* ptr) {
         size_t segment_index = offset / memory->segment_size;
         size_t segment_offset = offset % memory->segment_size;
         
-        // Verifica che il segmento sia allocato
-        if (segment_index < memory->num_segments && memory->segments[segment_index]->is_allocated) {
-            // Ritorna il puntatore effettivo nel segmento
+        // Verifica che il segmento esista ed sia allocato
+        if (segment_index < memory->num_segments && 
+            memory->segments[segment_index] && 
+            memory->segments[segment_index]->data &&
+            memory->segments[segment_index]->is_allocated) {
+            
             uint8_t* res = (uint8_t*)memory->segments[segment_index]->data + segment_offset;
+
             if(WASM_DEBUG_MEM_ACCESS){ 
                 ESP_LOGI("WASM3", "resolve_pointer: returning M3Memory pointer %p", res);
                 ESP_LOGI("WASM3", "resolve_pointer: returning M3Memory pointer");
             }
+
             return res;
         }
     }
     
+    returnOriginal:
+
     // Se non è nella memoria segmentata, ritorna il puntatore originale
     if(WASM_DEBUG_MEM_ACCESS){ 
         ESP_LOGI("WASM3", "resolve_pointer: returning original pointer %p", ptr);
