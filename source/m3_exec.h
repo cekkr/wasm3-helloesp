@@ -1378,7 +1378,7 @@ d_m3Op  (ContinueLoopIf)
 d_m3Op  (Const32)
 {
     u32 value = MEMACCESS(u32, _mem, _pc++); //* (u32 *)_pc++;    
-    slot (u32) = value;
+    * (u32*) (_sp) = value;
     nextOp ();
 }
 
@@ -1387,7 +1387,7 @@ d_m3Op  (Const64)
 {
     u64 value = MEMACCESS(u64, _mem, _pc); // * (u64 *)_pc;
     _pc += (M3_SIZEOF_PTR == 4) ? 2 : 1;
-    slot (u64) = value;
+    * (u64*) (_sp) = value;
     nextOp ();
 }
 
