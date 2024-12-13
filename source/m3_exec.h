@@ -1375,20 +1375,22 @@ d_m3Op  (ContinueLoopIf)
 }
 
 
-d_m3Op  (Const32)
-{
-    u32 value = MEMACCESS(u32, _mem, _pc++); //* (u32 *)_pc++;    
-    * (u32*) (_sp) = value;
-    nextOp ();
+d_m3Op (Const32) {
+    u32 value = MEMACCESS(u32, _mem, _pc++);
+    void* dest = m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(u32));
+    * (u32*) dest = value;
+    nextOp();
 }
 
 
-d_m3Op  (Const64)
-{
-    u64 value = MEMACCESS(u64, _mem, _pc); // * (u64 *)_pc;
-    _pc += (M3_SIZEOF_PTR == 4) ? 2 : 1;
-    * (u64*) (_sp) = value;
-    nextOp ();
+d_m3Op (Const64) {
+    u64 value = MEMACCESS(u64, _mem, _pc);  
+    _pc += 2;  // Su ESP32 sempre 2 perché M3_SIZEOF_PTR == 4
+
+    void* dest = m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(u64));
+    memcpy(dest, &value, sizeof(u64));  // Usiamo memcpy per evitare problemi di allineamento
+
+    nextOp();
 }
 
 d_m3Op  (Unsupported)
