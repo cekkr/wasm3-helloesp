@@ -126,18 +126,33 @@ static u8* m3SegmentedMemAccess(IM3Memory mem, iptr offset, size_t size)
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, cstr_t i_operationName);
 #    define d_m3Op(NAME)           M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, cstr_t i_operationName)
 
-#    define nextOpImpl()           (MEMACCESS(IM3Operation, _mem, _pc))(_pc + 1, d_m3OpArgs, __FUNCTION__)
-#    define jumpOpImpl(PC)         (MEMACCESS(IM3Operation, _mem, PC))(PC + 1, d_m3OpArgs, __FUNCTION__)
+#    define nextOpImpl()           ({ \
+                                      IM3Operation op = (IM3Operation)m3SegmentedMemAccess(_mem, (iptr)_pc, sizeof(IM3Operation)); \
+                                      op(_pc + 1, d_m3OpArgs, __FUNCTION__); \
+                                   })
+
+#    define jumpOpImpl(PC)         ({ \
+                                      IM3Operation op = (IM3Operation)m3SegmentedMemAccess(_mem, (iptr)(PC), sizeof(IM3Operation)); \
+                                      op((PC) + 1, d_m3OpArgs, __FUNCTION__); \
+                                   })
 #else
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
 #    define d_m3Op(NAME)           M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
 
-#    define nextOpImpl()           (MEMACCESS(IM3Operation, _mem, _pc))(_pc + 1, d_m3OpArgs)
-#    define jumpOpImpl(PC)         (MEMACCESS(IM3Operation, _mem, PC))(PC + 1, d_m3OpArgs)
+#    define nextOpImpl()           ({ \
+                                      IM3Operation op = (IM3Operation)m3SegmentedMemAccess(_mem, (iptr)_pc, sizeof(IM3Operation)); \
+                                      op(_pc + 1, d_m3OpArgs); \
+                                   })
+
+#    define jumpOpImpl(PC)         ({ \
+                                      IM3Operation op = (IM3Operation)m3SegmentedMemAccess(_mem, (iptr)(PC), sizeof(IM3Operation)); \
+                                      op((PC) + 1, d_m3OpArgs); \
+                                   })
 #endif
 
-#define nextOpDirect()              M3_MUSTTAIL return nextOpImpl()
-#define jumpOpDirect(PC)            M3_MUSTTAIL return jumpOpImpl((u64)(PC))
+#define nextOpDirect()              return nextOpImpl()
+#define jumpOpDirect(PC)            return jumpOpImpl((u64)(PC))
+
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
 d_m3RetSig  RunCode  (d_m3OpSig, cstr_t i_operationName)
