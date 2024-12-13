@@ -196,6 +196,12 @@ M3Result AddSegment(M3Memory* memory) {
         return m3Err_mallocFailed;
     }
     
+
+    if(WASM_DEBUG_ADD_SEGMENT){
+         ESP_LOGI("WASM3", "AddSegment: memory->segments[%d]=%p", new_idx, memory->segments[new_idx]);
+         ESP_LOGI("WASM3", "AddSegment: flush");
+    }
+
     // Allocare i dati del segmento
     memory->segments[new_idx]->data = m3_Def_Malloc(memory->segment_size);
     if (!memory->segments[new_idx]->data) {
