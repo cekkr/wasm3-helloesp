@@ -71,7 +71,7 @@ ptr_status_t validate_ptr_for_free(const void* ptr);
 #define     m3_Realloc(MEM, PTR, NEW)               m3_realloc(MEM, PTR, NEW)
 #define     m3_AllocStruct(MEM, STRUCT)                  (STRUCT *)m3_malloc (MEM, sizeof (STRUCT))
 #define     m3_AllocArray(MEM, STRUCT, NUM)              (STRUCT *)m3_malloc (MEM, sizeof (STRUCT) * (NUM))
-#define     m3_ReallocArray(MEM, PTR, STRUCT, NEW)      ((STRUCT *)m3_realloc (MEM, PTR, sizeof (STRUCT) * (NEW)))
+#define     m3_ReallocArray(MEM, PTR, STRUCT, NEW)          (STRUCT *)m3_realloc (MEM, PTR, sizeof (STRUCT) * (NEW))
 #define     m3_Free(MEM, PTR)                              m3_free(MEM, PTR)
 //#define     m3_FreeMemory(P)                        do { m3_free((void*)(P), true); (P) = NULL; } while(0) 
 

@@ -487,7 +487,10 @@ const bool WASM_DEBUG_SEGMENTED_MEMORY = true;
 
 // Updated malloc to handle segment loading
 void* m3_malloc(M3Memory* memory, size_t size) {
-    if(WASM_DEBUG_SEGMENTED_MEMORY) ESP_LOGI("WASM3", "m3_malloc called");
+    if(WASM_DEBUG_SEGMENTED_MEMORY) {
+        ESP_LOGI("WASM3", "m3_malloc called");
+        ESP_LOGI("WASM3", "m3_malloc: memory->segment_size = %zu", memory->segment_size);
+    }
 
     if (!memory || size == 0) {
         ESP_LOGE("WASM3", "m3_malloc: memory NULL or size = %d", size);

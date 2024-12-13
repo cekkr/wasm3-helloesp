@@ -113,8 +113,8 @@ u8  GetFuncTypeResultType  (const IM3FuncType i_funcType, u16 i_index)
 
 void FreeImportInfo (M3ImportInfo * i_info)
 {
-    m3_Int_Free (i_info->moduleUtf8);
-    m3_Int_Free (i_info->fieldUtf8);
+    m3_Def_Free (i_info->moduleUtf8);
+    m3_Def_Free (i_info->fieldUtf8);
 }
 
 static const bool WASM_DEBUG_FUNCTION_RELEASE = false;
@@ -124,7 +124,7 @@ void  Function_Release  (IM3Function i_function)
     if(WASM_DEBUG_FUNCTION_RELEASE) ESP_LOGI("WASM3", "Function_Release called");
     //m3_Int_Free (i_function->constants);
 
-    safe_m3_int_free((void**)&(i_function->constants));
+    m3_Free(&i_function->module->runtime->memory, (void**)&(i_function->constants));
 
     for (int i = 0; i < i_function->numNames; i++)
     {
@@ -132,7 +132,7 @@ void  Function_Release  (IM3Function i_function)
         // name can be an alias of fieldUtf8
         if (i_function->names[i] != i_function->import.fieldUtf8)
         {
-            safe_m3_int_free((void**)&(i_function->names[i]));
+            m3_Free(&i_function->module->runtime->memory, (void**)&(i_function->names[i]));
         }
     }
 
@@ -141,21 +141,21 @@ void  Function_Release  (IM3Function i_function)
 
     if (i_function->ownsWasmCode){
         if(WASM_DEBUG_FUNCTION_RELEASE) ESP_LOGI("WASM3", "free i_function->wasm");
-        safe_m3_int_free((void**)&(i_function->wasm));
+        m3_Free(&i_function->module->runtime->memory, (void**)&(i_function->wasm));
     }
 
     // Function_FreeCompiledCode (func);
 
 #   if (d_m3EnableCodePageRefCounting)
     {
-        m3_Int_Free (i_function->codePageRefs);
+        m3_Free(i_function->module->runtime->memory, i_function->codePageRefs);
         i_function->numCodePageRefs = 0;
     }
 
    
 #   endif
 
-    safe_m3_int_free((void**)&(i_function));
+    m3_Free(&i_function->module->runtime->memory, (void**)&(i_function));
 }
 
 

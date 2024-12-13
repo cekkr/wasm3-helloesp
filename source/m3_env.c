@@ -18,7 +18,7 @@ IM3Environment  m3_NewEnvironment  ()
     init_globalMemory();
     if(WASM_DEBUG_NEW_ENV) ESP_LOGI("WASM3", "m3_NewEnvironment: init_globalMemory called");
 
-    IM3Environment env = m3_Int_AllocStruct (M3Environment);
+    IM3Environment env = m3_Def_AllocStruct (M3Environment);
     if(WASM_DEBUG_NEW_ENV) ESP_LOGI("WASM3", "env allocated");    
 
     if (env)
@@ -65,7 +65,7 @@ void  Environment_Release  (IM3Environment i_environment)
     while (ftype)
     {
         IM3FuncType next = ftype->next;
-        m3_Int_Free (ftype);
+        m3_Def_Free (ftype);
         ftype = next;
     }
 
@@ -79,7 +79,7 @@ void  m3_FreeEnvironment  (IM3Environment i_environment)
     if (i_environment)
     {
         Environment_Release (i_environment);
-        m3_Int_Free (i_environment);
+        m3_Def_Free (i_environment);
     }
 }
 
@@ -104,7 +104,7 @@ void  Environment_AddFuncType  (IM3Environment i_environment, IM3FuncType * io_f
     {
         if (AreFuncTypesEqual (newType, addType))
         {
-            m3_Int_Free (addType);
+            m3_Def_Free (addType);
             break;
         }
         else {
@@ -115,7 +115,7 @@ void  Environment_AddFuncType  (IM3Environment i_environment, IM3FuncType * io_f
 
             if(!ultra_safe_ptr_valid(newType)){
                 ESP_LOGE("WASM3", "Invalid newType pointer in Environment_AddFuncType");
-                m3_Int_Free (addType);
+                m3_Def_Free (addType);
                 return;
             }
         }
@@ -213,7 +213,7 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
 {
     if(WASM_DEBUG_NEW_RUNTIME) ESP_LOGI("WASM3", "m3_NewRuntime called");
 
-    IM3Runtime runtime = m3_Int_AllocStruct (M3Runtime);
+    IM3Runtime runtime = m3_Def_AllocStruct (M3Runtime);
     if(WASM_DEBUG_NEW_RUNTIME) ESP_LOGI("WASM3", "m3_NewRuntime: m3_Int_AllocStruct done");
 
     if (runtime)
@@ -224,16 +224,14 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
         runtime->environment = i_environment;
         runtime->userdata = i_userdata;
 
-        runtime->originStack = 0;
+        /*runtime->originStack = 0;
         runtime->stack = runtime->originStack;
         runtime->maxStackSize = i_stackSizeInBytes; 
-        runtime->numStackSlots = i_stackSizeInBytes / sizeof (m3slot_t);  
-
-        return runtime;
+        runtime->numStackSlots = i_stackSizeInBytes / sizeof (m3slot_t);*/
 
         /// Preparing the stack is no more necessary      
 
-        //runtime->originStack = m3_Int_Malloc ("Wasm Stack", i_stackSizeInBytes + 4*sizeof (m3slot_t)); // TODO: more precise stack checks
+        runtime->originStack = m3_Malloc (&runtime->memory, i_stackSizeInBytes + 4*sizeof (m3slot_t)); // TODO: more precise stack checks
         //runtime->originStack = m3_NewStack(); // (not implemented) ad hoc M3Memory for stack
 
         if (runtime->originStack)
@@ -249,7 +247,7 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
         }
         else { 
             ESP_LOGE("WASM3", "m3_NewRuntime: runtime->originStack is NULL");
-            m3_Int_Free (runtime);
+            m3_Def_Free (runtime);
         }
     }
     else {
@@ -304,11 +302,11 @@ void FreeMemory(IM3Memory memory) {
         // Libera la memoria di ogni segmento allocato
         for (size_t i = 0; i < memory->num_segments; i++) {
             if (memory->segments[i].is_allocated && memory->segments[i].data) {
-                m3_Int_Free(memory->segments[i].data);
+                m3_Def_Free(memory->segments[i].data);
             }
         }
         // Libera l'array dei segmenti
-        m3_Int_Free(memory->segments);
+        m3_Def_Free(memory->segments);
         memory->segments = NULL;
         memory->num_segments = 0;
     }
@@ -325,7 +323,7 @@ void  Runtime_Release  (IM3Runtime i_runtime)
     Environment_ReleaseCodePages (i_runtime->environment, i_runtime->pagesOpen);
     Environment_ReleaseCodePages (i_runtime->environment, i_runtime->pagesFull);
 
-    m3_Int_Free (i_runtime->originStack);
+    m3_Free (&i_runtime->memory, i_runtime->originStack); // todo: check the stack management
 
     void* memory_ptr = &i_runtime->memory;
     FreeMemory (memory_ptr);
@@ -570,10 +568,10 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
                 // Cleanup in caso di errore
                 for (size_t j = 0; j < io_runtime->memory.num_segments; j++) {
                     if (io_runtime->memory.segments[j].is_allocated) {
-                        m3_Int_Free(io_runtime->memory.segments[j].data);
+                        m3_Def_Free(io_runtime->memory.segments[j].data);
                     }
                 }
-                m3_Int_Free(io_runtime->memory.segments);
+                m3_Def_Free(io_runtime->memory.segments);
                 return result;
             }
         }
@@ -728,7 +726,7 @@ _           (ReadLEB_u32 (& numElements, & bytes, end));
             // make sure the table isn't shrunk.
             if (endElement > io_module->table0Size)
             {
-                m3_Int_ReallocArray (IM3Function, io_module->table0, endElement);
+                m3_ReallocArray (&io_module->runtime->memory, io_module->table0, IM3Function, endElement);
                 io_module->table0Size = (u32) endElement;
             }
             _throwifnull(io_module->table0);

@@ -35,7 +35,7 @@ IM3CodePage  NewCodePage  (IM3Runtime i_runtime, u32 i_minNumLines)
         return NULL;
     }
 
-    page = (IM3CodePage)m3_Int_Malloc (pageSize);
+    page = (IM3CodePage)m3_Def_Malloc (pageSize);
 
     if (page)
     {
@@ -44,7 +44,7 @@ IM3CodePage  NewCodePage  (IM3Runtime i_runtime, u32 i_minNumLines)
 
 #if d_m3RecordBacktraces
         u32 pageSizeBt = sizeof (M3CodeMappingPage) + sizeof (M3CodeMapEntry) * page->info.numLines;
-        page->info.mapping = (M3CodeMappingPage *)m3_Int_Malloc (pageSizeBt);
+        page->info.mapping = (M3CodeMappingPage *)m3_Def_Malloc (pageSizeBt);
 
         if (page->info.mapping)
         {
@@ -78,7 +78,7 @@ void  FreeCodePages  (IM3CodePage * io_list)
 #if d_m3RecordBacktraces
         m3_Free (page->info.mapping);
 #endif // d_m3RecordBacktraces
-        m3_Int_Free (page);
+        m3_Def_Free (page);
         page = next;
     }
 
