@@ -540,6 +540,8 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
 
     if (not i_module->memoryImported)
     {
+        m3_InitMemory(&io_runtime->memory);
+
         // Imposta i parametri di base della memoria
         u32 maxPages = i_module->memoryInfo.maxPages;
         u32 pageSize = i_module->memoryInfo.pageSize;
