@@ -354,11 +354,13 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
     // OPTZ: use a simplified interpreter for expressions
 
     // create a temporary runtime context
-#if defined(d_m3PreferStaticAlloc)
-    static M3Runtime runtime = { 0 };
-#else
-    M3Runtime runtime = { 0 };
-#endif
+
+    #if defined(d_m3PreferStaticAlloc)
+        static M3Runtime runtime = { 0 };
+    #else
+        M3Runtime runtime = { 0 };
+    #endif    
+
     //M3_INIT (runtime);    
 
     if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: M3Runtime size: %d", sizeof (M3Runtime));
@@ -368,7 +370,7 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
     runtime.environment = savedRuntime->environment;
     runtime.numStackSlots = savedRuntime->numStackSlots; 
     runtime.stack = savedRuntime->stack;
-    runtime.memory = savedRuntime->memory;
+    //runtime.memory = savedRuntime->memory;
 
     m3stack_t stack = (m3stack_t)runtime.stack;
 
@@ -405,9 +407,9 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
             ESP_LOGI("WASM3", "EvaluateExpression: RunCode");
 
             # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-            m3ret_t r = RunCode (m3code, stack, &runtime.memory, d_m3OpDefaultArgs, d_m3BaseCstr); // NULL or &runtime.memory?
+            m3ret_t r = RunCode (m3code, stack, NULL, d_m3OpDefaultArgs, d_m3BaseCstr); // NULL or &runtime.memory?
             # else
-            m3ret_t r = RunCode (m3code, stack, &runtime.memory, d_m3OpDefaultArgs); 
+            m3ret_t r = RunCode (m3code, stack, NULL, d_m3OpDefaultArgs); 
             # endif
             
             if (r == 0)

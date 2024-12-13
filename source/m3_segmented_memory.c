@@ -272,7 +272,7 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
     return ptr;
 }
 
-u8* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size) 
+void* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size) 
 {
     u32 offset = (u32)ptr;
 
@@ -317,7 +317,7 @@ u8* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size)
     }
     
     // Ora possiamo essere sicuri che il segmento è allocato
-    return ((u8*)mem->segments[segment_index]->data) + segment_offset;
+    return ((void*)mem->segments[segment_index]->data) + segment_offset;
 }
 
 bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size)

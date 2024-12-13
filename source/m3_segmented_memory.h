@@ -71,7 +71,7 @@ static void* GetMemorySegment(IM3Memory memory, u32 offset);
 
 bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size);
 void* resolve_pointer(M3Memory* memory, void* ptr);
-u8* m3SegmentedMemAccess(IM3Memory mem, void* offset, size_t size);
+void* m3SegmentedMemAccess(IM3Memory mem, void* offset, size_t size);
 
 /// Regions
 void* m3_malloc(M3Memory* memory, size_t size);
