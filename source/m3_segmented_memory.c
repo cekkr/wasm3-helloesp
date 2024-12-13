@@ -292,6 +292,10 @@ void m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
 
 const bool WASM_DEBUG_SEGMENTED_MEMORY = false;
 
+
+#define PRINT_PTR(ptr) ESP_LOGI("WASM3", "Pointer value: %p (unsigned: %u, signed: %d)", \
+                               (void*)ptr, (uintptr_t)ptr, (intptr_t)ptr)
+
 IM3Memory m3_InitMemory(IM3Memory memory) {
     if (!memory) return NULL;
     
@@ -348,12 +352,12 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     u32 ptr1 = m3_malloc(memory, 1);
     u32 ptr2 = m3_malloc(memory, 1);
 
-    if (WASM_DEBUG_SEGMENTED_MEM_MAN) {
-        ESP_LOGI("WASM3", "m3_InitMemory: allocated %d and %d", ptr1, ptr2);
-    }
+    PRINT_PTR(ptr1);
+    PRINT_PTR(ptr2);
     
     return memory;
 }
+
 
 void* m3_malloc(IM3Memory memory, size_t size) {
     if (!memory || size == 0) return NULL;
