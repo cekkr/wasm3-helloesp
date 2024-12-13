@@ -28,6 +28,8 @@ IM3Memory m3_InitMemory(IM3Memory memory){
 
     init_region_manager(&memory->region_mgr, WASM_M3MEMORY_REGION_MIN_SIZE);
 
+    m3_malloc(memory, 1); // allocate symbolic memory
+
     return memory;
 }
 
