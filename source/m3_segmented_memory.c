@@ -95,6 +95,24 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
 
 // Funzione per aggiungere un nuovo segmento
 const bool WASM_DEBUG_ADD_SEGMENT = false;
+
+M3Result InitSegment(M3Memory* memory, MemorySegment* seg){
+    if (!memory ||!seg) return m3Err_nullMemory;
+
+    // Allocare i dati del segmento
+    seg->data = m3_Def_Malloc(memory->segment_size);
+    if (!seg->data) {  
+        ESP_LOGE("WASM3", "InitSegment: can't allocate segment data");          
+        return m3Err_nullSegmentData;
+    }
+    
+    seg->is_allocated = true;
+    seg->size = memory->segment_size;
+    memory->total_size += memory->segment_size;  
+
+    return NULL;
+}
+
 M3Result AddSegment(M3Memory* memory, size_t set_num_segments) {
     if(memory->segment_size == 0){
         ESP_LOGE("WASM3", "AddSegment: memory->segment_size is zero");
@@ -149,16 +167,7 @@ M3Result AddSegment(M3Memory* memory, size_t set_num_segments) {
         MemorySegment* seg = memory->segments[new_idx];
         if(WASM_DEBUG_ADD_SEGMENT) ESP_LOGI("WASM3", "AddSegment: Can access segment structure");
 
-        // Allocare i dati del segmento
-        seg->data = m3_Def_Malloc(memory->segment_size);
-        if (!seg->data) {  
-            ESP_LOGE("WASM3", "AddSegment: can't allocate segment data");          
-            goto backToOriginal;
-        }
-        
-        seg->is_allocated = true;
-        seg->size = memory->segment_size;
-        memory->total_size += memory->segment_size;                   
+        InitSegment(memory, seg);           
     }
 
     memory->num_segments = new_segments;
@@ -188,14 +197,27 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
     size_t segment_offset = offset % memory->segment_size;
 
     // Check if segment exists and is valid
-    if (segment_index >= memory->num_segments || 
-        !memory->segments[segment_index] || 
-        !memory->segments[segment_index]->data) {
-        //ESP_LOGW("WASM3", "get_segment_pointer: requested unallocated segment %d", segment_index);
-        return ERROR_POINTER;
+    if (segment_index >= memory->num_segments) {
+        if(segment_index - memory->num_segments <= 2){
+            AddSegment(memory, segment_index);
+        }
+        else {
+            ESP_LOGW("WASM3", "get_segment_pointer: requested unallocated segment %d", segment_index);
+            goto failResult;
+        }
+
+        if(memory->segments[segment_index] && !memory->segments[segment_index]->data){
+            if(InitSegment(memory, memory->segments[segment_index])){
+                ESP_LOGE("WASM3", "get_segment_pointer: failed allocating segment %d", segment_index);
+                goto failResult;
+            }
+        }        
     }
 
     return (uint8_t*)(memory->segments[segment_index]->data + segment_offset);
+
+    failResult:    
+    return ERROR_POINTER;
 }
 
 void* resolve_pointer_uncheck(IM3Memory memory, void* ptr) {
