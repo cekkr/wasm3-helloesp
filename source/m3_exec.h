@@ -634,7 +634,7 @@ d_m3Op (CallIndirect)
     else forwardTrap(r);
 }
 
-d_m3Op (CallRawFunction)
+/*d_m3Op (CallRawFunction)
 {
     d_m3TracePrepare
 
@@ -666,6 +666,42 @@ d_m3Op (CallRawFunction)
 
     if (M3_UNLIKELY(possible_trap)) {
         // Non serve più refreshare _mem
+        pushBacktraceFrame();
+    }
+    forwardTrap(possible_trap);
+}*/
+
+d_m3Op (CallRawFunction)
+{
+    d_m3TracePrepare
+
+    M3ImportContext ctx;
+    M3RawCall call = (M3RawCall) (*MEMACCESS(M3RawCall, _mem, _pc++));
+    ctx.function = immediate (IM3Function);
+    ctx.userdata = immediate (void *);
+    u64* const sp = ((u64*)_sp);
+    IM3Memory memory = _mem;
+    IM3Runtime runtime = m3MemRuntime(_mem);
+
+    // Aggiungi controlli di sicurezza
+    if (runtime == NULL) {
+        return m3Err_mallocFailed;  // o un altro codice di errore appropriato
+    }
+
+    void* stack_backup = NULL;
+    if (runtime->stack != NULL) {
+        stack_backup = runtime->stack;
+    }
+    
+    runtime->stack = sp;
+    
+    m3ret_t possible_trap = call(runtime, &ctx, sp, memory);
+    
+    if (stack_backup != NULL) {
+        runtime->stack = stack_backup;
+    }
+
+    if (M3_UNLIKELY(possible_trap)) {
         pushBacktraceFrame();
     }
     forwardTrap(possible_trap);
