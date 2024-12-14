@@ -210,7 +210,8 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
         }
 
         ESP_LOGI("WASM3", "get_segment_pointer: get new segment index %d (num_segments: %d)", segment_index, memory->num_segments);
-        if(memory->segments[segment_index] && !memory->segments[segment_index]->data){
+        if(memory->segments[segment_index] 
+            && memory->segments[segment_index]->data == NULL){
             if(InitSegment(memory, memory->segments[segment_index])){
                 ESP_LOGE("WASM3", "get_segment_pointer: failed allocating segment %d", segment_index);
                 goto failResult;

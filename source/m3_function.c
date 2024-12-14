@@ -465,7 +465,7 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName, const c
     }
 
     // Alloca spazio per il nuovo nome della funzione
-    if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "m3_Def_AllocArray function name");
+    if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "m3_Def_AllocArray function name %d %s", strlen(functionName), functionName);
     char* nameCopy = m3_Def_AllocArray(char, strlen(functionName) + 1);
     if (!nameCopy) {
         return "nameCopy memory allocation failed";
