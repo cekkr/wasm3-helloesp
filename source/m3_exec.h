@@ -1434,14 +1434,17 @@ d_m3Op (Const64) {
    // Prima verifica la validità dell'accesso alla memoria sorgente
    void* src_ptr = m3SegmentedMemAccess_2(_mem, (u32)_pc, sizeof(u64));
 
-   if (src_ptr == ERROR_POINTER) {
-       ESP_LOGE("WASM3", "Source memory access failed at pc=%u", (unsigned)_pc);
-       return m3Err_mallocFailed;
-   }
+    // Leggi il valore usando memcpy per evitare problemi di allineamento
+    u64 value = 0;
 
-   // Leggi il valore usando memcpy per evitare problemi di allineamento
-   u64 value;
-   memcpy(&value, src_ptr, sizeof(u64));
+    if (src_ptr == ERROR_POINTER) {
+        ESP_LOGI("WASM3", "Source memory access failed at pc=%u", (unsigned)_pc);
+        //return m3Err_mallocFailed;
+    }
+    else {
+        memcpy(&value, src_ptr, sizeof(u64));
+    }   
+
    _pc += 2;  // Su ESP32 sempre 2 perché M3_SIZEOF_PTR == 4
 
    // Calcola l'offset di destinazione
@@ -1454,7 +1457,7 @@ d_m3Op (Const64) {
                 (unsigned)_sp, immediate(i32));
        return m3Err_mallocFailed;
    }
-
+    
    // Verifica allineamento su ESP32
    if ((uintptr_t)dest & 7) {
        ESP_LOGW("WASM3", "Unaligned 64-bit access at offset %u", dest_offset);
