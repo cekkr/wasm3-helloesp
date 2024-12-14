@@ -887,7 +887,7 @@ d_m3Op  (Entry)
         size_t start_segment = stack_start_offset / memory->segment_size;
         size_t end_segment = (stack_start_offset + required_size - 1) / memory->segment_size;
                             
-        if(end_segment > memory->num_segments){
+        /*if(end_segment > memory->num_segments){
             // realloc new segments
             memory->num_segments = end_segment;
             ESP_LOGI("WASM3", "(Entry): Going to reallocate %u memory->segments", end_segment);
@@ -895,9 +895,9 @@ d_m3Op  (Entry)
                 forwardTrap(error_details(m3Err_mallocFailed, "during segments realloc in (Entry)"));
                 return NULL;
             }
-        }
+        }*/
 
-        if (!allocate_segment_data(memory, end_segment)) {
+        if (AddSegment(memory, end_segment)) {
             forwardTrap(error_details(m3Err_mallocFailed, "during allocate_segment_data in (Entry)"));
             return NULL;
         }
