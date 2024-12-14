@@ -121,11 +121,11 @@ static const bool WASM_DEBUG_FUNCTION_RELEASE = false;
 
 void  Function_Release  (IM3Function i_function)
 {    
-    #define FUNCTIONS_ON_SEGMENTED_MEM 
+    #define FUNCTIONS_ON_SEGMENTED_MEM 0
 
     if(WASM_DEBUG_FUNCTION_RELEASE) ESP_LOGI("WASM3", "Function_Release called");
 
-    #ifdef FUNCTIONS_ON_SEGMENTED_MEM
+    #if FUNCTIONS_ON_SEGMENTED_MEM
     m3_Dyn_Free(&i_function->module->runtime->memory, i_function->constants);
     #else
     m3_Def_Free(i_function->constants);
@@ -137,7 +137,7 @@ void  Function_Release  (IM3Function i_function)
         // name can be an alias of fieldUtf8
         if (i_function->names[i] != i_function->import.fieldUtf8)
         {
-            #ifdef FUNCTIONS_ON_SEGMENTED_MEM
+            #if FUNCTIONS_ON_SEGMENTED_MEM
             m3_Dyn_Free(&i_function->module->runtime->memory, i_function->names[i]);
             #else
             m3_Def_Free(i_function->names[i]);
@@ -150,7 +150,7 @@ void  Function_Release  (IM3Function i_function)
 
     if (i_function->ownsWasmCode){
         if(WASM_DEBUG_FUNCTION_RELEASE) ESP_LOGI("WASM3", "free i_function->wasm");
-        #ifdef FUNCTIONS_ON_SEGMENTED_MEM
+        #if FUNCTIONS_ON_SEGMENTED_MEM
         m3_Dyn_Free(&i_function->module->runtime->memory, i_function->wasm);
         #else
         m3_Def_Free(i_function->wasm);
@@ -161,7 +161,7 @@ void  Function_Release  (IM3Function i_function)
 
 #   if (d_m3EnableCodePageRefCounting)
     {
-        #ifdef FUNCTIONS_ON_SEGMENTED_MEM
+        #if FUNCTIONS_ON_SEGMENTED_MEM
         m3_Dyn_Free(i_function->module->runtime->memory, i_function->codePageRefs);
         #else
         m3_Def_Free(i_function->codePageRefs);
@@ -173,7 +173,7 @@ void  Function_Release  (IM3Function i_function)
    
 #   endif
 
-    #ifdef FUNCTIONS_ON_SEGMENTED_MEM
+    #if FUNCTIONS_ON_SEGMENTED_MEM
     m3_Dyn_Free(&i_function->module->runtime->memory, i_function);
     #else
     m3_Def_Free(i_function);
