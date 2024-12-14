@@ -309,6 +309,8 @@ static const int DEBUG_TOP_MEMORY = 1;
 void FreeMemory(IM3Memory memory) {
     if(DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory called");
 
+    if(memory->segments == NULL) return;
+
     if (memory->segments) {
         // Libera la memoria di ogni segmento allocato
         for (size_t i = 0; i < memory->num_segments; i++) {
@@ -335,7 +337,8 @@ void  Runtime_Release  (IM3Runtime i_runtime)
     Environment_ReleaseCodePages (i_runtime->environment, i_runtime->pagesFull);
 
     //m3_Free (&i_runtime->memory, i_runtime->originStack); // todo: check the stack management (and use macros)
-    m3_Def_Free(i_runtime->originStack);
+    if(i_runtime->originStack != NULL)
+        m3_Def_Free(i_runtime->originStack);
 
     void* memory_ptr = &i_runtime->memory;
     FreeMemory (memory_ptr);
