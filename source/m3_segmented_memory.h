@@ -78,3 +78,6 @@ void* m3SegmentedMemAccess_2(IM3Memory memory, u32 offset, size_t size);
 void* m3_malloc(M3Memory* memory, size_t size);
 void m3_free(M3Memory* memory, void* ptr);
 void* m3_realloc(M3Memory* memory, void* ptr, size_t new_size);
+
+
+static u8 ERROR_POINTER[sizeof(u64)] __attribute__((aligned(8)));

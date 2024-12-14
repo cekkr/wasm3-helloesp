@@ -264,7 +264,7 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
         ESP_LOGI("WASM3", "resolve_pointer: returning M3Memory pointer");
     }
 
-    if(is_ptr_valid(ptr)){
+    if(!is_ptr_valid(ptr)){
         ESP_LOGE("WASM3", "resolve_pointer: invalid pointer %p", ptr);
         return NULL;
     }
@@ -325,7 +325,7 @@ void* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size)
 void* m3SegmentedMemAccess_2(IM3Memory memory, u32 offset, size_t size) {
     if (!memory || !memory->segments) {
         ESP_LOGE("WASM3", "Invalid memory or segments pointer");
-        return (void*) offset;
+        goto returnAsIs;
     }
 
     // Calcola in quale segmento si trova l'offset
@@ -336,21 +336,21 @@ void* m3SegmentedMemAccess_2(IM3Memory memory, u32 offset, size_t size) {
     if (segment_index >= memory->num_segments) {
         ESP_LOGE("WASM3", "Segment index out of bounds: %zu >= %zu", 
                  segment_index, memory->num_segments);
-        return (void*) offset;
+        goto returnAsIs;
     }
 
     MemorySegment* segment = memory->segments[segment_index];
     if (!segment || !segment->data || !segment->is_allocated) {
         ESP_LOGE("WASM3", "Invalid segment or segment not allocated at index %zu", 
                  segment_index);
-        return (void*) offset;
+        goto returnAsIs;
     }
 
     // Verifica se l'accesso supera i limiti del segmento
     if (segment_offset + size > segment->size) {
         ESP_LOGE("WASM3", "Access exceeds segment bounds: offset %zu + size %zu > %zu", 
                  segment_offset, size, segment->size);
-        return (void*) offset;
+        goto returnAsIs;
     }
 
     // Verifica che il chunk contenga l'offset richiesto
@@ -376,7 +376,15 @@ void* m3SegmentedMemAccess_2(IM3Memory memory, u32 offset, size_t size) {
 
     ESP_LOGE("WASM3", "No valid chunk found for offset %zu in segment %zu", 
              segment_offset, segment_index);
-    return (void*) offset;;
+
+    returnAsIs:
+
+    if(!is_ptr_valid((void*) offset)){
+        ESP_LOGE("WASM3", "m3SegmentedMemAccess_2: invalid pointer %d", offset);
+        return ERROR_POINTER;
+    }
+
+    return (void*) offset;
 }
 
 bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size)

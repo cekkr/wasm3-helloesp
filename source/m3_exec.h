@@ -1415,9 +1415,12 @@ d_m3Op (Const64) {
 
 d_m3Op (Const32) {
     u32 value = MEMACCESS_SAFE(u32, _mem, (u32)_pc++);
+
+    ESP_ERROR_CHECK(heap_caps_check_integrity_all(true));
+
     void* dest = m3SegmentedMemAccess_2(_mem, _sp + immediate(i32), sizeof(u32));
     
-    if (!dest) {
+    if (dest == ERROR_POINTER) {
         ESP_LOGE("WASM3", "Destination memory access failed at sp=%u, immediate=%d", 
                  (unsigned)_sp, immediate(i32));
         return m3Err_mallocFailed;
@@ -1430,7 +1433,8 @@ d_m3Op (Const32) {
 d_m3Op (Const64) {
    // Prima verifica la validità dell'accesso alla memoria sorgente
    void* src_ptr = m3SegmentedMemAccess_2(_mem, (u32)_pc, sizeof(u64));
-   if (!src_ptr) {
+
+   if (src_ptr == ERROR_POINTER) {
        ESP_LOGE("WASM3", "Source memory access failed at pc=%u", (unsigned)_pc);
        return m3Err_mallocFailed;
    }
@@ -1445,7 +1449,7 @@ d_m3Op (Const64) {
    
    // Verifica l'accesso alla memoria di destinazione
    void* dest = m3SegmentedMemAccess_2(_mem, dest_offset, sizeof(u64));
-   if (!dest) {
+   if (dest == ERROR_POINTER) {
        ESP_LOGE("WASM3", "Destination memory access failed at sp=%u, immediate=%d", 
                 (unsigned)_sp, immediate(i32));
        return m3Err_mallocFailed;
