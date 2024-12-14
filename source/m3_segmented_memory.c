@@ -325,7 +325,7 @@ void* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size)
 void* m3SegmentedMemAccess_2(IM3Memory memory, u32 offset, size_t size) {
     if (!memory || !memory->segments) {
         ESP_LOGE("WASM3", "Invalid memory or segments pointer");
-        return NULL;
+        return (void*) offset;
     }
 
     // Calcola in quale segmento si trova l'offset
@@ -336,21 +336,21 @@ void* m3SegmentedMemAccess_2(IM3Memory memory, u32 offset, size_t size) {
     if (segment_index >= memory->num_segments) {
         ESP_LOGE("WASM3", "Segment index out of bounds: %zu >= %zu", 
                  segment_index, memory->num_segments);
-        return NULL;
+        return (void*) offset;
     }
 
     MemorySegment* segment = memory->segments[segment_index];
     if (!segment || !segment->data || !segment->is_allocated) {
         ESP_LOGE("WASM3", "Invalid segment or segment not allocated at index %zu", 
                  segment_index);
-        return NULL;
+        return (void*) offset;
     }
 
     // Verifica se l'accesso supera i limiti del segmento
     if (segment_offset + size > segment->size) {
         ESP_LOGE("WASM3", "Access exceeds segment bounds: offset %zu + size %zu > %zu", 
                  segment_offset, size, segment->size);
-        return NULL;
+        return (void*) offset;
     }
 
     // Verifica che il chunk contenga l'offset richiesto
@@ -376,7 +376,7 @@ void* m3SegmentedMemAccess_2(IM3Memory memory, u32 offset, size_t size) {
 
     ESP_LOGE("WASM3", "No valid chunk found for offset %zu in segment %zu", 
              segment_offset, segment_index);
-    return NULL;
+    return (void*) offset;;
 }
 
 bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size)

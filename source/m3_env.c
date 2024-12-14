@@ -334,7 +334,8 @@ void  Runtime_Release  (IM3Runtime i_runtime)
     Environment_ReleaseCodePages (i_runtime->environment, i_runtime->pagesOpen);
     Environment_ReleaseCodePages (i_runtime->environment, i_runtime->pagesFull);
 
-    m3_Free (&i_runtime->memory, i_runtime->originStack); // todo: check the stack management
+    //m3_Free (&i_runtime->memory, i_runtime->originStack); // todo: check the stack management (and use macros)
+    m3_Def_Free(i_runtime->originStack);
 
     void* memory_ptr = &i_runtime->memory;
     FreeMemory (memory_ptr);
