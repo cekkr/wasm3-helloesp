@@ -422,10 +422,12 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
             m3ret_t r = RunCode (m3code, stack, &o->runtime->memory , d_m3OpDefaultArgs); 
             # endif
             
-            ESP_LOGI("WASM3", "EvaluateExpression: RunCode result: %d", r);
+            ESP_LOGI("WASM3", "EvaluateExpression: RunCode r: %d", r);
             if (r == 0)
             {                                                                               
                 m3log (runtime, "expression result: %s", SPrintValue (stack, i_type));
+                ESP_LOGI("WASM3", "EvaluateExpression: RunCode result: %s",  SPrintValue (stack, i_type));
+                
                 if (SizeOfType (i_type) == sizeof (u32))
                 {
                     * (u32 *) o_expressed = * ((u32 *) stack);
