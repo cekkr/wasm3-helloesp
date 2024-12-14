@@ -178,6 +178,25 @@ M3Result AddSegment(M3Memory* memory, size_t set_num_segments) {
 const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = false;
 const bool WASM_DEBUG_MEM_ACCESS = false;
 
+void* get_segment_pointer(IM3Memory memory, u32 offset) {
+    if (!memory || !memory->segments) {
+        return ERROR_POINTER;
+    }
+
+    // Calculate segment index and offset
+    size_t segment_index = offset / memory->segment_size;
+    size_t segment_offset = offset % memory->segment_size;
+
+    // Check if segment exists and is valid
+    if (segment_index >= memory->num_segments || 
+        !memory->segments[segment_index] || 
+        !memory->segments[segment_index]->data) {
+        return NULL;
+    }
+
+    return (uint8_t*)memory->segments[segment_index]->data + segment_offset;
+}
+
 void* resolve_pointer_uncheck(IM3Memory memory, void* ptr) {
     if(WASM_DEBUG_MEM_ACCESS) {
         ESP_LOGI("WASM3", "resolve_pointer_uncheck: checking pointer %p", ptr);
@@ -231,8 +250,7 @@ void* resolve_pointer_uncheck(IM3Memory memory, void* ptr) {
                     }
                     
                     if(WASM_DEBUG_MEM_ACCESS) {
-                        ESP_LOGI("WASM3", "resolve_pointer_uncheck: found valid pointer in segment %zu, chunk at %p", 
-                                i, chunk);
+                        ESP_LOGI("WASM3", "resolve_pointer_uncheck: found valid pointer in segment %zu, chunk at %p", i, chunk);
                     }
                     
                     return ptr;
@@ -254,7 +272,13 @@ void* resolve_pointer_uncheck(IM3Memory memory, void* ptr) {
 }
 
 void* resolve_pointer(IM3Memory memory, void* ptr) {
-    void* res = resolve_pointer_uncheck(memory, ptr);
+    void* orig_ptr = ptr;
+
+    //void* res = resolve_pointer_uncheck(memory, ptr);
+    void* res = get_segment_pointer(memory, ptr);
+
+    if(res != ERROR_POINTER)
+        orig_ptr = res;
 
     if(!is_ptr_valid(res)){
         ESP_LOGE("WASM3", "resolve_pointer: invalid pointer %p", ptr);
