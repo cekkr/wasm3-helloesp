@@ -179,13 +179,7 @@ const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = false;
 const bool WASM_DEBUG_MEM_ACCESS = false;
 
 void* resolve_pointer_uncheck(IM3Memory memory, void* ptr) {
-    if(WASM_DEBUG_MEM_ACCESS) ESP_LOGI("WASM3", "resolve_pointer start");
-    
-    // Prima verifichiamo se il puntatore è valido
-    if (!is_ptr_valid(ptr)) {
-        ESP_LOGE("WASM3", "Invalid input pointer");
-        return NULL;
-    }
+    if(WASM_DEBUG_MEM_ACCESS) ESP_LOGI("WASM3", "resolve_pointer start");    
     
     // Verifiche della memoria
     if (!memory || !memory->segments || memory->num_segments == 0) {
