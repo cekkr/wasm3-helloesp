@@ -387,7 +387,6 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 # define m3ApiSuccess()                       { return m3Err_none; }
 
 # if defined(M3_BIG_ENDIAN)
-// m3SegmentedMemAccess not implemented here
 #  define m3ApiReadMem8(ptr)         (* (uint8_t *)(ptr))
 #  define m3ApiReadMem16(ptr)        m3_bswap16((* (uint16_t *)(ptr)))
 #  define m3ApiReadMem32(ptr)        m3_bswap32((* (uint32_t *)(ptr)))
@@ -397,6 +396,17 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 #  define m3ApiWriteMem32(ptr, val)  { * (uint32_t *)(ptr) = m3_bswap32((val)); }
 #  define m3ApiWriteMem64(ptr, val)  { * (uint64_t *)(ptr) = m3_bswap64((val)); }
 # else
+#  define m3ApiReadMem8(ptr)         (* (uint8_t *)(ptr))
+#  define m3ApiReadMem16(ptr)        (* (uint16_t *)(ptr))
+#  define m3ApiReadMem32(ptr)        (* (uint32_t *)(ptr))
+#  define m3ApiReadMem64(ptr)        (* (uint64_t *)(ptr))
+#  define m3ApiWriteMem8(ptr, val)   { * (uint8_t  *)(ptr) = (val); }
+#  define m3ApiWriteMem16(ptr, val)  { * (uint16_t *)(ptr) = (val); }
+#  define m3ApiWriteMem32(ptr, val)  { * (uint32_t *)(ptr) = (val); }
+#  define m3ApiWriteMem64(ptr, val)  { * (uint64_t *)(ptr) = (val); }
+# endif
+
+/*
 #   define m3ApiReadMem8(ptr)         (*(uint8_t *)m3SegmentedMemAccess(_mem, (uintptr_t)(ptr), sizeof(uint8_t)))
 #   define m3ApiReadMem16(ptr)        (*(uint16_t *)m3SegmentedMemAccess(_mem, (uintptr_t)(ptr), sizeof(uint16_t)))
 #   define m3ApiReadMem32(ptr)        (*(uint32_t *)m3SegmentedMemAccess(_mem, (uintptr_t)(ptr), sizeof(uint32_t)))
@@ -405,7 +415,7 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 #   define m3ApiWriteMem16(ptr, val)  (*(uint16_t *)m3SegmentedMemAccess(_mem, (uintptr_t)(ptr), sizeof(uint16_t)) = (val))
 #   define m3ApiWriteMem32(ptr, val)  (*(uint32_t *)m3SegmentedMemAccess(_mem, (uintptr_t)(ptr), sizeof(uint32_t)) = (val))
 #   define m3ApiWriteMem64(ptr, val)  (*(uint64_t *)m3SegmentedMemAccess(_mem, (uintptr_t)(ptr), sizeof(uint64_t)) = (val))
-# endif
+*/
 
 #if defined(__cplusplus)
 }
