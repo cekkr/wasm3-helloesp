@@ -43,6 +43,7 @@ typedef struct M3Memory_t {
     // Cache per ottimizzare la ricerca di chunk liberi
     MemoryChunk** free_chunks;  // Array di puntatori a chunk liberi per size
     size_t num_free_buckets;
+
 } M3Memory;
 
 typedef M3Memory *          IM3Memory;

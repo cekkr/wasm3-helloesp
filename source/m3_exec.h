@@ -685,7 +685,8 @@ d_m3Op (CallRawFunction)
 
     // Aggiungi controlli di sicurezza
     if (runtime == NULL) {
-        return m3Err_mallocFailed;  // o un altro codice di errore appropriato
+        backtrace();
+        return m3Err_nullRuntime;  // o un altro codice di errore appropriato
     }
 
     void* stack_backup = NULL;

@@ -220,6 +220,7 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
     if (runtime)
     {        
         IM3Memory memory = m3_InitMemory(&runtime->memory);
+        memory->runtime = runtime;
 
         m3_ResetErrorInfo(runtime);
         if(WASM_DEBUG_NEW_RUNTIME) ESP_LOGI("WASM3", "m3_NewRuntime: m3_ResetErrorInfo done");
