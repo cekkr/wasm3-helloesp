@@ -15,6 +15,15 @@
 
 d_m3BeginExternC
 
+//#define DISABLE_WASM3_STATIC
+#ifdef DISABLE_WASM3_STATIC
+    #define WASM3_STATIC
+    #define WASM3_STATIC_INLINE
+#else
+    #define WASM3_STATIC static
+    #define WASM3_STATIC_INLINE static inline
+#endif
+
 enum
 {
     c_waOp_block                = 0x02,
@@ -149,29 +158,29 @@ typedef const M3OpInfo *    IM3OpInfo;
 IM3OpInfo  GetOpInfo  (m3opcode_t opcode);
 
 // TODO: This helper should be removed, when MultiValue is implemented
-static inline
+WASM3_STATIC_INLINE
 u8 GetSingleRetType(IM3FuncType ftype) {
     return (ftype && ftype->numRets) ? ftype->types[0] : (u8)c_m3Type_none;
 }
 
-static const u16 c_m3RegisterUnallocated = 0;
-static const u16 c_slotUnused = 0xffff;
+WASM3_STATIC const u16 c_m3RegisterUnallocated = 0;
+WASM3_STATIC const u16 c_slotUnused = 0xffff;
 
-static inline
+WASM3_STATIC_INLINE
 bool  IsRegisterAllocated  (IM3Compilation o, u32 i_register)
 {
     return (o->regStackIndexPlusOne [i_register] != c_m3RegisterUnallocated);
 }
 
-static inline
+WASM3_STATIC_INLINE
 bool  IsStackPolymorphic  (IM3Compilation o)
 {
     return o->block.isPolymorphic;
 }
 
-static inline bool  IsRegisterSlotAlias        (u16 i_slot)    { return (i_slot >= d_m3Reg0SlotAlias and i_slot != c_slotUnused); }
-static inline bool  IsFpRegisterSlotAlias      (u16 i_slot)    { return (i_slot == d_m3Fp0SlotAlias);  }
-static inline bool  IsIntRegisterSlotAlias     (u16 i_slot)    { return (i_slot == d_m3Reg0SlotAlias); }
+WASM3_STATIC_INLINE bool  IsRegisterSlotAlias        (u16 i_slot)    { return (i_slot >= d_m3Reg0SlotAlias and i_slot != c_slotUnused); }
+WASM3_STATIC_INLINE bool  IsFpRegisterSlotAlias      (u16 i_slot)    { return (i_slot == d_m3Fp0SlotAlias);  }
+WASM3_STATIC_INLINE bool  IsIntRegisterSlotAlias     (u16 i_slot)    { return (i_slot == d_m3Reg0SlotAlias); }
 
 
 #ifdef DEBUG
