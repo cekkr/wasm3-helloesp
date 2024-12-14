@@ -209,7 +209,7 @@ void default_free(void* ptr) {
     if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_free called for %p", ptr);
 
     TRY {
-        if (!ptr) return;
+        if (!ptr || ptr == ERROR_POINTER) return;
         
         // Logging del puntatore prima della free
         if(WASM_DEBUG_DEFAULT_FREE) ESP_LOGD("WASM3", "Attempting to free memory at %p", ptr);
