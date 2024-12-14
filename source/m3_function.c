@@ -173,11 +173,12 @@ void  Function_Release  (IM3Function i_function)
    
 #   endif
 
-    #if FUNCTIONS_ON_SEGMENTED_MEM
+    // This is redundant, functions are allocated in groups of functions
+    /*#if FUNCTIONS_ON_SEGMENTED_MEM
     m3_Dyn_Free(&i_function->module->runtime->memory, i_function);
     #else
     m3_Def_Free(i_function);
-    #endif
+    #endif*/
 }
 
 
