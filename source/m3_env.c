@@ -617,6 +617,7 @@ _       (EvaluateExpression(io_module, &segmentOffset, c_m3Type_i32, &start,
 }
 
 
+const bool WASM_DEBUG_INIT_ELEMENTS = true;
 M3Result  InitElements  (IM3Module io_module)
 {
     M3Result result = m3Err_none;
@@ -645,7 +646,9 @@ _           (ReadLEB_u32 (& numElements, & bytes, end));
             // make sure the table isn't shrunk.
             if (endElement > io_module->table0Size)
             {
-                m3_ReallocArray (&io_module->runtime->memory, io_module->table0, IM3Function, endElement);
+                if(WASM_DEBUG_INIT_ELEMENTS) ESP_LOGI("WASM3", "InitElements: m3_ReallocArray IM3Function");
+                //m3_ReallocArray (&io_module->runtime->memory, io_module->table0, IM3Function, endElement);
+                m3_Def_ReallocArray (io_module->table0, IM3Function, endElement);
                 io_module->table0Size = (u32) endElement;
             }
             _throwifnull(io_module->table0);
