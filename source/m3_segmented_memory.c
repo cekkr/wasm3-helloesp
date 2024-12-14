@@ -272,6 +272,7 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
     return ptr;
 }
 
+const bool WASM_DEBUG_MEM_ACCESS_BACKTRACE = false;
 void* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size) 
 {
     u32 offset = (u32)ptr;
@@ -282,7 +283,8 @@ void* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size)
 
     if(mem == NULL){
         ESP_LOGE("WASM3", "m3SegmentedMemAccess called with null memory pointer");     
-        backtrace();
+        if(WASM_DEBUG_MEM_ACCESS_BACKTRACE)
+            backtrace();
         return NULL;
     }
 
