@@ -1624,6 +1624,7 @@ d_m3Op  (SetGlobal_f64)
 #endif
 
 
+#define d_m3SkipMemoryBoundsCheck 1
 #if d_m3SkipMemoryBoundsCheck
 #  define m3MemCheck(x) true
 #else
