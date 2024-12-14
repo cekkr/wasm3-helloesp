@@ -170,6 +170,7 @@ d_m3ErrorConst  (typeCountMismatch,             "incorrect value count on stack"
 // runtime errors
 d_m3ErrorConst  (missingCompiledCode,           "function is missing compiled m3 code")
 d_m3ErrorConst  (wasmMemoryOverflow,            "runtime ran out of memory")
+d_m3ErrorConst  (pointerOverflow,               "pointer ran out of memory")
 d_m3ErrorConst  (globalMemoryNotAllocated,      "global memory is missing from a module")
 d_m3ErrorConst  (globaIndexOutOfBounds,         "global index is too large")
 d_m3ErrorConst  (argumentCountMismatch,         "argument count mismatch")

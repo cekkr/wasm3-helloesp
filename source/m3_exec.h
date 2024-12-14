@@ -1375,7 +1375,7 @@ d_m3Op  (ContinueLoopIf)
 }
 
 
-d_m3Op (Const32) {
+/*d_m3Op (Const32) {
     u32 value = MEMACCESS(u32, _mem, _pc++);
     void* dest = (void*)m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(u32));
     
@@ -1397,8 +1397,47 @@ d_m3Op (Const64) {
     if (!dest) {
         return m3Err_mallocFailed;  // o un altro codice di errore appropriato
     }
-    
+
     memcpy(dest, &value, sizeof(u64));  
+
+    nextOp();
+}*/
+
+// Macro helper per verifiche di memoria
+#define CHECK_MEMORY_ACCESS(ptr, size) \
+    do { \
+        if (!ptr) return m3Err_pointerOverflow; \
+        if ((uintptr_t)ptr & (sizeof(u32)-1)) return m3Err_wasmMemoryOverflow; \
+        if (!IsValidMemoryAccess(_mem, ptr, 1))  \
+            return m3Err_pointerOverflow; \
+    } while(0)
+
+d_m3Op (Const32) {
+    u32 value = MEMACCESS(u32, _mem, _pc++);
+    void* dest = (void*)m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(u32));
+    
+    CHECK_MEMORY_ACCESS(dest, sizeof(u32));
+    
+    * (u32*) dest = value;
+    nextOp();
+}
+
+d_m3Op (Const64) {
+    u64 value = MEMACCESS(u64, _mem, _pc);
+    _pc += 2;
+
+    void* dest = (void*)m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(u64));
+    
+    CHECK_MEMORY_ACCESS(dest, sizeof(u64));
+    
+    #if defined(ESP32)
+    if (__builtin_expect(((uintptr_t)dest & 7) != 0, 0)) {
+        memcpy(dest, &value, sizeof(u64));
+    } else
+    #endif
+    {
+        * (u64*) dest = value;
+    }
 
     nextOp();
 }

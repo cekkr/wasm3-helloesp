@@ -413,9 +413,9 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
             ESP_LOGI("WASM3", "EvaluateExpression: RunCode");
 
             # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-            m3ret_t r = RunCode (m3code, stack, NULL, d_m3OpDefaultArgs, d_m3BaseCstr); // NULL or &runtime.memory?
+            m3ret_t r = RunCode (m3code, stack, &savedRuntime->memory, d_m3OpDefaultArgs, d_m3BaseCstr); // NULL or &savedRuntime->memory?
             # else
-            m3ret_t r = RunCode (m3code, stack, NULL, d_m3OpDefaultArgs); 
+            m3ret_t r = RunCode (m3code, stack, &savedRuntime->memory, d_m3OpDefaultArgs); 
             # endif
             
             if (r == 0)
