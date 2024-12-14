@@ -995,6 +995,7 @@ d_m3Op  (Entry)
     IM3Function function = immediate (IM3Function);
     IM3Memory memory = m3MemInfo (_mem);
 
+#define d_m3SkipStackCheck 1
 #if d_m3SkipStackCheck
     if (true)
 #else
@@ -1039,7 +1040,7 @@ d_m3Op  (Entry)
 #endif
 
         if (M3_UNLIKELY(r)) {
-            _mem = memory->mallocated;
+            _mem = memory;
             fillBacktraceFrame ();
         }
         forwardTrap (r);
