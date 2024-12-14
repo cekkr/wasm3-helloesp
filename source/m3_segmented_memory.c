@@ -179,67 +179,75 @@ const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = false;
 const bool WASM_DEBUG_MEM_ACCESS = false;
 
 void* resolve_pointer_uncheck(IM3Memory memory, void* ptr) {
-    if(WASM_DEBUG_MEM_ACCESS) ESP_LOGI("WASM3", "resolve_pointer start");    
+    if(WASM_DEBUG_MEM_ACCESS) {
+        ESP_LOGI("WASM3", "resolve_pointer_uncheck: checking pointer %p", ptr);
+    }
     
-    // Verifiche della memoria
+    // Basic memory structure validation
     if (!memory || !memory->segments || memory->num_segments == 0) {
         ESP_LOGE("WASM3", "Invalid memory structure");
         return ptr;
     }
     
-    // Troviamo i limiti della memoria segmentata
-    void* seg_start = NULL;
-    void* seg_end = NULL;
-    
-    // Cerca il primo segmento valido
+    // Iterate through all segments to find which one contains our pointer
     for (size_t i = 0; i < memory->num_segments; i++) {
-        if (memory->segments[i] && memory->segments[i]->data) {
-            seg_start = memory->segments[i]->data;
-            break;
-        }
-    }
-    
-    // Se non troviamo segmenti validi, ritorniamo il puntatore originale
-    if (!seg_start) {
-        if (WASM_DEBUG_MEM_ACCESS) {
-            ESP_LOGI("WASM3", "No valid segments found, returning original pointer %p", ptr);
-        }
-        return ptr;
-    }
-    
-    // Trova l'ultimo segmento valido
-    for (size_t i = memory->num_segments - 1; i >= 0; i--) {
-        if (memory->segments[i] && memory->segments[i]->data) {
-            seg_end = (uint8_t*)memory->segments[i]->data + memory->segment_size;
-            break;
-        }
-    }
-    
-    // Verifica se il puntatore è nel range della memoria segmentata
-    if (ptr >= seg_start && ptr < seg_end) {
-        size_t offset = (uintptr_t)ptr - (uintptr_t)seg_start;
-        size_t segment_index = offset / memory->segment_size;
-        size_t segment_offset = offset % memory->segment_size;
+        MemorySegment* segment = memory->segments[i];
         
-        // Verifica validità del segmento
-        if (segment_index < memory->num_segments && 
-            memory->segments[segment_index] && 
-            memory->segments[segment_index]->data &&
-            memory->segments[segment_index]->is_allocated) {
+        // Skip invalid segments
+        if (!segment || !segment->data || !segment->is_allocated) {
+            continue;
+        }
+        
+        // Calculate segment boundaries
+        void* segment_start = segment->data;
+        void* segment_end = (uint8_t*)segment_start + segment->size;
+        
+        // Check if pointer falls within this segment's range
+        if (ptr >= segment_start && ptr < segment_end) {
+            // Calculate the offset within the segment
+            size_t segment_offset = (uint8_t*)ptr - (uint8_t*)segment_start;
             
-            void* res = (uint8_t*)memory->segments[segment_index]->data + segment_offset;
-            
-            if (WASM_DEBUG_MEM_ACCESS) {
-                ESP_LOGI("WASM3", "Returning resolved pointer %p", res);
+            // Validate offset is within segment bounds
+            if (segment_offset >= segment->size) {
+                ESP_LOGW("WASM3", "Pointer offset exceeds segment size: %zu >= %zu", 
+                         segment_offset, segment->size);
+                return ptr;
             }
             
-            return res;
+            // If we're using chunk-based memory management, validate the chunk
+            MemoryChunk* chunk = segment->first_chunk;
+            size_t chunk_offset = 0;
+            
+            while (chunk) {
+                size_t chunk_size = chunk->size - sizeof(MemoryChunk);
+                void* chunk_data = get_chunk_data(chunk);
+                void* chunk_end = (uint8_t*)chunk_data + chunk_size;
+                
+                // Check if pointer falls within this chunk
+                if (ptr >= chunk_data && ptr < chunk_end) {
+                    if (chunk->is_free) {
+                        ESP_LOGE("WASM3", "Attempting to access freed memory chunk");
+                        return ptr;
+                    }
+                    
+                    if(WASM_DEBUG_MEM_ACCESS) {
+                        ESP_LOGI("WASM3", "resolve_pointer_uncheck: found valid pointer in segment %zu, chunk at %p", 
+                                i, chunk);
+                    }
+                    
+                    return ptr;
+                }
+                
+                chunk = chunk->next;
+            }
+            
+            ESP_LOGW("WASM3", "Pointer found in segment %zu but not in any valid chunk", i);
+            return ptr;
         }
     }
     
-    // Se arriviamo qui, ritorniamo il puntatore originale
-    if (WASM_DEBUG_MEM_ACCESS) {
-        ESP_LOGI("WASM3", "Pointer not in segmented memory, returning original %p", ptr);
+    if(WASM_DEBUG_MEM_ACCESS) {
+        ESP_LOGI("WASM3", "Pointer not found in any segment, returning original: %p", ptr);
     }
     
     return ptr;
