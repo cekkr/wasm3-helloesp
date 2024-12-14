@@ -199,9 +199,11 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
 
     // Check if segment exists and is valid
     if (segment_index >= memory->num_segments) {
-        if(segment_index - memory->num_segments <= 2 && AddSegment(memory, segment_index)){
-            ESP_LOGW("WASM3", "get_segment_pointer: requested unallocated segment %d", segment_index);
-            goto failResult;
+        if(segment_index - memory->num_segments <= 2){
+            if(AddSegment(memory, segment_index)){
+                ESP_LOGW("WASM3", "get_segment_pointer: requested unallocated segment %d", segment_index);
+                goto failResult;
+            }
         }
 
         ESP_LOGI("WASM3", "get_segment_pointer: segment index %d (num_segments: %d)", segment_index, memory->num_segments);
