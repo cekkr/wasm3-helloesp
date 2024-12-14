@@ -8,7 +8,7 @@
 
 #include "esp_heap_caps.h"
 
-#define WASM_ENABLE_SPI_MEM 1
+#define WASM_ENABLE_SPI_MEM 0
 
 #define WASM_INIT_SEGMENTS 2
 #define WASM_SEGMENT_SIZE 4096
