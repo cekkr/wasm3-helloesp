@@ -322,6 +322,63 @@ void* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size)
     return ((void*)mem->segments[segment_index]->data) + segment_offset;
 }
 
+void* m3SegmentedMemAccess_2(IM3Memory memory, u32 offset, size_t size) {
+    if (!memory || !memory->segments) {
+        ESP_LOGE("WASM3", "Invalid memory or segments pointer");
+        return NULL;
+    }
+
+    // Calcola in quale segmento si trova l'offset
+    size_t segment_index = offset / memory->segment_size;
+    size_t segment_offset = offset % memory->segment_size;
+
+    // Verifica se l'indice del segmento è valido
+    if (segment_index >= memory->num_segments) {
+        ESP_LOGE("WASM3", "Segment index out of bounds: %zu >= %zu", 
+                 segment_index, memory->num_segments);
+        return NULL;
+    }
+
+    MemorySegment* segment = memory->segments[segment_index];
+    if (!segment || !segment->data || !segment->is_allocated) {
+        ESP_LOGE("WASM3", "Invalid segment or segment not allocated at index %zu", 
+                 segment_index);
+        return NULL;
+    }
+
+    // Verifica se l'accesso supera i limiti del segmento
+    if (segment_offset + size > segment->size) {
+        ESP_LOGE("WASM3", "Access exceeds segment bounds: offset %zu + size %zu > %zu", 
+                 segment_offset, size, segment->size);
+        return NULL;
+    }
+
+    // Verifica che il chunk contenga l'offset richiesto
+    MemoryChunk* chunk = segment->first_chunk;
+    size_t chunk_offset = 0;
+    
+    while (chunk) {
+        size_t chunk_data_size = chunk->size - sizeof(MemoryChunk);
+        if (segment_offset >= chunk_offset && 
+            segment_offset + size <= chunk_offset + chunk_data_size) {
+            // L'accesso è all'interno di questo chunk
+            if (chunk->is_free) {
+                ESP_LOGE("WASM3", "Attempting to access freed memory");
+                return NULL;
+            }
+            // Calcola l'indirizzo effettivo
+            return (uint8_t*)chunk + sizeof(MemoryChunk) + 
+                   (segment_offset - chunk_offset);
+        }
+        chunk_offset += chunk_data_size;
+        chunk = chunk->next;
+    }
+
+    ESP_LOGE("WASM3", "No valid chunk found for offset %zu in segment %zu", 
+             segment_offset, segment_index);
+    return NULL;
+}
+
 bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size)
 {
     return (offset + size) <= memory->total_size;

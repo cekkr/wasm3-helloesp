@@ -1402,60 +1402,64 @@ d_m3Op (Const64) {
 
     nextOp();
 }*/
-
-// Macro helper per verifiche di memoria
-#define CHECK_MEMORY_ACCESS(ptr, size) \
-    do { \
-        if (!ptr) return m3Err_pointerOverflow; \
-        if ((uintptr_t)ptr & (sizeof(u32)-1)) return m3Err_wasmMemoryOverflow; \
-        if (!IsValidMemoryAccess(_mem, ptr, 1))  \
-            return m3Err_pointerOverflow; \
-    } while(0)
+ 
+#define MEMACCESS_SAFE(type, mem, offset) \
+    ({ \
+        void* ptr = m3SegmentedMemAccess_2(mem, offset, sizeof(type)); \
+        if (!ptr) { \
+            ESP_LOGE("WASM3", "Memory access failed at offset %u", (unsigned)offset); \
+            return m3Err_mallocFailed; \
+        } \
+        *(type*)ptr; \
+    })
 
 d_m3Op (Const32) {
-    u32 value = MEMACCESS(u32, _mem, _pc++);
+    u32 value = MEMACCESS_SAFE(u32, _mem, (u32)_pc++);
+    void* dest = m3SegmentedMemAccess_2(_mem, _sp + immediate(i32), sizeof(u32));
     
-    // Controlli preventivi
-    if (!_mem || !_mem->mallocated) {
-        ESP_LOGE(TAG, "Invalid memory state before access");
+    if (!dest) {
+        ESP_LOGE("WASM3", "Destination memory access failed at sp=%u, immediate=%d", 
+                 (unsigned)_sp, immediate(i32));
         return m3Err_mallocFailed;
     }
-
-    i32 offset = _sp + immediate(i32);
-    if (offset < 0 || offset >= (_mem->numPages * m3_WASM_PAGE_SIZE)) {
-        ESP_LOGE(TAG, "Offset out of bounds: %d", offset);
-        return m3Err_wasmMemoryOverflow;
-    }
-
-    ESP_LOGD(TAG, "Memory access - Base: %p, Offset: %d, Pages: %d", 
-             _mem->mallocated, offset, _mem->numPages);
-
-    void* dest = (void*)m3SegmentedMemAccess(_mem, offset, sizeof(u32));
     
-    CHECK_MEMORY_ACCESS(dest, sizeof(u32));
-    
-    * (u32*) dest = value;
+    *(u32*)dest = value;
     nextOp();
 }
 
 d_m3Op (Const64) {
-    u64 value = MEMACCESS(u64, _mem, _pc);
-    _pc += 2;
+   // Prima verifica la validità dell'accesso alla memoria sorgente
+   void* src_ptr = m3SegmentedMemAccess_2(_mem, (u32)_pc, sizeof(u64));
+   if (!src_ptr) {
+       ESP_LOGE("WASM3", "Source memory access failed at pc=%u", (unsigned)_pc);
+       return m3Err_mallocFailed;
+   }
 
-    void* dest = (void*)m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(u64));
-    
-    CHECK_MEMORY_ACCESS(dest, sizeof(u64));
-    
-    #if defined(ESP32)
-    if (__builtin_expect(((uintptr_t)dest & 7) != 0, 0)) {
-        memcpy(dest, &value, sizeof(u64));
-    } else
-    #endif
-    {
-        * (u64*) dest = value;
-    }
+   // Leggi il valore usando memcpy per evitare problemi di allineamento
+   u64 value;
+   memcpy(&value, src_ptr, sizeof(u64));
+   _pc += 2;  // Su ESP32 sempre 2 perché M3_SIZEOF_PTR == 4
 
-    nextOp();
+   // Calcola l'offset di destinazione
+   u32 dest_offset = _sp + immediate(i32);
+   
+   // Verifica l'accesso alla memoria di destinazione
+   void* dest = m3SegmentedMemAccess_2(_mem, dest_offset, sizeof(u64));
+   if (!dest) {
+       ESP_LOGE("WASM3", "Destination memory access failed at sp=%u, immediate=%d", 
+                (unsigned)_sp, immediate(i32));
+       return m3Err_mallocFailed;
+   }
+
+   // Verifica allineamento su ESP32
+   if ((uintptr_t)dest & 7) {
+       ESP_LOGW("WASM3", "Unaligned 64-bit access at offset %u", dest_offset);
+   }
+
+   // Copia il valore usando sempre memcpy per sicurezza
+   memcpy(dest, &value, sizeof(u64));
+
+   nextOp();
 }
 
 d_m3Op  (Unsupported)
