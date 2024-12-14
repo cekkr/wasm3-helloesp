@@ -857,7 +857,7 @@ d_m3Op  (Compile)
 }
 
 
-static const bool WASM_Entry_IgnoreBufferOverflow = true;
+/*static const bool WASM_Entry_IgnoreBufferOverflow = true;
 d_m3Op  (Entry)
 {
     d_m3ClearRegisters
@@ -887,7 +887,7 @@ d_m3Op  (Entry)
         size_t start_segment = stack_start_offset / memory->segment_size;
         size_t end_segment = (stack_start_offset + required_size - 1) / memory->segment_size;
                             
-        /*if(end_segment > memory->num_segments){
+        if(end_segment > memory->num_segments){
             // realloc new segments
             memory->num_segments = end_segment;
             ESP_LOGI("WASM3", "(Entry): Going to reallocate %u memory->segments", end_segment);
@@ -895,10 +895,10 @@ d_m3Op  (Entry)
                 forwardTrap(error_details(m3Err_mallocFailed, "during segments realloc in (Entry)"));
                 return NULL;
             }
-        }*/
+        }
 
         if (AddSegment(memory, end_segment)) {
-            forwardTrap(error_details(m3Err_mallocFailed, "during allocate_segment_data in (Entry)"));
+            forwardTrap(error_details(m3Err_mallocFailed, "during AddSegment in (Entry)"));
             return NULL;
         }
         
@@ -984,6 +984,67 @@ d_m3Op  (Entry)
         forwardTrap(r);
     }
     else newTrap(error_details(m3Err_trapStackOverflow, "in d_m30p (Entry)"));
+}*/
+
+d_m3Op  (Entry)
+{
+    d_m3ClearRegisters
+
+    d_m3TracePrepare
+
+    IM3Function function = immediate (IM3Function);
+    IM3Memory memory = m3MemInfo (_mem);
+
+#if d_m3SkipStackCheck
+    if (true)
+#else
+    if (M3_LIKELY ((void *) (_sp + function->maxStackSlots) < _mem->maxStack))
+#endif
+    {
+#if defined(DEBUG)
+        function->hits++;
+#endif
+        u8 * stack = (u8 *) ((m3slot_t *) _sp + function->numRetAndArgSlots);
+
+        memset (stack, 0x0, function->numLocalBytes);
+        stack += function->numLocalBytes;
+
+        if (function->constants)
+        {
+            memcpy (stack, function->constants, function->numConstantBytes);
+        }
+
+#if d_m3EnableStrace >= 2
+        d_m3TracePrint("%s %s {", m3_GetFunctionName(function), SPrintFunctionArgList (function, _sp + function->numRetSlots));
+        trace_rt->callDepth++;
+#endif
+
+        m3ret_t r = nextOpImpl ();
+
+#if d_m3EnableStrace >= 2
+        trace_rt->callDepth--;
+
+        if (r) {
+            d_m3TracePrint("} !trap = %s", (char*)r);
+        } else {
+            int rettype = GetSingleRetType(function->funcType);
+            if (rettype != c_m3Type_none) {
+                char str [128] = { 0 };
+                SPrintArg (str, 127, _sp, rettype);
+                d_m3TracePrint("} = %s", str);
+            } else {
+                d_m3TracePrint("}");
+            }
+        }
+#endif
+
+        if (M3_UNLIKELY(r)) {
+            _mem = memory->mallocated;
+            fillBacktraceFrame ();
+        }
+        forwardTrap (r);
+    }
+    else newTrap (m3Err_trapStackOverflow);
 }
 
 
