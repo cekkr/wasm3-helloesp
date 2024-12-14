@@ -272,16 +272,15 @@ void* resolve_pointer_uncheck(IM3Memory memory, void* ptr) {
 }
 
 void* resolve_pointer(IM3Memory memory, void* ptr) {
-    void* orig_ptr = ptr;
-
     //void* res = resolve_pointer_uncheck(memory, ptr);
     void* res = get_segment_pointer(memory, ptr);
 
-    if(res == ERROR_POINTER)
-        res = orig_ptr;
+    if(res == ERROR_POINTER || res == NULL)
+        res = ptr;
 
     if(!is_ptr_valid(res)){
-        ESP_LOGE("WASM3", "resolve_pointer: invalid pointer %p", ptr);
+        ESP_LOGE("WASM3", "resolve_pointer: invalid pointer %p (from %p)", res, ptr);
+        ESP_LOGE("WASM3", "resolve_pointer: invalid pointer %p (from %p)", res, ptr);
         return ERROR_POINTER;
     }
 
@@ -339,6 +338,9 @@ void* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size)
 }
 
 void* m3SegmentedMemAccess_2(IM3Memory memory, u32 offset, size_t size) {
+    
+    return resolve_pointer(memory, (void*)offset);
+
     if (!memory || !memory->segments) {
         ESP_LOGW("WASM3", "Invalid memory or segments pointer");
         goto returnAsIs;
