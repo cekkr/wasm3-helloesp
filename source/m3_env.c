@@ -648,7 +648,7 @@ _           (ReadLEB_u32 (& numElements, & bytes, end));
             {
                 if(WASM_DEBUG_INIT_ELEMENTS) ESP_LOGI("WASM3", "InitElements: m3_ReallocArray IM3Function");
                 //m3_ReallocArray (&io_module->runtime->memory, io_module->table0, IM3Function, endElement);
-                m3_Def_ReallocArray (io_module->table0, IM3Function, endElement);
+                m3_Def_ReallocArray (IM3Function, io_module->table0, endElement);
                 io_module->table0Size = (u32) endElement;
             }
             _throwifnull(io_module->table0);
