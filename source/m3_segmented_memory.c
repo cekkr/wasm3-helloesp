@@ -126,8 +126,11 @@ M3Result AddSegment(M3Memory* memory, size_t set_num_segments) {
     if(new_segments == 0){
         new_segments = memory->num_segments + 1;
     }
+    else {
+        new_segments++;
+    }
 
-    size_t new_size = (new_segments + 1) * sizeof(MemorySegment*);
+    size_t new_size = (new_segments) * sizeof(MemorySegment*);
     
     if(new_segments > memory->num_segments){
         if(WASM_DEBUG_ADD_SEGMENT) ESP_LOGI("WASM3", "Adding segments (%d)", new_segments);
