@@ -179,97 +179,88 @@ const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
 
 const bool WASM_DEBUG_MEM_ACCESS = true;
 
-void* resolve_pointer(IM3Memory memory, void* ptr) {
+void* resolve_pointer_uncheck(IM3Memory memory, void* ptr) {
     ESP_LOGI("WASM3", "resolve_pointer start");
     
-    // Verifiche base più dettagliate
-    if (!memory) {
-        ESP_LOGE("WASM3", "memory is NULL");
-        goto returnOriginal;
+    // Prima verifichiamo se il puntatore è valido
+    if (!is_ptr_valid(ptr)) {
+        ESP_LOGE("WASM3", "Invalid input pointer");
+        return NULL;
     }
     
-    ESP_LOGI("WASM3", "memory->num_segments: %d", memory->num_segments);
-    
-    if (!memory->segments) {
-        ESP_LOGE("WASM3", "memory->segments is NULL");
-        goto returnOriginal;
+    // Verifiche della memoria
+    if (!memory || !memory->segments || memory->num_segments == 0) {
+        ESP_LOGE("WASM3", "Invalid memory structure");
+        return ptr;
     }
     
-    if (memory->num_segments == 0) {
-        ESP_LOGE("WASM3", "memory->num_segments is 0");
-        goto returnOriginal;
-    }
-
-    // Dobbiamo trovare il primo e l'ultimo segmento valido
+    // Troviamo i limiti della memoria segmentata
     void* seg_start = NULL;
     void* seg_end = NULL;
     
-    // Trova il primo segmento allocato
+    // Cerca il primo segmento valido
     for (size_t i = 0; i < memory->num_segments; i++) {
-        if (!memory->segments[i]) {
-            ESP_LOGE("WASM3", "memory->segments[%d] is NULL", i);
-            goto returnOriginal;
-        }
-        
         if (memory->segments[i] && memory->segments[i]->data) {
             seg_start = memory->segments[i]->data;
             break;
         }
     }
     
-    // Se non troviamo nemmeno un segmento valido, ritorna il puntatore originale
+    // Se non troviamo segmenti validi, ritorniamo il puntatore originale
     if (!seg_start) {
-        goto returnOriginal;
+        if (WASM_DEBUG_MEM_ACCESS) {
+            ESP_LOGI("WASM3", "No valid segments found, returning original pointer %p", ptr);
+        }
+        return ptr;
     }
     
-    // Trova l'ultimo segmento allocato
+    // Trova l'ultimo segmento valido
     for (size_t i = memory->num_segments - 1; i >= 0; i--) {
         if (memory->segments[i] && memory->segments[i]->data) {
             seg_end = (uint8_t*)memory->segments[i]->data + memory->segment_size;
             break;
         }
     }
-
-    // Se il puntatore è nel range della memoria segmentata
+    
+    // Verifica se il puntatore è nel range della memoria segmentata
     if (ptr >= seg_start && ptr < seg_end) {
-        // Calcola l'offset dall'inizio della memoria segmentata
         size_t offset = (uintptr_t)ptr - (uintptr_t)seg_start;
-        
-        // Trova il segmento corretto
         size_t segment_index = offset / memory->segment_size;
         size_t segment_offset = offset % memory->segment_size;
         
-        // Verifica che il segmento esista ed sia allocato
+        // Verifica validità del segmento
         if (segment_index < memory->num_segments && 
             memory->segments[segment_index] && 
             memory->segments[segment_index]->data &&
             memory->segments[segment_index]->is_allocated) {
             
-            uint8_t* res = (uint8_t*)memory->segments[segment_index]->data + segment_offset;
-
-            if(WASM_DEBUG_MEM_ACCESS){ 
-                ESP_LOGI("WASM3", "resolve_pointer: returning M3Memory pointer %p", res);
-                ESP_LOGI("WASM3", "resolve_pointer: returning M3Memory pointer");
+            void* res = (uint8_t*)memory->segments[segment_index]->data + segment_offset;
+            
+            if (WASM_DEBUG_MEM_ACCESS) {
+                ESP_LOGI("WASM3", "Returning resolved pointer %p", res);
             }
-
+            
             return res;
         }
     }
     
-    returnOriginal:
-
-    // Se non è nella memoria segmentata, ritorna il puntatore originale
-    if(WASM_DEBUG_MEM_ACCESS){ 
-        ESP_LOGI("WASM3", "resolve_pointer: returning original pointer %p", ptr);
-        ESP_LOGI("WASM3", "resolve_pointer: returning M3Memory pointer");
+    // Se arriviamo qui, ritorniamo il puntatore originale
+    if (WASM_DEBUG_MEM_ACCESS) {
+        ESP_LOGI("WASM3", "Pointer not in segmented memory, returning original %p", ptr);
     }
-
-    if(!is_ptr_valid(ptr)){
-        ESP_LOGE("WASM3", "resolve_pointer: invalid pointer %p", ptr);
-        return NULL;
-    }
-
+    
     return ptr;
+}
+
+void* resolve_pointer(IM3Memory memory, void* ptr) {
+    void* res = resolve_pointer_uncheck(memory, ptr);
+
+    if(!is_ptr_valid(res)){
+        ESP_LOGE("WASM3", "resolve_pointer: invalid pointer %p", ptr);
+        return ERROR_POINTER;
+    }
+
+    return res;
 }
 
 const bool WASM_DEBUG_MEM_ACCESS_BACKTRACE = false;
@@ -285,7 +276,7 @@ void* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size)
         ESP_LOGE("WASM3", "m3SegmentedMemAccess called with null memory pointer");     
         if(WASM_DEBUG_MEM_ACCESS_BACKTRACE)
             backtrace();
-        return NULL;
+        return ERROR_POINTER;
     }
 
     if(WASM_DEBUG_SEGMENTED_MEM_ACCESS){ 
@@ -298,7 +289,7 @@ void* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size)
     // Verifica che l'accesso sia nei limiti della memoria totale
     if (mem->total_size > 0 && offset + size > mem->total_size){
         ESP_LOGE("WASM3", "m3SegmentedMemAccess: requested memory exceeds total size");
-        return NULL;
+        return ERROR_POINTER;
     }    
 
     size_t segment_index = offset / mem->segment_size;
@@ -312,7 +303,7 @@ void* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size)
         if (!mem->segments[i]->is_allocated) {
             if (!allocate_segment_data(mem, i)) {
                 ESP_LOGE("WASM3", "Failed to allocate segment %zu on access", i);
-                return NULL;
+                return ERROR_POINTER;
             }
             if(WASM_DEBUG_SEGMENTED_MEM_ACCESS) ESP_LOGI("WASM3", "Lazy allocated segment %zu on access", i);
         }
@@ -328,7 +319,16 @@ void* m3SegmentedMemAccess_2(IM3Memory memory, u32 offset, size_t size) {
         goto returnAsIs;
     }
 
-    // Calcola in quale segmento si trova l'offset
+    // Verifica che segment_size non sia zero
+    if (memory->segment_size == 0) {
+        ESP_LOGW("WASM3", "Invalid segment_size: 0");
+        goto returnAsIs;
+    }
+
+    ESP_LOGD("WASM3", "Memory check - segment_size: %zu, num_segments: %zu", 
+             memory->segment_size, memory->num_segments);
+
+    // Ora possiamo calcolare in sicurezza
     size_t segment_index = offset / memory->segment_size;
     size_t segment_offset = offset % memory->segment_size;
 
