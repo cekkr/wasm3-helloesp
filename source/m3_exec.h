@@ -697,13 +697,14 @@ d_m3Op (CallRawFunction)
     
     runtime->stack = sp;
     
-    m3ret_t possible_trap = call(runtime, &ctx, sp, memory);
-    
+    void* _possible_trap = call(runtime, &ctx, sp, memory);
+    m3ret_t possible_trap = m3ApiOffsetToPtr(_possible_trap);
+
     if (stack_backup != NULL) {
         runtime->stack = stack_backup;
     }
 
-    if (true || M3_UNLIKELY(possible_trap)) {
+    if (M3_UNLIKELY(possible_trap)) {
         pushBacktraceFrame();
     }
     forwardTrap(possible_trap);

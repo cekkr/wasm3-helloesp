@@ -32,7 +32,11 @@ void backtrace(){
 
 m3ret_t backtrace_err(m3ret_t err){
     //ESP_LOGE("WASM3", "Error: %s", err);
-    esp_backtrace_print(100);
+    if(err != NULL){
+        //esp_backtrace_print(100); // enable when you need it
+        ESP_LOGD("WASM3", "Result to check in backtrace_err");
+    }
+
     return err;
 }
 
