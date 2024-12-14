@@ -138,12 +138,44 @@ static const bool WASM_DEBUG_ALLOCS = false;
 static const bool CHECK_MEMORY_AVAILABLE = false;
 static const bool DEFAULT_ALLOC_ALIGNMENT = false;
 
+bool check_memory_available_bySize(size_t required_size) {
+    const char * TAG = "WASM3";
+
+    #if WASM_ENABLE_SPI_MEM
+        // Check both internal and PSRAM memory
+        size_t free_internal = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        size_t free_spiram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+        size_t largest_internal = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        size_t largest_spiram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+
+        ESP_LOGD(TAG, "Free internal: %zu, largest block: %zu", free_internal, largest_internal);
+        ESP_LOGD(TAG, "Free SPIRAM: %zu, largest block: %zu", free_spiram, largest_spiram);
+
+        // Check if allocation can fit in either memory type
+        return (largest_internal >= required_size) || (largest_spiram >= required_size);
+    #else
+        // Only check internal memory
+        size_t free_internal = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        size_t largest_internal = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+
+        ESP_LOGD(TAG, "Free internal: %zu, largest block: %zu", free_internal, largest_internal);
+
+        return largest_internal >= required_size;
+    #endif
+}
+
 void* default_malloc(size_t size) {
     if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_malloc called size: %u", size);
 
     TRY {
         if(CHECK_MEMORY_AVAILABLE){
             print_memory_info();
+        }
+
+        if(check_memory_available_bySize(size)){
+            ESP_LOGE("WASM3", "No memory available (size: %u)", size);
+            backtrace();
+            return NULL;
         }
 
         size_t aligned_size = DEFAULT_ALLOC_ALIGNMENT ? (size + 7) & ~7 : size; 
@@ -213,6 +245,12 @@ void* default_realloc(void* ptr, size_t new_size) {
         if(!ptr){
             ptr = default_malloc(aligned_size);
             return ptr;
+        }
+
+        if(check_memory_available_bySize(new_size)){
+            ESP_LOGE("WASM3", "No memory available (size: %u)", new_size);
+            backtrace();
+            return NULL;
         }
 
         if(!ultra_safe_ptr_valid(ptr)){
