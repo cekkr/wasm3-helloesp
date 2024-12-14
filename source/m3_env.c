@@ -464,6 +464,7 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
 
 // Memory initialization M3Runtime - M3Module
 const bool WASM_DEBUG_INIT_MEMORY = true;
+const bool WASM_INIT_MEMORY_PREALLOC_SEGMENTS = false;
 M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .h
 {
     if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "InitMemory called");
@@ -482,13 +483,15 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
         io_runtime->memory.segment_size = WASM_SEGMENT_SIZE;
         
         // Calcola numero iniziale di segmenti necessari
-        u32 pageSize = i_module->memoryInfo.pageSize;
-        pageSize = pageSize ? pageSize : 65536;
-        size_t initial_size = (size_t)i_module->memoryInfo.initPages * pageSize;
-        size_t num_segments = (initial_size + io_runtime->memory.segment_size - 1) / io_runtime->memory.segment_size;
+        if(WASM_INIT_MEMORY_PREALLOC_SEGMENTS){
+            u32 pageSize = i_module->memoryInfo.pageSize;
+            pageSize = pageSize ? pageSize : 65536;
+            size_t initial_size = (size_t)i_module->memoryInfo.initPages * pageSize;
+            size_t num_segments = (initial_size + io_runtime->memory.segment_size - 1) / io_runtime->memory.segment_size;
 
-        if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "InitMemory: Malloc MemorySegment");
-        result = AddSegment(&io_runtime->memory, num_segments);
+            if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "InitMemory: Malloc MemorySegment (num segments: %d)", num_segments);
+            result = AddSegment(&io_runtime->memory, num_segments);
+        }
     }
 
     return result;
