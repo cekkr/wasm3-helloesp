@@ -426,7 +426,6 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
             if (r == 0)
             {                                                                               
                 m3log (runtime, "expression result: %s", SPrintValue (stack, i_type));
-                //ESP_LOGI("WASM3", "EvaluateExpression: RunCode result: %s",  SPrintValue (stack, i_type));
                 
                 if (SizeOfType (i_type) == sizeof (u32))
                 {
@@ -440,15 +439,20 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
         }
 
         // TODO: EraseCodePage (...) see OPTZ above
-        ReleaseCodePage (& runtime, o->page);
+        ESP_LOGI("WASM3", "EvaluateExpression: ReleaseCodePage");
+        //ReleaseCodePage (& runtime, o->page);
     }
     else result = m3Err_mallocFailedCodePage;
 
     //runtime.originStack = NULL;        // prevent free(stack) in ReleaseRuntime
     //Runtime_Release (& runtime);
     i_module->runtime = savedRuntime;
-
     * io_bytes = o->wasm;
+
+    if(result != NULL)
+        ESP_LOGI("WASM3", "EvaluateExpression: return %s", result);
+    else 
+        ESP_LOGI("WASM3", "EvaluateExpression: return ok");
 
     return result;
 }
