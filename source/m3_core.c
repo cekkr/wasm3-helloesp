@@ -135,7 +135,7 @@ void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
 //static const int WASM_ENABLE_SPI_MEM = 0;
 static const int ALLOC_SHIFT_OF = 4; // 4
 static const bool WASM_DEBUG_ALLOCS = false;
-static const bool CHECK_MEMORY_AVAILABLE = true;
+static const bool CHECK_MEMORY_AVAILABLE = false;
 static const bool DEFAULT_ALLOC_ALIGNMENT = false;
 
 void* default_malloc(size_t size) {
