@@ -277,8 +277,8 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
     //void* res = resolve_pointer_uncheck(memory, ptr);
     void* res = get_segment_pointer(memory, ptr);
 
-    if(res != ERROR_POINTER)
-        orig_ptr = res;
+    if(res == ERROR_POINTER)
+        res = orig_ptr;
 
     if(!is_ptr_valid(res)){
         ESP_LOGE("WASM3", "resolve_pointer: invalid pointer %p", ptr);
