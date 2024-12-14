@@ -1408,7 +1408,7 @@ d_m3Op (Const64) {
         void* ptr = m3SegmentedMemAccess_2(mem, offset, sizeof(type)); \
         if (!ptr) { \
             ESP_LOGE("WASM3", "Memory access failed at offset %u", (unsigned)offset); \
-            return m3Err_mallocFailed; \
+            return m3Err_pointerOverflow; \
         } \
         *(type*)ptr; \
     })
@@ -1423,7 +1423,7 @@ d_m3Op (Const32) {
     if (dest == ERROR_POINTER) {
         ESP_LOGE("WASM3", "Destination memory access failed at sp=%u, immediate=%d", 
                  (unsigned)_sp, immediate(i32));
-        return m3Err_mallocFailed;
+        return m3Err_pointerOverflow;
     }
     
     *(u32*)dest = value;
@@ -1455,9 +1455,9 @@ d_m3Op (Const64) {
    if (dest == ERROR_POINTER) {
        ESP_LOGE("WASM3", "Destination memory access failed at sp=%u, immediate=%d", 
                 (unsigned)_sp, immediate(i32));
-       return m3Err_mallocFailed;
+       return m3Err_pointerOverflow;
    }
-    
+
    // Verifica allineamento su ESP32
    if ((uintptr_t)dest & 7) {
        ESP_LOGW("WASM3", "Unaligned 64-bit access at offset %u", dest_offset);

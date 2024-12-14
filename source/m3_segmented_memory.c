@@ -324,7 +324,7 @@ void* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size)
 
 void* m3SegmentedMemAccess_2(IM3Memory memory, u32 offset, size_t size) {
     if (!memory || !memory->segments) {
-        ESP_LOGE("WASM3", "Invalid memory or segments pointer");
+        ESP_LOGW("WASM3", "Invalid memory or segments pointer");
         goto returnAsIs;
     }
 
@@ -334,21 +334,21 @@ void* m3SegmentedMemAccess_2(IM3Memory memory, u32 offset, size_t size) {
 
     // Verifica se l'indice del segmento è valido
     if (segment_index >= memory->num_segments) {
-        ESP_LOGE("WASM3", "Segment index out of bounds: %zu >= %zu", 
+        ESP_LOGW("WASM3", "Segment index out of bounds: %zu >= %zu", 
                  segment_index, memory->num_segments);
         goto returnAsIs;
     }
 
     MemorySegment* segment = memory->segments[segment_index];
     if (!segment || !segment->data || !segment->is_allocated) {
-        ESP_LOGE("WASM3", "Invalid segment or segment not allocated at index %zu", 
+        ESP_LOGW("WASM3", "Invalid segment or segment not allocated at index %zu", 
                  segment_index);
         goto returnAsIs;
     }
 
     // Verifica se l'accesso supera i limiti del segmento
     if (segment_offset + size > segment->size) {
-        ESP_LOGE("WASM3", "Access exceeds segment bounds: offset %zu + size %zu > %zu", 
+        ESP_LOGW("WASM3", "Access exceeds segment bounds: offset %zu + size %zu > %zu", 
                  segment_offset, size, segment->size);
         goto returnAsIs;
     }
