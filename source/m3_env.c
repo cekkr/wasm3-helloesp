@@ -310,7 +310,7 @@ static const int DEBUG_TOP_MEMORY = 1;
 void FreeMemory(IM3Memory memory) {
     if(DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory called");
 
-    if(memory->segments == NULL) return;
+    if(memory->segment_size != WASM_SEGMENT_SIZE) return;
 
     if (is_ptr_valid(memory->segments)) {
         // Libera la memoria di ogni segmento allocato
