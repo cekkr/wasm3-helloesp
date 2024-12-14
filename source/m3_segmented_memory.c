@@ -186,6 +186,7 @@ M3Result AddSegment(M3Memory* memory, size_t set_num_segments) {
 
 const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = false;
 const bool WASM_DEBUG_MEM_ACCESS = false;
+const bool WASM_DEBUG_GET_SEGMENT_POINTER = true;
 
 void* get_segment_pointer(IM3Memory memory, u32 offset) {
     if (!memory || !memory->segments) {
@@ -212,7 +213,9 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
         }        
     }
 
-    return (uint8_t*)(memory->segments[segment_index]->data + segment_offset);
+    uint8_t* res = (uint8_t*)(memory->segments[segment_index]->data + segment_offset);
+    if(WASM_DEBUG_GET_SEGMENT_POINTER) ESP_LOGI("WASM3", "get_segment_pointer: M3Memory result: %p", res);
+    return res;
 
     failResult:    
     return ERROR_POINTER;
