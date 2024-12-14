@@ -316,14 +316,16 @@ void FreeMemory(IM3Memory memory) {
         // Libera la memoria di ogni segmento allocato
         for (size_t i = 0; i < memory->num_segments; i++) {
             if(DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory: freeing segment %d", i);
-                if(validate_ptr_for_free(memory->segments[i])){
-                    if (memory->segments[i]->is_allocated && memory->segments[i]->data) {
-                        m3_Def_Free(memory->segments[i]->data);
-                    }
-
-                    m3_Def_Free(memory->segments[i]);
+            if(is_ptr_valid(memory->segments[i])){
+                if (memory->segments[i]->is_allocated && memory->segments[i]->data) {
+                    m3_Def_Free(memory->segments[i]->data);
                 }
-            }
+
+                m3_Def_Free(memory->segments[i]);
+            }   
+            else {
+                if(DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory: segment %d not freeable", i);
+            }         
         }
         // Libera l'array dei segmenti
         m3_Def_Free(memory->segments);
