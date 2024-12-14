@@ -134,14 +134,14 @@ M3Result AddSegments(M3Memory* memory, size_t set_num_segments) {
     
     if(new_segments > memory->num_segments){
         if(WASM_DEBUG_ADD_SEGMENT) ESP_LOGI("WASM3", "Adding segments (%d)", new_segments);
-        MemorySegment** new_segments = m3_Def_Realloc(memory->segments, new_size);
-        if (!new_segments) {
+        MemorySegment** segments = m3_Def_Realloc(memory->segments, new_size);
+        if (segments == NULL) {
             ESP_LOGE("WASM3", "AddSegments: failed to allocate new segments");
             memory->num_segments = original_num_segments;
             return m3Err_mallocFailed;
         }
 
-        memory->segments = new_segments;
+        memory->segments = segments;
     }
 
     if(WASM_DEBUG_ADD_SEGMENT)
