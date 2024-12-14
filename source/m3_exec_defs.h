@@ -89,12 +89,12 @@ d_m3BeginExternC
 #    define d_m3Op(NAME)           M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, cstr_t i_operationName)
 
 #    define nextOpImpl()           ({ \
-                                      IM3Operation op = (IM3Operation)m3SegmentedMemAccess(_mem, (iptr)_pc, sizeof(IM3Operation)); \
+                                      IM3Operation op = (IM3Operation)m3SegmentedMemAccess(_mem, _pc, sizeof(IM3Operation)); \
                                       op(_pc + 1, d_m3OpArgs, __FUNCTION__); \
                                    })
 
 #    define jumpOpImpl(PC)         ({ \
-                                      IM3Operation op = (IM3Operation)m3SegmentedMemAccess(_mem, (iptr)(PC), sizeof(IM3Operation)); \
+                                      IM3Operation op = (IM3Operation)m3SegmentedMemAccess(_mem, (PC), sizeof(IM3Operation)); \
                                       op((PC) + 1, d_m3OpArgs, __FUNCTION__); \
                                    })
 #else
@@ -102,18 +102,18 @@ d_m3BeginExternC
 #    define d_m3Op(NAME)           M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
 
 #    define nextOpImpl()           ({ \
-                                      IM3Operation op = (IM3Operation)m3SegmentedMemAccess(_mem, (iptr)_pc, sizeof(IM3Operation)); \
+                                      IM3Operation op = (IM3Operation)m3SegmentedMemAccess(_mem, _pc, sizeof(IM3Operation)); \
                                       op(_pc + 1, d_m3OpArgs); \
                                    })
 
 #    define jumpOpImpl(PC)         ({ \
-                                      IM3Operation op = (IM3Operation)m3SegmentedMemAccess(_mem, (iptr)(PC), sizeof(IM3Operation)); \
+                                      IM3Operation op = (IM3Operation)m3SegmentedMemAccess(_mem, (PC), sizeof(IM3Operation)); \
                                       op((PC) + 1, d_m3OpArgs); \
                                    })
 #endif
 
 #define nextOpDirect()              return nextOpImpl()
-#define jumpOpDirect(PC)            return jumpOpImpl((iptr)(PC))
+#define jumpOpDirect(PC)            return jumpOpImpl((PC))
 
 #else 
 
