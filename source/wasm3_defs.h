@@ -419,5 +419,5 @@ typedef void /*const*/ *                    code_t;
 typedef code_t const * /*__restrict__*/     pc_t;
 
 // check in m3_exec.h
-#define d_m3RecordBacktraces 1 
+#define d_m3RecordBacktraces 0
 
