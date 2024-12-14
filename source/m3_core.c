@@ -217,9 +217,9 @@ void default_free(void* ptr) {
         bool notFreeToFree = false;
         if (WAMS_DEFAULT_FREE_CHECK_FREEEABLE && !is_ptr_freeable(ptr)) {            
             ESP_LOGW("WASM3", "default_free: is_ptr_freeable check failed for pointer");
-            backtrace();
+            //backtrace();
             //notFreeToFree = true;
-            //return;
+            return;
         }
 
         if(notFreeToFree) ESP_LOGW("WASM3", "default_free: theoretically, is_ptr_freeable check failed for pointer");
