@@ -510,7 +510,7 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
             size_t num_segments = (initial_size + io_runtime->memory.segment_size - 1) / io_runtime->memory.segment_size;
 
             if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "InitMemory: Malloc MemorySegment (num segments: %d)", num_segments);
-            result = AddSegment(&io_runtime->memory, num_segments);
+            result = AddSegments(&io_runtime->memory, num_segments);
         }
     }
 

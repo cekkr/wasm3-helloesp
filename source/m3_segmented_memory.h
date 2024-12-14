@@ -62,7 +62,7 @@ IM3Memory m3_NewMemory();
 IM3Memory m3_InitMemory(IM3Memory memory);
 //IM3MemoryPoint m3_GetMemoryPoint(IM3Memory mem);
 
-M3Result AddSegment(M3Memory* memory, size_t set_num_segments);
+M3Result AddSegments(M3Memory* memory, size_t set_num_segments);
 M3Result GrowMemory(M3Memory* memory, size_t additional_size);
 
 ////////////////////////////////

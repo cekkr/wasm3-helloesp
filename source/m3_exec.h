@@ -934,8 +934,8 @@ d_m3Op  (Entry)
             }
         }
 
-        if (AddSegment(memory, end_segment)) {
-            forwardTrap(error_details(m3Err_mallocFailed, "during AddSegment in (Entry)"));
+        if (AddSegments(memory, end_segment)) {
+            forwardTrap(error_details(m3Err_mallocFailed, "during AddSegments in (Entry)"));
             return NULL;
         }
         
