@@ -191,10 +191,11 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
     if (segment_index >= memory->num_segments || 
         !memory->segments[segment_index] || 
         !memory->segments[segment_index]->data) {
-        return NULL;
+        //ESP_LOGW("WASM3", "get_segment_pointer: requested unallocated segment %d", segment_index);
+        return ERROR_POINTER;
     }
 
-    return (uint8_t*)memory->segments[segment_index]->data + segment_offset;
+    return (uint8_t*)(memory->segments[segment_index]->data + segment_offset);
 }
 
 void* resolve_pointer_uncheck(IM3Memory memory, void* ptr) {
@@ -279,7 +280,6 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
         res = ptr;
 
     if(!is_ptr_valid(res)){
-        ESP_LOGE("WASM3", "resolve_pointer: invalid pointer %p (from %p)", res, ptr);
         ESP_LOGE("WASM3", "resolve_pointer: invalid pointer %p (from %p)", res, ptr);
         return ERROR_POINTER;
     }

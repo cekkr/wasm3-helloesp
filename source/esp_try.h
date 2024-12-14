@@ -31,7 +31,7 @@ void backtrace(){
 
 
 M3Result backtrace_err(M3Result err){
-    ESP_LOGE("WASM3", "Error: %s", err);
+    //ESP_LOGE("WASM3", "Error: %s", err);
     esp_backtrace_print(100);
     return err;
 }
