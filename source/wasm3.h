@@ -133,7 +133,7 @@ d_m3ErrorConst  (mallocFailed,                  "memory allocation failed")
 // parse errors
 d_m3ErrorConst  (incompatibleWasmVersion,       "incompatible Wasm binary version")
 d_m3ErrorConst  (wasmMalformed,                 "malformed Wasm binary")
-d_m3ErrorConst  (m3Err_malformedUtf8,             "malformed UTF-8")
+d_m3ErrorConst  (malformedUtf8,             "malformed UTF-8")
 d_m3ErrorConst  (misorderedWasmSection,         "out of order Wasm section")
 d_m3ErrorConst  (wasmUnderrun,                  "underrun while parsing Wasm binary")
 d_m3ErrorConst  (wasmOverrun,                   "overrun while parsing Wasm binary")
@@ -340,16 +340,45 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 //  raw function definition helpers
 //-------------------------------------------------------------------------------------------------------------------------------
 
-# define m3ApiOffsetToPtr(offset)   (void*)((uint8_t*)_mem + (uint32_t)(offset))
-# define m3ApiPtrToOffset(ptr)      (uint32_t)((uint8_t*)ptr - (uint8_t*)_mem)
+# define m3ApiOffsetToPtr(offset)   resolve_pointer(_mem, (void*)(uintptr_t)(offset)) //(void*)((uint8_t*)_mem + (uint32_t)(offset))
+//# define m3ApiPtrToOffset(ptr)      (uint32_t)((uint8_t*)ptr - (uint8_t*)_mem)
+#define m3ApiPtrToOffset(ptr)      ({ \
+    ESP_LOGI("WASM3", "# define m3ApiPtrToOffset(ptr): not implemented"); \
+    (uint32_t)0; \
+})
 
+/*
 # define m3ApiReturnType(TYPE)                 TYPE* raw_return = ((TYPE*) (_sp++));
 # define m3ApiMultiValueReturnType(TYPE, NAME) TYPE* NAME = ((TYPE*) (_sp++));
 # define m3ApiGetArg(TYPE, NAME)               TYPE NAME = * ((TYPE *) (_sp++));
 # define m3ApiGetArgMem(TYPE, NAME)            TYPE NAME = (TYPE)m3ApiOffsetToPtr(* ((uint32_t *) (_sp++)));
+# define m3ApiCheckMem(addr, len)   { if (M3_UNLIKELY(((void*)(addr) < _mem) || ((uint64_t)(uintptr_t)(addr) + (len)) > ((uint64_t)(uintptr_t)(_mem)+m3_GetMemorySize(runtime)))) m3ApiTrap(m3Err_trapOutOfBoundsMemoryAccess); }
+*/
+
+#define m3ApiReturnType(TYPE)                 TYPE* raw_return = ((TYPE*) (_sp++));
+#define m3ApiMultiValueReturnType(TYPE, NAME) TYPE* NAME = ((TYPE*) (_sp++));
+#define m3ApiGetArg(TYPE, NAME)               TYPE NAME = * ((TYPE *) (_sp++));
+
+#define m3ApiOffsetToPtr(offset)              resolve_pointer(_mem, (void*)(uintptr_t)(offset))
+
+#define m3ApiPtrToOffset(ptr)                 ({ \
+    ESP_LOGI("WASM3", "# define m3ApiPtrToOffset(ptr): not implemented"); \
+    (uint32_t)0; \
+})
+
+#define m3ApiGetArgMem(TYPE, NAME)            TYPE NAME = (TYPE)m3ApiOffsetToPtr((uintptr_t)(* ((uint32_t *) (_sp++)))); 
+
+#define m3ApiTrap(VALUE)                      return VALUE
+
+#define m3ApiCheckMem(addr, len) \
+    if (M3_UNLIKELY(((uintptr_t)(addr) < (uintptr_t)_mem) || \
+        ((uintptr_t)(addr) + (len)) > ((uintptr_t)(_mem) + m3_GetMemorySize(runtime)))) { \
+        m3ApiTrap(m3Err_trapOutOfBoundsMemoryAccess); \
+    }
+
+////////////////////////////////////////////////////////////////
 
 # define m3ApiIsNullPtr(addr)       ((void*)(addr) <= _mem)
-# define m3ApiCheckMem(addr, len)   { if (M3_UNLIKELY(((void*)(addr) < _mem) || ((uint64_t)(uintptr_t)(addr) + (len)) > ((uint64_t)(uintptr_t)(_mem)+m3_GetMemorySize(runtime)))) m3ApiTrap(m3Err_trapOutOfBoundsMemoryAccess); }
 
 # define m3ApiRawFunction(NAME)     const void * NAME (IM3Runtime runtime, IM3ImportContext _ctx, uint64_t * _sp, void * _mem)
 # define m3ApiReturn(VALUE)                   { *raw_return = (VALUE); return m3Err_none;}
