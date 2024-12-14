@@ -1414,7 +1414,23 @@ d_m3Op (Const64) {
 
 d_m3Op (Const32) {
     u32 value = MEMACCESS(u32, _mem, _pc++);
-    void* dest = (void*)m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(u32));
+    
+    // Controlli preventivi
+    if (!_mem || !_mem->mallocated) {
+        ESP_LOGE(TAG, "Invalid memory state before access");
+        return m3Err_mallocFailed;
+    }
+
+    i32 offset = _sp + immediate(i32);
+    if (offset < 0 || offset >= (_mem->numPages * m3_WASM_PAGE_SIZE)) {
+        ESP_LOGE(TAG, "Offset out of bounds: %d", offset);
+        return m3Err_wasmMemoryOverflow;
+    }
+
+    ESP_LOGD(TAG, "Memory access - Base: %p, Offset: %d, Pages: %d", 
+             _mem->mallocated, offset, _mem->numPages);
+
+    void* dest = (void*)m3SegmentedMemAccess(_mem, offset, sizeof(u32));
     
     CHECK_MEMORY_ACCESS(dest, sizeof(u32));
     
