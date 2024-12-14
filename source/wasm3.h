@@ -370,11 +370,15 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 
 #define m3ApiTrap(VALUE)                      return VALUE
 
-#define m3ApiCheckMem(addr, len) \
+/*#define m3ApiCheckMem(addr, len) \
     if (M3_UNLIKELY(((uintptr_t)(addr) < (uintptr_t)_mem) || \
         ((uintptr_t)(addr) + (len)) > ((uintptr_t)(_mem) + m3_GetMemorySize(runtime)))) { \
         m3ApiTrap(m3Err_trapOutOfBoundsMemoryAccess); \
     }
+*/
+
+// todo: implement it with segmentation
+#define m3ApiCheckMem(addr, len) 
 
 ////////////////////////////////////////////////////////////////
 

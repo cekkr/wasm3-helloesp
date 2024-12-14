@@ -80,8 +80,8 @@ d_m3BeginExternC
     #define pushBacktraceFrame()            do {} while (0)
     #define fillBacktraceFrame(FUNCTION)    do {} while (0)
 
-    #define newTrap(err)                    return err
-    #define forwardTrap(err)                return err
+    #define newTrap(err)                    return backtrace_err(err)
+    #define forwardTrap(err)                return backtrace_err(err)
 #endif
 
 

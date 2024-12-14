@@ -29,6 +29,13 @@ void backtrace(){
     esp_backtrace_print(100);
 }
 
+
+M3Result backtrace_err(M3Result err){
+    ESP_LOGE("WASM3", "Error: %s", err);
+    esp_backtrace_print(100);
+    return err;
+}
+
 // Esempio di funzione che restituisce un errore
 esp_err_t faulty_function() {
     return ESP_FAIL; // Simula un errore
