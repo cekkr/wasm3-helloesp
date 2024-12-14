@@ -351,7 +351,14 @@ typedef m3slot_t *              m3stack_t;
 typedef
 const void * const  cvptr_t;
 
-#define DEBUG
+#define DEBUG 1
+#define d_m3LogParse 1
+#define d_m3LogCompile 1
+#define d_m3LogEmit 1
+#define d_m3LogCodePages 1
+#define d_m3LogModule 1
+#define d_m3LogRuntime 1
+
 # if defined (DEBUG)
 
 #   define d_m3Log(CATEGORY, FMT, ...)                  printf (" %8s  |  " FMT, #CATEGORY, ##__VA_ARGS__);

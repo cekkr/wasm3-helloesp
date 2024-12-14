@@ -444,8 +444,8 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
     }
     else result = m3Err_mallocFailedCodePage;
 
-    runtime.originStack = NULL;        // prevent free(stack) in ReleaseRuntime
-    Runtime_Release (& runtime);
+    //runtime.originStack = NULL;        // prevent free(stack) in ReleaseRuntime
+    //Runtime_Release (& runtime);
     i_module->runtime = savedRuntime;
 
     * io_bytes = o->wasm;
