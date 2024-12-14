@@ -124,7 +124,7 @@ void  Function_Release  (IM3Function i_function)
     if(WASM_DEBUG_FUNCTION_RELEASE) ESP_LOGI("WASM3", "Function_Release called");
     //m3_Def_Free (i_function->constants);
 
-    m3_Dyn_Free(&i_function->module->runtime->memory, i_function->constants);
+    m3_Def_Free(&i_function->module->runtime->memory, i_function->constants);
     //m3_Def_Free(i_function->constants);
 
     for (int i = 0; i < i_function->numNames; i++)
@@ -133,7 +133,7 @@ void  Function_Release  (IM3Function i_function)
         // name can be an alias of fieldUtf8
         if (i_function->names[i] != i_function->import.fieldUtf8)
         {
-            m3_Dyn_Free(&i_function->module->runtime->memory, i_function->names[i]);
+            m3_Def_Free(&i_function->module->runtime->memory, i_function->names[i]);
             //m3_Def_Free(i_function->names[i]);
         }
     }
@@ -143,7 +143,7 @@ void  Function_Release  (IM3Function i_function)
 
     if (i_function->ownsWasmCode){
         if(WASM_DEBUG_FUNCTION_RELEASE) ESP_LOGI("WASM3", "free i_function->wasm");
-        m3_Dyn_Free(&i_function->module->runtime->memory, i_function->wasm);
+        m3_Def_Free(&i_function->module->runtime->memory, i_function->wasm);
         //m3_Def_Free(i_function->wasm);
     }
 
@@ -151,7 +151,7 @@ void  Function_Release  (IM3Function i_function)
 
 #   if (d_m3EnableCodePageRefCounting)
     {
-        m3_Dyn_Free(i_function->module->runtime->memory, i_function->codePageRefs);
+        m3_Def_Free(i_function->module->runtime->memory, i_function->codePageRefs);
         //m3_Def_Free(i_function->codePageRefs);
         i_function->numCodePageRefs = 0;
     }
@@ -159,7 +159,7 @@ void  Function_Release  (IM3Function i_function)
    
 #   endif
 
-    m3_Dyn_Free(&i_function->module->runtime->memory, i_function);
+    m3_Def_Free(&i_function->module->runtime->memory, i_function);
     //m3_Def_Free(i_function);
 }
 

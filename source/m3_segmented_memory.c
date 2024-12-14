@@ -175,9 +175,8 @@ M3Result AddSegment(M3Memory* memory, size_t set_num_segments) {
     return m3Err_mallocFailed;
 }
 
-const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
-
-const bool WASM_DEBUG_MEM_ACCESS = true;
+const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = false;
+const bool WASM_DEBUG_MEM_ACCESS = false;
 
 void* resolve_pointer_uncheck(IM3Memory memory, void* ptr) {
     ESP_LOGI("WASM3", "resolve_pointer start");
