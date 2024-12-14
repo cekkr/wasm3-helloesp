@@ -677,7 +677,7 @@ d_m3Op (CallRawFunction)
     d_m3TracePrepare
 
     M3ImportContext ctx;
-    M3RawCall call = (M3RawCall) (*MEMACCESS(M3RawCall, _mem, _pc++));
+    M3RawCall call = (M3RawCall) (MEMACCESS(M3RawCall, _mem, _pc++)); // *MEMACCESS..
     ctx.function = immediate (IM3Function);
     ctx.userdata = immediate (void *);
     u64* const sp = ((u64*)_sp);
@@ -697,8 +697,8 @@ d_m3Op (CallRawFunction)
     
     runtime->stack = sp;
     
-    void* _possible_trap = call(runtime, &ctx, sp, memory);
-    m3ret_t possible_trap = (m3ret_t)m3ApiOffsetToPtr(_possible_trap);
+    m3ret_t possible_trap = call(runtime, &ctx, sp, memory);
+    //m3ret_t possible_trap = (m3ret_t)m3ApiOffsetToPtr(_possible_trap);
 
     if (stack_backup != NULL) {
         runtime->stack = stack_backup;
