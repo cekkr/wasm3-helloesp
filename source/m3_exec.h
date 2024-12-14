@@ -698,7 +698,7 @@ d_m3Op (CallRawFunction)
     runtime->stack = sp;
     
     void* _possible_trap = call(runtime, &ctx, sp, memory);
-    m3ret_t possible_trap = *(m3ret_t*)m3ApiOffsetToPtr(_possible_trap);
+    m3ret_t possible_trap = (m3ret_t)m3ApiOffsetToPtr(_possible_trap);
 
     if (stack_backup != NULL) {
         runtime->stack = stack_backup;
