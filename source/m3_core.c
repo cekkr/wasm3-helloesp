@@ -847,7 +847,7 @@ u32  FindModuleOffset  (IM3Runtime i_runtime, pc_t i_pc)
         u32 result = 0;
 
         bool pcFound = MapPCToOffset (curr, i_pc, & result);
-                                                                                d_m3Assert (pcFound);
+                                                                            d_m3Assert (pcFound);
 
         return result;
     }
