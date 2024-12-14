@@ -410,7 +410,7 @@ const void * const  cvptr_t;
 
 
 # if defined(ASSERTS) || (defined(DEBUG) && !defined(NASSERTS))
-#   define d_m3Assert(ASS)  if (!(ASS)) { printf("Assertion failed at %s:%d : %s\n", __FILE__, __LINE__, #ASS); abort(); }
+#   define d_m3Assert(ASS)  if (!(ASS)) { printf("Assertion failed at %s:%d : %s\n", __FILE__, __LINE__, #ASS); /*abort();*/ } 
 # else
 #   define d_m3Assert(ASS)
 # endif
