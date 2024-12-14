@@ -861,7 +861,7 @@ void  PushBacktraceFrame  (IM3Runtime io_runtime, pc_t i_pc)
     if (M3_UNLIKELY (io_runtime->backtrace.lastFrame == M3_BACKTRACE_TRUNCATED))
         return;
 
-    M3BacktraceFrame * newFrame = m3_AllocStruct(M3BacktraceFrame);
+    M3BacktraceFrame * newFrame = m3_Def_AllocStruct(M3BacktraceFrame);
 
     if (!newFrame)
     {
