@@ -121,11 +121,15 @@ static const bool WASM_DEBUG_FUNCTION_RELEASE = false;
 
 void  Function_Release  (IM3Function i_function)
 {    
-    if(WASM_DEBUG_FUNCTION_RELEASE) ESP_LOGI("WASM3", "Function_Release called");
-    //m3_Def_Free (i_function->constants);
+    #define FUNCTIONS_ON_SEGMENTED_MEM 
 
-    m3_Def_Free(&i_function->module->runtime->memory, i_function->constants);
-    //m3_Def_Free(i_function->constants);
+    if(WASM_DEBUG_FUNCTION_RELEASE) ESP_LOGI("WASM3", "Function_Release called");
+
+    #ifdef FUNCTIONS_ON_SEGMENTED_MEM
+    m3_Dyn_Free(&i_function->module->runtime->memory, i_function->constants);
+    #else
+    m3_Def_Free(i_function->constants);
+    #endif 
 
     for (int i = 0; i < i_function->numNames; i++)
     {
@@ -133,8 +137,11 @@ void  Function_Release  (IM3Function i_function)
         // name can be an alias of fieldUtf8
         if (i_function->names[i] != i_function->import.fieldUtf8)
         {
-            m3_Def_Free(&i_function->module->runtime->memory, i_function->names[i]);
-            //m3_Def_Free(i_function->names[i]);
+            #ifdef FUNCTIONS_ON_SEGMENTED_MEM
+            m3_Dyn_Free(&i_function->module->runtime->memory, i_function->names[i]);
+            #else
+            m3_Def_Free(i_function->names[i]);
+            #endif
         }
     }
 
@@ -143,24 +150,34 @@ void  Function_Release  (IM3Function i_function)
 
     if (i_function->ownsWasmCode){
         if(WASM_DEBUG_FUNCTION_RELEASE) ESP_LOGI("WASM3", "free i_function->wasm");
-        m3_Def_Free(&i_function->module->runtime->memory, i_function->wasm);
-        //m3_Def_Free(i_function->wasm);
+        #ifdef FUNCTIONS_ON_SEGMENTED_MEM
+        m3_Dyn_Free(&i_function->module->runtime->memory, i_function->wasm);
+        #else
+        m3_Def_Free(i_function->wasm);
+        #endif
     }
 
     // Function_FreeCompiledCode (func);
 
 #   if (d_m3EnableCodePageRefCounting)
     {
-        m3_Def_Free(i_function->module->runtime->memory, i_function->codePageRefs);
-        //m3_Def_Free(i_function->codePageRefs);
+        #ifdef FUNCTIONS_ON_SEGMENTED_MEM
+        m3_Dyn_Free(i_function->module->runtime->memory, i_function->codePageRefs);
+        #else
+        m3_Def_Free(i_function->codePageRefs);
+        #endif
+
         i_function->numCodePageRefs = 0;
     }
 
    
 #   endif
 
-    m3_Def_Free(&i_function->module->runtime->memory, i_function);
-    //m3_Def_Free(i_function);
+    #ifdef FUNCTIONS_ON_SEGMENTED_MEM
+    m3_Dyn_Free(&i_function->module->runtime->memory, i_function);
+    #else
+    m3_Def_Free(i_function);
+    #endif
 }
 
 
