@@ -18,3 +18,9 @@ target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-error=return-type -Wno-erro
                         -Wno-error=unused-value -Wno-error=maybe-uninitialized -Wno-error=uninitialized -Wno-error=format
                         -Wno-error=multistatement-macros    
                     )
+
+# Avoid IRAM
+target_compile_options(${COMPONENT_LIB} PRIVATE 
+    -fno-jump-tables 
+    -fno-tree-switch-conversion
+)
