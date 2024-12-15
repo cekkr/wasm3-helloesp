@@ -14,6 +14,7 @@
 #include "esp_debug_helpers.h"
 #include "esp_heap_caps.h"
 #include "esp_try.h"
+#include "esp_log.h"
 
 //#include "m3_compile.h"
 
@@ -548,6 +549,7 @@ u32  SizeOfType  (u8 i_m3Type)
 
 
 //-- Binary Wasm parsing utils  ------------------------------------------------------------------------------------------
+const bool WASM_READ_BACKTRACE_WASMUNDERRUN = true;
 
 M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_end) {
     if (!io_bytes || !*io_bytes || !o_value) return m3Err_malformedData;
@@ -565,6 +567,12 @@ M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_
         *io_bytes = ptr;
         return m3Err_none;
     }
+
+    if(WASM_READ_BACKTRACE_WASMUNDERRUN){
+        ESP_LOGE("WASM3", "Read WASM underrun");
+        backtrace();
+    }
+
     return m3Err_wasmUnderrun;
 }
 
@@ -582,8 +590,14 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
         memcpy(o_value, (const u8*)resolve_pointer(memory, *io_bytes), sizeof(u32));
         M3_BSWAP_u32(*o_value);
         *io_bytes = ptr;
-        return m3Err_none;
+        return m3Err_none;        
     }
+
+    if(WASM_READ_BACKTRACE_WASMUNDERRUN){
+        ESP_LOGE("WASM3", "Read WASM underrun");
+        backtrace();
+    }
+
     return m3Err_wasmUnderrun;
 }
 
@@ -604,6 +618,12 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
         *io_bytes = ptr;
         return m3Err_none;
     }
+
+    if(WASM_READ_BACKTRACE_WASMUNDERRUN){
+        ESP_LOGE("WASM3", "Read WASM underrun");
+        backtrace();
+    }
+
     return m3Err_wasmUnderrun;
 }
 
@@ -623,6 +643,12 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
         *io_bytes = ptr;
         return m3Err_none;
     }
+
+    if(WASM_READ_BACKTRACE_WASMUNDERRUN){
+        ESP_LOGE("WASM3", "Read WASM underrun");
+        backtrace();
+    }
+
     return m3Err_wasmUnderrun;
 }
 #endif
@@ -641,6 +667,12 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
         *io_bytes = ptr + 1;
         return m3Err_none;
     }
+
+    if(WASM_READ_BACKTRACE_WASMUNDERRUN){
+        ESP_LOGE("WASM3", "Read WASM underrun");
+        backtrace();
+    }
+
     return m3Err_wasmUnderrun;
 }
 
@@ -667,6 +699,12 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
         *io_bytes = ptr;
         return m3Err_none;
     }
+
+    if(WASM_READ_BACKTRACE_WASMUNDERRUN){
+        ESP_LOGE("WASM3", "Read WASM underrun");
+        backtrace();
+    }
+
     return m3Err_wasmUnderrun;
 }
 
@@ -702,6 +740,12 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
 
     *o_value = value;
     *io_bytes = ptr;
+
+    if(WASM_READ_BACKTRACE_WASMUNDERRUN && result == m3Err_wasmUnderrun){
+        ESP_LOGE("WASM3", "Read WASM underrun");
+        backtrace();
+    }
+
     return result;
 }
 
@@ -742,6 +786,12 @@ M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t
 
     *o_value = value;
     *io_bytes = ptr;
+
+    if(WASM_READ_BACKTRACE_WASMUNDERRUN && result == m3Err_wasmUnderrun){
+        ESP_LOGE("WASM3", "Read WASM underrun");
+        backtrace();
+    }
+
     return result;
 }
 
