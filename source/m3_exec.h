@@ -674,6 +674,8 @@ d_m3Op (CallIndirect)
 
 d_m3Op (CallRawFunction)
 {
+    CALL_WATCHDOG
+
     d_m3TracePrepare
 
     M3ImportContext ctx;

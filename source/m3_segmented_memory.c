@@ -1,6 +1,5 @@
 #include "m3_segmented_memory.h"
 #include "esp_log.h"
-
 #include "m3_pointers.h"
 
 #define WASM_DEBUG_SEGMENTED_MEM_MAN 1
@@ -191,7 +190,8 @@ const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = false;
 const bool WASM_DEBUG_MEM_ACCESS = false;
 const bool WASM_DEBUG_GET_SEGMENT_POINTER = false;
 
-void* get_segment_pointer(IM3Memory memory, u32 offset) {
+void* get_segment_pointer(IM3Memory memory, u32 offset) {    
+
     if (!memory || !memory->segments) {
         return ERROR_POINTER;
     }

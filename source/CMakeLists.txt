@@ -16,6 +16,9 @@ set(sources
     "m3_parse.c"
 )
 
+
+file(GLOB_RECURSE M3_SOURCES "wasm3/*.c")
+
 add_library(m3 STATIC ${sources})
 
 target_include_directories(m3 PUBLIC .)

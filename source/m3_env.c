@@ -367,7 +367,9 @@ void  m3_FreeRuntime  (IM3Runtime i_runtime)
 const bool WASM_DEBUG_EvaluateExpression = false;
 M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type, bytes_t * io_bytes, cbytes_t i_end)
 {
-    ESP_LOGI("WASM3", "EvaluateExpression called");
+    CALL_WATCHDOG
+    if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression called");
+    
     M3Result result = m3Err_none;
 
     // OPTZ: use a simplified interpreter for expressions
@@ -1108,6 +1110,8 @@ _   (checkStartFunction(i_function->module))
 
 M3Result m3_Call(IM3Function i_function, uint32_t i_argc, const void* i_argptrs[])
 {
+    CALL_WATCHDOG
+
     IM3Runtime runtime = i_function->module->runtime;
     IM3FuncType ftype = i_function->funcType;
     M3Result result = m3Err_none;

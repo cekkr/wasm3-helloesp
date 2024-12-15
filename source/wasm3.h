@@ -22,6 +22,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "esp_task_wdt.h" // for watchdog reset
+
 #include "wasm3_defs.h"
 
 // Constants
@@ -425,3 +427,9 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 #if defined(__cplusplus)
 }
 #endif
+
+///
+/// WATCHDOG
+///
+
+#define CALL_WATCHDOG esp_task_wdt_reset();
