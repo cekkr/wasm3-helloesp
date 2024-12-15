@@ -191,6 +191,7 @@ const bool WASM_DEBUG_MEM_ACCESS = false;
 const bool WASM_DEBUG_GET_SEGMENT_POINTER = false;
 
 void* get_segment_pointer(IM3Memory memory, u32 offset) {    
+    //CALL_WATCHDOG
 
     if (!memory || !memory->segments) {
         return ERROR_POINTER;
