@@ -10,6 +10,7 @@
 
 #include <stdarg.h>
 #include "esp_debug_helpers.h"
+#include "esp_private/panic_internal.h"
 
 //#include "m3_config.h"
 //#include "m3_config_platforms.h"
@@ -37,3 +38,4 @@ char* error_details(const char* base_error, const char* format, ...);
 
 // const char* err2 = error_details(trapStackOverflow, "Errore alla linea %d", line_number);
 
+void custom_panic_handler(void* frame, panic_info_t* info);

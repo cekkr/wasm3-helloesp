@@ -15,3 +15,8 @@ char* error_details(const char* base_error, const char* format, ...) {
     
     return buffer;
 }
+
+void custom_panic_handler(void* frame, panic_info_t* info) {
+    ESP_LOGE("WASM3", "Custom panic handler");
+    esp_backtrace_print(100);
+}
