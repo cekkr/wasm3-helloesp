@@ -432,7 +432,7 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 /// WATCHDOG
 ///
 
-#define ENABLE_WDT 0
+#define ENABLE_WDT 1
 
 #if ENABLE_WDT
 #define CALL_WATCHDOG esp_task_wdt_reset(); 
