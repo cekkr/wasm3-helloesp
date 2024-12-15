@@ -176,21 +176,22 @@ void* default_malloc(size_t size) {
             ESP_LOGE("WASM3", "No memory available (size: %u)", size);
             ESP_LOGE("WASM3", "No memory available (size: %u)", size);
             backtrace();
-            return NULL;
+            return ERROR_POINTER;
         }
 
         size_t aligned_size = DEFAULT_ALLOC_ALIGNMENT ? (size + 7) & ~7 : size; 
+        aligned_size += ALLOC_SHIFT_OF;
 
         void* ptr = WASM_ENABLE_SPI_MEM ? heap_caps_malloc(aligned_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
-        if (ptr == NULL) {
-            ptr = heap_caps_malloc(aligned_size + ALLOC_SHIFT_OF, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL); // | MALLOC_CAP_INTERNAL           
+        if (ptr == NULL || ptr == ERROR_POINTER) {
+            ptr = heap_caps_malloc(aligned_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL); // | MALLOC_CAP_INTERNAL           
         }
 
         if (ptr) {
-            memset(ptr, 0, aligned_size + ALLOC_SHIFT_OF);  // Zero-fill con padding
+            memset(ptr, 0, aligned_size);  // Zero-fill con padding
         }
 
-        if(ptr == NULL){
+        if(ptr == NULL || ptr == ERROR_POINTER){
             ESP_LOGE("WASM3", "Failed to allocate memory of size %d", aligned_size);
             esp_backtrace_print(100);
         }
@@ -241,7 +242,8 @@ void* default_realloc(void* ptr, size_t new_size) {
     if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_realloc called for %p (size: %u)", ptr, new_size);
 
     size_t aligned_size = DEFAULT_ALLOC_ALIGNMENT ? (new_size + 7) & ~7 : new_size;
-
+    aligned_size += ALLOC_SHIFT_OF;
+    
     TRY {
         if(!ptr){
             ptr = default_malloc(aligned_size);
@@ -252,13 +254,13 @@ void* default_realloc(void* ptr, size_t new_size) {
             ESP_LOGE("WASM3", "No memory available (size: %u)", new_size);
             ESP_LOGE("WASM3", "No memory available (size: %u)", new_size);
             backtrace();
-            return NULL;
+            return ERROR_POINTER;
         }
 
         if(!ultra_safe_ptr_valid(ptr)){
-            ESP_LOGW("WASM3", "default_free: is_ptr_freeable check failed for pointer");
+            ESP_LOGW("WASM3", "default_realloc: is_ptr_freeable check failed for pointer");
             backtrace();
-            return;
+            return ERROR_POINTER;
         }
 
         // Ottieni la dimensione originale del blocco
@@ -286,9 +288,14 @@ void* default_realloc(void* ptr, size_t new_size) {
 
         if (new_ptr == NULL){
             ESP_LOGE("WASM3", "Failed to reallocate memory of size %zu", aligned_size);
+        }        
+
+        ptr = &new_ptr;
+
+        if(ptr == NULL){
+            return ERROR_POINTER;
         }
 
-        ptr = new_ptr;
         return new_ptr;
 
     } CATCH {
