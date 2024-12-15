@@ -646,6 +646,8 @@ _try {
         //todo: create M3Memory ad hoc? mah...
     }
 
+    if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: assignation dones.");
+
     module->name = ".unnamed";                                                      m3log (parse, "load module: %d bytes", i_numBytes);
     module->startFunction = -1;
     //module->hasWasmCodeCopy = false;
