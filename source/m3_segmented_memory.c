@@ -193,6 +193,9 @@ const bool WASM_DEBUG_GET_SEGMENT_POINTER = false;
 void* get_segment_pointer(IM3Memory memory, u32 offset) {    
     //CALL_WATCHDOG
 
+    if(offset == ERROR_POINTER)
+        return ERROR_POINTER;
+
     if (!memory || !memory->segments) {
         return ERROR_POINTER;
     }
@@ -331,8 +334,7 @@ void* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size)
 
     if(mem == NULL){
         ESP_LOGE("WASM3", "m3SegmentedMemAccess called with null memory pointer");     
-        if(WASM_DEBUG_MEM_ACCESS_BACKTRACE)
-            backtrace();
+        if(WASM_DEBUG_MEM_ACCESS_BACKTRACE) backtrace();
         return ERROR_POINTER;
     }
 

@@ -174,6 +174,7 @@ void* default_malloc(size_t size) {
 
         if(!check_memory_available_bySize(size)){
             ESP_LOGE("WASM3", "No memory available (size: %u)", size);
+            ESP_LOGE("WASM3", "No memory available (size: %u)", size);
             backtrace();
             return NULL;
         }
@@ -248,6 +249,7 @@ void* default_realloc(void* ptr, size_t new_size) {
         }
 
         if(!check_memory_available_bySize(new_size)){
+            ESP_LOGE("WASM3", "No memory available (size: %u)", new_size);
             ESP_LOGE("WASM3", "No memory available (size: %u)", new_size);
             backtrace();
             return NULL;

@@ -241,9 +241,9 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
             ESP_LOGI("WASM3", "flush");
         }
 
-        //runtime->originStack = m3_Malloc (memory, i_stackSizeInBytes + 4 * sizeof (m3slot_t)); // TODO: more precise stack checks
+        runtime->originStack = m3_Malloc (memory, i_stackSizeInBytes + 4 * sizeof (m3slot_t)); // TODO: more precise stack checks
         //runtime->originStack = m3_NewStack(); // (not implemented) ad hoc M3Memory for stack        
-        runtime->originStack = m3_Def_Malloc (stackSize); // default malloc
+        //runtime->originStack = m3_Def_Malloc (stackSize); // default malloc
 
         if (runtime->originStack)
         {
@@ -369,7 +369,7 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
 {
     CALL_WATCHDOG
     if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression called");
-    
+
     M3Result result = m3Err_none;
 
     // OPTZ: use a simplified interpreter for expressions
