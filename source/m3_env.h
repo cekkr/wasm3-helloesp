@@ -26,6 +26,8 @@ typedef struct M3MemoryInfo //todo: study its usage
     u32     initPages;
     u32     maxPages;
     u32     pageSize;
+    
+    IM3Memory mem;
 }
 M3MemoryInfo;
 

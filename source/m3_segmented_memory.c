@@ -313,7 +313,7 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
     void* res = get_segment_pointer(memory, ptr);
 
     if(res == ERROR_POINTER || res == NULL)
-        res = ptr;
+        res = &ptr;
 
     if(!is_ptr_valid(res)){
         ESP_LOGE("WASM3", "resolve_pointer: invalid pointer %p (from %p)", res, ptr);
@@ -453,6 +453,53 @@ bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size)
 {
     return (offset + size) <= memory->total_size;
 }
+
+u32 get_offset_pointer(IM3Memory memory, void* ptr) {
+    if (!memory || !memory->segments || !ptr) {
+        return (u32)ERROR_POINTER;
+    }
+
+    // If ptr is already an offset or ERROR_POINTER, return it as is
+    if (ptr == ERROR_POINTER || (u32)ptr < memory->segment_size) {
+        return (u32)ptr;
+    }
+
+    // Search through all segments to find which one contains this pointer
+    for (size_t i = 0; i < memory->num_segments; i++) {
+        MemorySegment* segment = memory->segments[i];
+        if (!segment || !segment->data) continue;
+
+        // Calculate if ptr falls within this segment's range
+        void* segment_start = segment->data;
+        void* segment_end = (uint8_t*)segment_start + segment->size;
+
+        if (ptr >= segment_start && ptr < segment_end) {
+            // Calculate the offset within the segment
+            size_t segment_offset = (uint8_t*)ptr - (uint8_t*)segment_start;
+            
+            // Calculate the total offset
+            u32 total_offset = (i * memory->segment_size) + segment_offset;
+
+            if (WASM_DEBUG_GET_SEGMENT_POINTER) {
+                ESP_LOGI("WASM3", "get_offset_pointer: converted %p to offset %u (segment %zu)", 
+                         ptr, total_offset, i);
+            }
+
+            return total_offset;
+        }
+    }
+
+    // If we didn't find the pointer in any segment, return the original pointer
+    if (WASM_DEBUG_GET_SEGMENT_POINTER) {
+        ESP_LOGI("WASM3", "get_offset_pointer: pointer %p not found in segmented memory", ptr);
+    }
+    
+    return (u32)ptr;
+}
+
+////
+////
+////
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 

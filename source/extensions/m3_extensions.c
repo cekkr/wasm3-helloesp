@@ -39,6 +39,7 @@ M3Result  m3_InjectFunction  (IM3Module                 i_module,
                               bool                      i_doCompilation)
 {
     M3Result result = m3Err_none;                                       d_m3Assert (io_functionIndex);
+    IM3Memory mem = &i_module->runtime->memory;    
 
     IM3Function function = NULL;
     IM3FuncType ftype = NULL;
@@ -50,7 +51,7 @@ _   (SignatureToFuncType (& ftype, i_signature));
     bytes_t end = i_wasmBytes + 5;
 
     u32 size;
-_   (ReadLEB_u32 (& size, & bytes, end));
+_   (ReadLEB_u32 (mem, & size, & bytes, end));
     end = bytes + size;
 
     if (index >= 0)

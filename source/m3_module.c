@@ -111,6 +111,7 @@ _try {
     return result;
 }
 
+const bool WASM_DEBUG_MODULE_ADDFUNCTION = true;
 M3Result  Module_AddFunction  (IM3Module io_module, u32 i_typeIndex, IM3ImportInfo i_importInfo)
 {
 _try {
@@ -118,6 +119,7 @@ _try {
     u32 index = io_module->numFunctions++;
 _   (Module_PreallocFunctions(io_module, io_module->numFunctions));
 
+    if(WASM_DEBUG_MODULE_ADDFUNCTION) ESP_LOGI("WASM3", "i_typeIndex (%d) < io_module->numFuncTyped(%d)", i_typeIndex, io_module->numFuncTypes);
     _throwif ("type sig index out of bounds", i_typeIndex >= io_module->numFuncTypes);
 
     IM3FuncType ft = io_module->funcTypes [i_typeIndex];

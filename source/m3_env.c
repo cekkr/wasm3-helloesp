@@ -632,6 +632,7 @@ const bool WASM_DEBUG_INIT_ELEMENTS = true;
 M3Result  InitElements  (IM3Module io_module)
 {
     M3Result result = m3Err_none;
+    IM3Memory mem = &io_module->runtime->memory;
 
     bytes_t bytes = io_module->elementSection;
     cbytes_t end = io_module->elementSectionEnd;
@@ -639,7 +640,7 @@ M3Result  InitElements  (IM3Module io_module)
     for (u32 i = 0; i < io_module->numElementSegments; ++i)
     {
         u32 index;
-_       (ReadLEB_u32 (& index, & bytes, end));
+_       (ReadLEB_u32 (mem, & index, & bytes, end));
 
         if (index == 0)
         {
@@ -648,7 +649,7 @@ _           (EvaluateExpression (io_module, & offset, c_m3Type_i32, & bytes, end
             _throwif ("table underflow", offset < 0);
 
             u32 numElements;
-_           (ReadLEB_u32 (& numElements, & bytes, end));
+_           (ReadLEB_u32 (mem, & numElements, & bytes, end));
 
             size_t endElement = (size_t) numElements + offset;
             _throwif ("table overflow", endElement > d_m3MaxSaneTableSize);
@@ -671,7 +672,7 @@ _           (ReadLEB_u32 (& numElements, & bytes, end));
             for (u32 e = 0; e < numElements; ++e)
             {
                 u32 functionIndex;
-_               (ReadLEB_u32 (& functionIndex, & bytes, end));
+_               (ReadLEB_u32 (mem, & functionIndex, & bytes, end));
                 _throwif ("function index out of range", functionIndex >= io_module->numFunctions);
                 IM3Function function = & io_module->functions [functionIndex];      d_m3Assert (function); //printf ("table: %s\n", m3_GetFunctionName(function));
                 io_module->table0 [e + offset] = function;
@@ -748,21 +749,25 @@ _           (CompileFunction (function));
 // TODO: deal with main + side-modules loading efforcement
 M3Result  m3_LoadModule  (IM3Runtime io_runtime, IM3Module io_module)
 {
+    // Start
+    M3Result result = m3Err_none;
+
     // Debug memory allocation
     multi_heap_info_t info;
     heap_caps_get_info(&info, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
     ESP_LOGI("WASM3", "Before LoadModule - Free: %d bytes, Largest block: %d bytes", 
-         info.total_free_bytes, info.largest_free_block);
+        info.total_free_bytes, info.largest_free_block);
 
-    // Start
-    M3Result result = m3Err_none;
+    if(!M3_UNLIKELY(io_module->runtime)){                
+        if (M3_UNLIKELY(io_module->runtime)) { // useless due to redudancy
+            return m3Err_moduleAlreadyLinked;
+        }
 
-    if (M3_UNLIKELY(io_module->runtime)) {
-        return m3Err_moduleAlreadyLinked;
+        io_module->runtime = io_runtime;
+        //M3Memory * memory = & io_runtime->memory;    
+
+        IM3Runtime io_runtime = io_module->runtime;
     }
-
-    io_module->runtime = io_runtime;
-    M3Memory * memory = & io_runtime->memory;    
 
     ESP_LOGI("WASM3", "Starting InitMemory");
 _   (InitMemory (io_runtime, io_module));
@@ -773,7 +778,7 @@ _   (InitGlobals (io_module));
     ESP_LOGI("WASM3", "InitGlobals completed");
 
     ESP_LOGI("WASM3", "Starting InitDataSegments");
-_   (InitDataSegments (memory, io_module));
+_   (InitDataSegments (&io_runtime->memory, io_module));
     ESP_LOGI("WASM3", "InitDataSegments completed");
 
     ESP_LOGI("WASM3", "Starting InitElements");

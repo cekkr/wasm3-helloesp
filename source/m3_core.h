@@ -145,23 +145,23 @@ bool        IsFpType                (u8 i_wasmType);
 bool        Is64BitType             (u8 i_m3Type);
 u32         SizeOfType              (u8 i_m3Type);
 
-M3Result    Read_u64                (u64 * o_value, bytes_t * io_bytes, cbytes_t i_end);
-M3Result    Read_u32                (u32 * o_value, bytes_t * io_bytes, cbytes_t i_end);
+M3Result    Read_u64                (IM3Memory memory, u64 * o_value, bytes_t * io_bytes, cbytes_t i_end);
+M3Result    Read_u32                (IM3Memory memory, u32 * o_value, bytes_t * io_bytes, cbytes_t i_end);
 #if d_m3ImplementFloat
-M3Result    Read_f64                (f64 * o_value, bytes_t * io_bytes, cbytes_t i_end);
-M3Result    Read_f32                (f32 * o_value, bytes_t * io_bytes, cbytes_t i_end);
+M3Result    Read_f64                (IM3Memory memory, f64 * o_value, bytes_t * io_bytes, cbytes_t i_end);
+M3Result    Read_f32                (IM3Memory memory, f32 * o_value, bytes_t * io_bytes, cbytes_t i_end);
 #endif
-M3Result    Read_u8                 (u8  * o_value, bytes_t * io_bytes, cbytes_t i_end);
-M3Result    Read_opcode             (m3opcode_t * o_value, bytes_t  * io_bytes, cbytes_t i_end);
+M3Result    Read_u8                 (IM3Memory memory, u8  * o_value, bytes_t * io_bytes, cbytes_t i_end);
+M3Result    Read_opcode             (IM3Memory memory, m3opcode_t * o_value, bytes_t  * io_bytes, cbytes_t i_end);
 
-M3Result    ReadLebUnsigned         (u64 * o_value, u32 i_maxNumBits, bytes_t * io_bytes, cbytes_t i_end);
-M3Result    ReadLebSigned           (i64 * o_value, u32 i_maxNumBits, bytes_t * io_bytes, cbytes_t i_end);
-M3Result    ReadLEB_u32             (u32 * o_value, bytes_t * io_bytes, cbytes_t i_end);
-M3Result    ReadLEB_u7              (u8  * o_value, bytes_t * io_bytes, cbytes_t i_end);
-M3Result    ReadLEB_i7              (i8  * o_value, bytes_t * io_bytes, cbytes_t i_end);
-M3Result    ReadLEB_i32             (i32 * o_value, bytes_t * io_bytes, cbytes_t i_end);
-M3Result    ReadLEB_i64             (i64 * o_value, bytes_t * io_bytes, cbytes_t i_end);
-M3Result    Read_utf8               (cstr_t * o_utf8, bytes_t * io_bytes, cbytes_t i_end);
+M3Result    ReadLebUnsigned         (IM3Memory memory, u64 * o_value, u32 i_maxNumBits, bytes_t * io_bytes, cbytes_t i_end);
+M3Result    ReadLebSigned           (IM3Memory memory, i64 * o_value, u32 i_maxNumBits, bytes_t * io_bytes, cbytes_t i_end);
+M3Result    ReadLEB_u32             (IM3Memory memory, u32 * o_value, bytes_t * io_bytes, cbytes_t i_end);
+M3Result    ReadLEB_u7              (IM3Memory memory, u8  * o_value, bytes_t * io_bytes, cbytes_t i_end);
+M3Result    ReadLEB_i7              (IM3Memory memory, i8  * o_value, bytes_t * io_bytes, cbytes_t i_end);
+M3Result    ReadLEB_i32             (IM3Memory memory, i32 * o_value, bytes_t * io_bytes, cbytes_t i_end);
+M3Result    ReadLEB_i64             (IM3Memory memory, i64 * o_value, bytes_t * io_bytes, cbytes_t i_end);
+M3Result    Read_utf8               (IM3Memory memory, cstr_t * o_utf8, bytes_t * io_bytes, cbytes_t i_end);
 
 cstr_t      SPrintValue             (void * i_value, u8 i_type);
 size_t      SPrintArg               (char * o_string, size_t i_stringBufferSize, voidptr_t i_sp, u8 i_type);

@@ -23,17 +23,17 @@ M3Result  ParseType_Memory  (M3MemoryInfo * o_memory, bytes_t * io_bytes, cbytes
 
     u8 flag;
 
-_   (ReadLEB_u7 (& flag, io_bytes, i_end));                   // really a u1
-_   (ReadLEB_u32 (& o_memory->initPages, io_bytes, i_end));
+_   (ReadLEB_u7 (o_memory->mem, & flag, io_bytes, i_end));                   // really a u1
+_   (ReadLEB_u32 (o_memory->mem, & o_memory->initPages, io_bytes, i_end));
 
     o_memory->maxPages = 0;
     if (flag & (1u << 0))
-_       (ReadLEB_u32 (& o_memory->maxPages, io_bytes, i_end));
+_       (ReadLEB_u32 (o_memory->mem, & o_memory->maxPages, io_bytes, i_end));
 
     o_memory->pageSize = 0;
     if (flag & (1u << 3)) {
         u32 logPageSize;
-_       (ReadLEB_u32 (& logPageSize, io_bytes, i_end));
+_       (ReadLEB_u32 (o_memory->mem, & logPageSize, io_bytes, i_end));
         o_memory->pageSize = 1u << logPageSize;
     }
 
@@ -44,10 +44,11 @@ _       (ReadLEB_u32 (& logPageSize, io_bytes, i_end));
 M3Result  ParseSection_Type  (IM3Module io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     IM3FuncType ftype = NULL;
+    IM3Memory mem = &io_module->runtime->memory;
 
 _try {
     u32 numTypes;
-_   (ReadLEB_u32 (& numTypes, & i_bytes, i_end));                                   m3log (parse, "** Type [%d]", numTypes);
+_   (ReadLEB_u32 (mem, & numTypes, & i_bytes, i_end));                                   m3log (parse, "** Type [%d]", numTypes);
 
     _throwif("too many types", numTypes > d_m3MaxSaneTypesCount);
 
@@ -56,16 +57,16 @@ _   (ReadLEB_u32 (& numTypes, & i_bytes, i_end));                               
         // table of IM3FuncType (that point to the actual M3FuncType struct in the Environment)
         io_module->funcTypes = m3_Def_AllocArray (IM3FuncType, numTypes);
         _throwifnull (io_module->funcTypes);
-        io_module->numFuncTypes = numTypes;
+        io_module->numFuncTypes += numTypes;
 
         for (u32 i = 0; i < numTypes; ++i)
         {
             i8 form;
-_           (ReadLEB_i7 (& form, & i_bytes, i_end));
+_           (ReadLEB_i7 (mem, & form, & i_bytes, i_end));
             _throwif (m3Err_wasmMalformed, form != -32); // for Wasm MVP
 
             u32 numArgs;
-_           (ReadLEB_u32 (& numArgs, & i_bytes, i_end));
+_           (ReadLEB_u32 (mem, & numArgs, & i_bytes, i_end));
 
             _throwif (m3Err_tooManyArgsRets, numArgs > d_m3MaxSaneFunctionArgRetCount);
 #if defined(M3_COMPILER_MSVC)
@@ -77,14 +78,14 @@ _           (ReadLEB_u32 (& numArgs, & i_bytes, i_end));
             {
                 i8 wasmType;
                 u8 argType;
-_               (ReadLEB_i7 (& wasmType, & i_bytes, i_end));
+_               (ReadLEB_i7 (mem, & wasmType, & i_bytes, i_end));
 _               (NormalizeType (& argType, wasmType));
 
                 argTypes[a] = argType;
             }
 
             u32 numRets;
-_           (ReadLEB_u32 (& numRets, & i_bytes, i_end));
+_           (ReadLEB_u32 (mem, & numRets, & i_bytes, i_end));
             _throwif (m3Err_tooManyArgsRets, (u64)(numRets) + numArgs > d_m3MaxSaneFunctionArgRetCount);
 
 _           (AllocFuncType (& ftype, numRets + numArgs));
@@ -95,7 +96,7 @@ _           (AllocFuncType (& ftype, numRets + numArgs));
             {
                 i8 wasmType;
                 u8 retType;
-_               (ReadLEB_i7 (& wasmType, & i_bytes, i_end));
+_               (ReadLEB_i7 (mem, & wasmType, & i_bytes, i_end));
 _               (NormalizeType (& retType, wasmType));
 
                 ftype->types[r] = retType;
@@ -125,9 +126,10 @@ _               (NormalizeType (& retType, wasmType));
 M3Result  ParseSection_Function  (IM3Module io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
+    IM3Memory mem = &io_module->runtime->memory;
 
     u32 numFunctions;
-_   (ReadLEB_u32 (& numFunctions, & i_bytes, i_end));                               m3log (parse, "** Function [%d]", numFunctions);
+_   (ReadLEB_u32 (mem, & numFunctions, & i_bytes, i_end));                               m3log (parse, "** Function [%d]", numFunctions);
 
     _throwif("too many functions", numFunctions > d_m3MaxSaneFunctionsCount);
 
@@ -136,7 +138,7 @@ _   (Module_PreallocFunctions(io_module, io_module->numFunctions + numFunctions)
     for (u32 i = 0; i < numFunctions; ++i)
     {
         u32 funcTypeIndex;
-_       (ReadLEB_u32 (& funcTypeIndex, & i_bytes, i_end));
+_       (ReadLEB_u32 (mem, & funcTypeIndex, & i_bytes, i_end));
 
 _       (Module_AddFunction (io_module, funcTypeIndex, NULL /* import info */));
     }
@@ -149,11 +151,12 @@ static const bool WASM_DEBUG_PARSE_SECTION = false;
 M3Result  ParseSection_Import  (IM3Module io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
+    IM3Memory mem = &io_module->runtime->memory;
 
     M3ImportInfo import = { NULL, NULL }, clearImport = { NULL, NULL };
 
     u32 numImports;
-_   (ReadLEB_u32 (& numImports, & i_bytes, i_end));                                 m3log (parse, "** Import [%d]", numImports);
+_   (ReadLEB_u32 (mem, & numImports, & i_bytes, i_end));                                 m3log (parse, "** Import [%d]", numImports);
 
     _throwif("too many imports", numImports > d_m3MaxSaneImportsCount);
 
@@ -164,16 +167,16 @@ _   (Module_PreallocFunctions(io_module, numImports));
     {
         u8 importKind;
 
-_       (Read_utf8 (& import.moduleUtf8, & i_bytes, i_end));
-_       (Read_utf8 (& import.fieldUtf8, & i_bytes, i_end));
-_       (Read_u8 (& importKind, & i_bytes, i_end));                                 m3log (parse, "    kind: %d '%s.%s' ",
+_       (Read_utf8 (mem, & import.moduleUtf8, & i_bytes, i_end));
+_       (Read_utf8 (mem, & import.fieldUtf8, & i_bytes, i_end));
+_       (Read_u8 (mem, & importKind, & i_bytes, i_end));                                 m3log (parse, "    kind: %d '%s.%s' ",
                                                                                                 (u32) importKind, import.moduleUtf8, import.fieldUtf8);
         switch (importKind)
         {
             case d_externalKind_function:
             {
                 u32 typeIndex;
-_               (ReadLEB_u32 (& typeIndex, & i_bytes, i_end))
+_               (ReadLEB_u32 (mem, & typeIndex, & i_bytes, i_end))
 
 _               (Module_AddFunction (io_module, typeIndex, & import))
                 import = clearImport;
@@ -200,9 +203,9 @@ _               (ParseType_Memory (& io_module->memoryInfo, & i_bytes, i_end));
                 i8 waType;
                 u8 type, isMutable;
 
-_               (ReadLEB_i7 (& waType, & i_bytes, i_end));
+_               (ReadLEB_i7 (mem, & waType, & i_bytes, i_end));
 _               (NormalizeType (& type, waType));
-_               (ReadLEB_u7 (& isMutable, & i_bytes, i_end));                     m3log (parse, "     global: %s mutable=%d", c_waTypes [type], (u32) isMutable);
+_               (ReadLEB_u7 (mem, & isMutable, & i_bytes, i_end));                     m3log (parse, "     global: %s mutable=%d", c_waTypes [type], (u32) isMutable);
 
                 IM3Global global;
 _               (Module_AddGlobal (io_module, & global, type, isMutable, true /* isImport */));
@@ -229,10 +232,11 @@ _               (Module_AddGlobal (io_module, & global, type, isMutable, true /*
 M3Result  ParseSection_Export  (IM3Module io_module, bytes_t i_bytes, cbytes_t  i_end)
 {
     M3Result result = m3Err_none;
+    IM3Memory mem = &io_module->runtime->memory;
     const char * utf8 = NULL;
 
     u32 numExports;
-_   (ReadLEB_u32 (& numExports, & i_bytes, i_end));                                 m3log (parse, "** Export [%d]", numExports);
+_   (ReadLEB_u32 (mem, & numExports, & i_bytes, i_end));                                 m3log (parse, "** Export [%d]", numExports);
 
     _throwif("too many exports", numExports > d_m3MaxSaneExportsCount);
 
@@ -241,9 +245,9 @@ _   (ReadLEB_u32 (& numExports, & i_bytes, i_end));                             
         u8 exportKind;
         u32 index;
 
-_       (Read_utf8 (& utf8, & i_bytes, i_end));
-_       (Read_u8 (& exportKind, & i_bytes, i_end));
-_       (ReadLEB_u32 (& index, & i_bytes, i_end));                                  m3log (parse, "    index: %3d; kind: %d; export: '%s'; ", index, (u32) exportKind, utf8);
+_       (Read_utf8 (mem, & utf8, & i_bytes, i_end));
+_       (Read_u8 (mem, & exportKind, & i_bytes, i_end));
+_       (ReadLEB_u32 (mem, & index, & i_bytes, i_end));                                  m3log (parse, "    index: %3d; kind: %d; export: '%s'; ", index, (u32) exportKind, utf8);
 
         if (exportKind == d_externalKind_function)
         {
@@ -291,7 +295,7 @@ M3Result  ParseSection_Start  (IM3Module io_module, bytes_t i_bytes, cbytes_t i_
     M3Result result = m3Err_none;
 
     u32 startFuncIndex;
-_   (ReadLEB_u32 (& startFuncIndex, & i_bytes, i_end));                               m3log (parse, "** Start Function: %d", startFuncIndex);
+_   (ReadLEB_u32 (&io_module->runtime->memory, & startFuncIndex, & i_bytes, i_end));                               m3log (parse, "** Start Function: %d", startFuncIndex);
 
     if (startFuncIndex < io_module->numFunctions)
     {
@@ -329,7 +333,7 @@ M3Result  ParseSection_Element  (IM3Module io_module, bytes_t i_bytes, cbytes_t 
     M3Result result = m3Err_none;
 
     u32 numSegments;
-_   (ReadLEB_u32 (& numSegments, & i_bytes, i_end));                         m3log (parse, "** Element [%d]", numSegments);
+_   (ReadLEB_u32 (&io_module->runtime->memory, & numSegments, & i_bytes, i_end));                         m3log (parse, "** Element [%d]", numSegments);
 
     _throwif ("too many element segments", numSegments > d_m3MaxSaneElementSegments);
 
@@ -344,9 +348,10 @@ _   (ReadLEB_u32 (& numSegments, & i_bytes, i_end));                         m3l
 M3Result  ParseSection_Code  (M3Module * io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result;
+    IM3Memory mem = &io_module->runtime->memory;
 
     u32 numFunctions;
-_   (ReadLEB_u32 (& numFunctions, & i_bytes, i_end));                               m3log (parse, "** Code [%d]", numFunctions);
+_   (ReadLEB_u32 (mem, & numFunctions, & i_bytes, i_end));                               m3log (parse, "** Code [%d]", numFunctions);
 
     if (numFunctions != io_module->numFunctions - io_module->numFuncImports)
     {
@@ -358,7 +363,7 @@ _   (ReadLEB_u32 (& numFunctions, & i_bytes, i_end));                           
         const u8 * start = i_bytes;
 
         u32 size;
-_       (ReadLEB_u32 (& size, & i_bytes, i_end));
+_       (ReadLEB_u32 (mem, & size, & i_bytes, i_end));
 
         if (size)
         {
@@ -411,9 +416,10 @@ _                   (NormalizeType (& normalType, wasmType));
 M3Result  ParseSection_Data  (M3Module * io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
+    IM3Memory mem = &io_module->runtime->memory;
 
     u32 numDataSegments;
-_   (ReadLEB_u32 (& numDataSegments, & i_bytes, i_end));                            m3log (parse, "** Data [%d]", numDataSegments);
+_   (ReadLEB_u32 (mem, & numDataSegments, & i_bytes, i_end));                            m3log (parse, "** Data [%d]", numDataSegments);
 
     _throwif("too many data segments", numDataSegments > d_m3MaxSaneDataSegments);
 
@@ -425,7 +431,7 @@ _   (ReadLEB_u32 (& numDataSegments, & i_bytes, i_end));                        
     {
         M3DataSegment * segment = & io_module->dataSegments [i];
 
-_       (ReadLEB_u32 (& segment->memoryRegion, & i_bytes, i_end));
+_       (ReadLEB_u32 (mem, & segment->memoryRegion, & i_bytes, i_end));
 
         segment->initExpr = i_bytes;
 _       (Parse_InitExpr (io_module, & i_bytes, i_end));
@@ -433,7 +439,7 @@ _       (Parse_InitExpr (io_module, & i_bytes, i_end));
 
         _throwif (m3Err_wasmMissingInitExpr, segment->initExprSize <= 1);
 
-_       (ReadLEB_u32 (& segment->size, & i_bytes, i_end));
+_       (ReadLEB_u32 (mem, & segment->size, & i_bytes, i_end));
         segment->data = i_bytes;                                                    m3log (parse, "    segment [%u]  memory: %u;  expr-size: %d;  size: %d",
                                                                                        i, segment->memoryRegion, segment->initExprSize, segment->size);
         i_bytes += segment->size;
@@ -454,7 +460,7 @@ M3Result  ParseSection_Memory  (M3Module * io_module, bytes_t i_bytes, cbytes_t 
     // TODO: MVP; assert no memory imported
 
     u32 numMemories;
-_   (ReadLEB_u32 (& numMemories, & i_bytes, i_end));                             m3log (parse, "** Memory [%d]", numMemories);
+_   (ReadLEB_u32 (&io_module->runtime->memory, & numMemories, & i_bytes, i_end));                             m3log (parse, "** Memory [%d]", numMemories);
 
     _throwif (m3Err_tooManyMemorySections, numMemories != 1);
 
@@ -467,9 +473,10 @@ _   (ReadLEB_u32 (& numMemories, & i_bytes, i_end));                            
 M3Result  ParseSection_Global  (M3Module * io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
+    IM3Memory mem = &io_module->runtime->memory;
 
     u32 numGlobals;
-_   (ReadLEB_u32 (& numGlobals, & i_bytes, i_end));                                 m3log (parse, "** Global [%d]", numGlobals);
+_   (ReadLEB_u32 (mem, & numGlobals, & i_bytes, i_end));                                 m3log (parse, "** Global [%d]", numGlobals);
 
     _throwif("too many globals", numGlobals > d_m3MaxSaneGlobalsCount);
 
@@ -478,9 +485,9 @@ _   (ReadLEB_u32 (& numGlobals, & i_bytes, i_end));                             
         i8 waType;
         u8 type, isMutable;
 
-_       (ReadLEB_i7 (& waType, & i_bytes, i_end));
+_       (ReadLEB_i7 (mem, & waType, & i_bytes, i_end));
 _       (NormalizeType (& type, waType));
-_       (ReadLEB_u7 (& isMutable, & i_bytes, i_end));                                 m3log (parse, "    global: [%d] %s mutable: %d", i, c_waTypes [type],   (u32) isMutable);
+_       (ReadLEB_u7 (mem, & isMutable, & i_bytes, i_end));                                 m3log (parse, "    global: [%d] %s mutable: %d", i, c_waTypes [type],   (u32) isMutable);
 
         IM3Global global;
 _       (Module_AddGlobal (io_module, & global, type, isMutable, false /* isImport */));
@@ -499,6 +506,7 @@ _       (Parse_InitExpr (io_module, & i_bytes, i_end));
 M3Result  ParseSection_Name  (M3Module * io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result;
+    IM3Memory mem = &io_module->runtime->memory;
 
     cstr_t name;
 
@@ -507,22 +515,22 @@ M3Result  ParseSection_Name  (M3Module * io_module, bytes_t i_bytes, cbytes_t i_
         u8 nameType;
         u32 payloadLength;
 
-_       (ReadLEB_u7 (& nameType, & i_bytes, i_end));
-_       (ReadLEB_u32 (& payloadLength, & i_bytes, i_end));
+_       (ReadLEB_u7 (mem, & nameType, & i_bytes, i_end));
+_       (ReadLEB_u32 (mem, & payloadLength, & i_bytes, i_end));
 
         bytes_t start = i_bytes;
         if (nameType == 1)
         {
             u32 numNames;
-_           (ReadLEB_u32 (& numNames, & i_bytes, i_end));
+_           (ReadLEB_u32 (mem, & numNames, & i_bytes, i_end));
 
             _throwif("too many names", numNames > d_m3MaxSaneFunctionsCount);
 
             for (u32 i = 0; i < numNames; ++i)
             {
                 u32 index;
-_               (ReadLEB_u32 (& index, & i_bytes, i_end));
-_               (Read_utf8 (& name, & i_bytes, i_end));
+_               (ReadLEB_u32 (mem, & index, & i_bytes, i_end));
+_               (Read_utf8 (mem, & name, & i_bytes, i_end));
 
                 if (index < io_module->numFunctions)
                 {
@@ -552,7 +560,7 @@ M3Result  ParseSection_Custom  (M3Module * io_module, bytes_t i_bytes, cbytes_t 
     M3Result result;
 
     cstr_t name;
-_   (Read_utf8 (& name, & i_bytes, i_end));
+_   (Read_utf8 (&io_module->runtime->memory, & name, & i_bytes, i_end));
                                                                                     m3log (parse, "** Custom: '%s'", name);
     if (strcmp (name, "name") == 0) {
 _       (ParseSection_Name(io_module, i_bytes, i_end));
@@ -566,13 +574,14 @@ _       (io_module->environment->customSectionHandler(io_module, name, i_bytes, 
 }
 
 
-static const bool WASM_DEBUG_PARSEMODULESECTION = false;
+static const bool WASM_DEBUG_PARSEMODULESECTION = true;
 M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_bytes, u32 i_numBytes)
 {
     if(WASM_DEBUG_PARSEMODULESECTION){
         ESP_LOGI("WASM3", "ParseModuleSection called");
         ESP_LOGI("WASM3", "ParseModuleSection: Section Type: %d", i_sectionType);
-        ESP_LOGI("WASM3", "ParseModuleSection: Bytes: %lu", i_numBytes);
+        ESP_LOGI("WASM3", "ParseModuleSection: i_bytes Type: %d", i_sectionType);
+        ESP_LOGI("WASM3", "ParseModuleSection: NumBytes: %d", i_numBytes);
     }
 
     M3Result result = m3Err_none;
@@ -614,15 +623,29 @@ M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_
     return result;
 }
 
-static const bool WASM_DEBUG_PARSE_MODULE = false;
-M3Result  m3_ParseModule  (IM3Environment i_environment, IM3Module * o_module, cbytes_t i_bytes, u32 i_numBytes)
+static const bool WASM_DEBUG_PARSE_MODULE = true;
+static const bool WASM_PARSE_MODULE_IGNORE_SECTION_ORDER = true;
+M3Result  m3_ParseModule  (IM3Environment i_environment, IM3Module * o_module, cbytes_t i_bytes, u32 i_numBytes, IM3Runtime o_runtime)
 {
-    IM3Module module;                                                               m3log (parse, "load module: %d bytes", i_numBytes);
+    IM3Module module;          
+                                                                 m3log (parse, "load module: %d bytes", i_numBytes);
 _try {
     if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule start");
     module = m3_Def_AllocStruct(M3Module);
     if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: module allocated");
     _throwifnull (module);
+
+    IM3Memory mem = NULL;
+    if(o_runtime != NULL){
+        if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: assigning given runtime and its memory");
+        module->runtime = &o_runtime;
+        mem = &module->runtime->memory;
+        module->memoryInfo.mem = &mem;
+    }
+    else {
+        //todo: create M3Memory ad hoc? mah...
+    }
+
     module->name = ".unnamed";                                                      m3log (parse, "load module: %d bytes", i_numBytes);
     module->startFunction = -1;
     //module->hasWasmCodeCopy = false;
@@ -635,8 +658,8 @@ _try {
     module->wasmEnd = end;
 
     u32 magic, version;
-_   (Read_u32 (& magic, & pos, end));
-_   (Read_u32 (& version, & pos, end));
+_   (Read_u32 (mem, & magic, & pos, end));
+_   (Read_u32 (mem, & version, & pos, end));
 
     _throwif (m3Err_wasmMalformed, magic != 0x6d736100);
     _throwif (m3Err_incompatibleWasmVersion, version != 1);
@@ -649,9 +672,9 @@ _   (Read_u32 (& version, & pos, end));
     {
         if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: cycle: ReadLEB_u7");
         u8 section;
-_       (ReadLEB_u7 (& section, & pos, end));
+_       (ReadLEB_u7 (mem, & section, & pos, end));
 
-        if (section != 0) {
+        if (section != 0 && !WASM_PARSE_MODULE_IGNORE_SECTION_ORDER) {
             // Ensure sections appear only once and in order
             while (sectionsOrder[expectedSection++] != section) {
                 _throwif(m3Err_misorderedWasmSection, expectedSection >= 12);
@@ -660,10 +683,10 @@ _       (ReadLEB_u7 (& section, & pos, end));
 
         if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: cycle: ReadLEB_u32");
         u32 sectionLength;
-_       (ReadLEB_u32 (& sectionLength, & pos, end));
+_       (ReadLEB_u32 (mem, & sectionLength, & pos, end));
         _throwif(m3Err_wasmMalformed, pos + sectionLength > end);
 
-        if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: cycle: ParseModuleSection");
+        if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: cycle: ParseModuleSection (pos: %d, sectionLength: %d)", pos, sectionLength);
 _       (ParseModuleSection (module, section, pos, sectionLength));
 
         pos += sectionLength;

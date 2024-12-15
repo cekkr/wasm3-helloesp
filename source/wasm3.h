@@ -182,6 +182,7 @@ d_m3ErrorConst  (globalTypeMismatch,            "global type mismatch")
 d_m3ErrorConst  (globalNotMutable,              "global is not mutable")
 d_m3ErrorConst  (nullRuntime,                   "runtime is null")
 d_m3ErrorConst  (nullSegmentData,               "unable to allocate segment data")
+d_m3ErrorConst  (malformedData,                  "malformed data")
 
 // traps
 d_m3ErrorConst  (trapOutOfBoundsMemoryAccess,   "[trap] out of bounds memory access")
@@ -239,10 +240,11 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 //-------------------------------------------------------------------------------------------------------------------------------
 
     // i_wasmBytes data must be persistent during the lifetime of the module
-    M3Result            m3_ParseModule              (IM3Environment         i_environment,
+    /*M3Result            m3_ParseModule              (IM3Environment         i_environment,
                                                      IM3Module *            o_module,
                                                      const uint8_t * const  i_wasmBytes,
-                                                     uint32_t               i_numWasmBytes);
+                                                     uint32_t               i_numWasmBytes);*/
+    M3Result  m3_ParseModule  (IM3Environment i_environment, IM3Module * o_module, cbytes_t i_bytes, u32 i_numBytes, IM3Runtime o_runtime);
 
     // Only modules not loaded into a M3Runtime need to be freed. A module is considered unloaded if
     // a. m3_LoadModule has not yet been called on that module. Or,

@@ -1154,7 +1154,7 @@ M3Result  Compile_Const_i32  (IM3Compilation o, m3opcode_t i_opcode)
     M3Result result;
 
     i32 value;
-_   (ReadLEB_i32 (& value, & o->wasm, o->wasmEnd));
+_   (ReadLEB_i32 (&o->runtime->memory, & value, & o->wasm, o->wasmEnd));
 _   (PushConst (o, value, c_m3Type_i32));                       m3log (compile, d_indent " (const i32 = %" PRIi32 ")", get_indention_string (o), value);
     _catch: return result;
 }
@@ -1165,7 +1165,7 @@ M3Result  Compile_Const_i64  (IM3Compilation o, m3opcode_t i_opcode)
     M3Result result;
 
     i64 value;
-_   (ReadLEB_i64 (& value, & o->wasm, o->wasmEnd));
+_   (ReadLEB_i64 (&o->runtime->memory, & value, & o->wasm, o->wasmEnd));
 _   (PushConst (o, value, c_m3Type_i64));                       m3log (compile, d_indent " (const i64 = %" PRIi64 ")", get_indention_string (o), value);
     _catch: return result;
 }
@@ -1179,7 +1179,7 @@ M3Result  Compile_Const_f32  (IM3Compilation o, m3opcode_t i_opcode)
 
     union { u32 u; f32 f; } value = { 0 };
 
-_   (Read_f32 (& value.f, & o->wasm, o->wasmEnd));              m3log (compile, d_indent " (const f32 = %" PRIf32 ")", get_indention_string (o), value.f);
+_   (Read_f32 (&o->runtime->memory, & value.f, & o->wasm, o->wasmEnd));              m3log (compile, d_indent " (const f32 = %" PRIf32 ")", get_indention_string (o), value.f);
 _   (PushConst (o, value.u, c_m3Type_f32));
 
     _catch: return result;
@@ -1192,7 +1192,7 @@ M3Result  Compile_Const_f64  (IM3Compilation o, m3opcode_t i_opcode)
 
     union { u64 u; f64 f; } value = { 0 };
 
-_   (Read_f64 (& value.f, & o->wasm, o->wasmEnd));              m3log (compile, d_indent " (const f64 = %" PRIf64 ")", get_indention_string (o), value.f);
+_   (Read_f64 (&o->runtime->memory, & value.f, & o->wasm, o->wasmEnd));              m3log (compile, d_indent " (const f64 = %" PRIf64 ")", get_indention_string (o), value.f);
 _   (PushConst (o, value.u, c_m3Type_f64));
 
     _catch: return result;
@@ -1295,7 +1295,7 @@ M3Result  Compile_SetLocal  (IM3Compilation o, m3opcode_t i_opcode)
     M3Result result;
 
     u32 localIndex;
-_   (ReadLEB_u32 (& localIndex, & o->wasm, o->wasmEnd));             //  printf ("--- set local: %d \n", localSlot);
+_   (ReadLEB_u32 (&o->runtime->memory, & localIndex, & o->wasm, o->wasmEnd));             //  printf ("--- set local: %d \n", localSlot);
 
     if (localIndex < GetFunctionNumArgsAndLocals (o->function))
     {
@@ -1323,7 +1323,7 @@ M3Result  Compile_GetLocal  (IM3Compilation o, m3opcode_t i_opcode)
 _try {
 
     u32 localIndex;
-_   (ReadLEB_u32 (& localIndex, & o->wasm, o->wasmEnd));
+_   (ReadLEB_u32 (&o->runtime->memory, & localIndex, & o->wasm, o->wasmEnd));
 
     if (localIndex >= GetFunctionNumArgsAndLocals (o->function))
         _throw ("local index out of bounds");
@@ -1384,7 +1384,7 @@ M3Result  Compile_GetSetGlobal  (IM3Compilation o, m3opcode_t i_opcode)
     M3Result result = m3Err_none;
 
     u32 globalIndex;
-_   (ReadLEB_u32 (& globalIndex, & o->wasm, o->wasmEnd));
+_   (ReadLEB_u32 (&o->runtime->memory, & globalIndex, & o->wasm, o->wasmEnd));
 
     if (globalIndex < o->module->numGlobals)
     {
@@ -1425,7 +1425,7 @@ M3Result  Compile_Branch  (IM3Compilation o, m3opcode_t i_opcode)
     M3Result result;
 
     u32 depth;
-_   (ReadLEB_u32 (& depth, & o->wasm, o->wasmEnd));
+_   (ReadLEB_u32 (&o->runtime->memory, & depth, & o->wasm, o->wasmEnd));
 
     IM3CompilationScope scope;
 _   (GetBlockScope (o, & scope, depth));
@@ -1532,7 +1532,7 @@ M3Result  Compile_BranchTable  (IM3Compilation o, m3opcode_t i_opcode)
 {
 _try {
     u32 targetCount;
-_   (ReadLEB_u32 (& targetCount, & o->wasm, o->wasmEnd));
+_   (ReadLEB_u32 (&o->runtime->memory, & targetCount, & o->wasm, o->wasmEnd));
 
 _   (PreserveRegisterIfOccupied (o, c_m3Type_i64));         // move branch operand to a slot
     u16 slot = GetStackTopSlotNumber (o);
@@ -1555,7 +1555,7 @@ _   (EmitOp (o, op_BranchTable));
     for (u32 i = 0; i < targetCount; ++i)
     {
         u32 target;
-_       (ReadLEB_u32 (& target, & o->wasm, o->wasmEnd));
+_       (ReadLEB_u32 (&o->runtime->memory, & target, & o->wasm, o->wasmEnd));
 
         IM3CompilationScope scope;
 _       (GetBlockScope (o, & scope, target));
@@ -1659,7 +1659,7 @@ M3Result  Compile_Call  (IM3Compilation o, m3opcode_t i_opcode)
 {
 _try {
     u32 functionIndex;
-_   (ReadLEB_u32 (& functionIndex, & o->wasm, o->wasmEnd));
+_   (ReadLEB_u32 (&o->runtime->memory, & functionIndex, & o->wasm, o->wasmEnd));
 
     IM3Function function = Module_GetFunction (o->module, functionIndex);
 
@@ -1703,11 +1703,14 @@ WASM3_STATIC
 M3Result  Compile_CallIndirect  (IM3Compilation o, m3opcode_t i_opcode)
 {
 _try {
+
+    IM3Memory mem = &o->runtime->memory;
+
     u32 typeIndex;
-_   (ReadLEB_u32 (& typeIndex, & o->wasm, o->wasmEnd));
+_   (ReadLEB_u32 (mem, & typeIndex, & o->wasm, o->wasmEnd));
 
     u32 tableIndex;
-_   (ReadLEB_u32 (& tableIndex, & o->wasm, o->wasmEnd));
+_   (ReadLEB_u32 (mem, & tableIndex, & o->wasm, o->wasmEnd));
 
     _throwif ("function call type index out of range", typeIndex >= o->module->numFuncTypes);
 
@@ -1736,7 +1739,7 @@ M3Result  Compile_Memory_Size  (IM3Compilation o, m3opcode_t i_opcode)
     M3Result result;
 
     i8 reserved;
-_   (ReadLEB_i7 (& reserved, & o->wasm, o->wasmEnd));
+_   (ReadLEB_i7 (&o->runtime->memory, & reserved, & o->wasm, o->wasmEnd));
 
 _   (PreserveRegisterIfOccupied (o, c_m3Type_i32));
 
@@ -1753,7 +1756,7 @@ M3Result  Compile_Memory_Grow  (IM3Compilation o, m3opcode_t i_opcode)
     M3Result result;
 
     i8 reserved;
-_   (ReadLEB_i7 (& reserved, & o->wasm, o->wasmEnd));
+_   (ReadLEB_i7 (&o->runtime->memory, & reserved, & o->wasm, o->wasmEnd));
 
 _   (CopyStackTopToRegister (o, false));
 _   (PopType (o, c_m3Type_i32));
@@ -1770,16 +1773,18 @@ M3Result  Compile_Memory_CopyFill  (IM3Compilation o, m3opcode_t i_opcode)
 {
     M3Result result = m3Err_none;
 
+    IM3Memory mem = &o->runtime->memory;
+
     u32 sourceMemoryIdx, targetMemoryIdx;
     IM3Operation op;
     if (i_opcode == c_waOp_memoryCopy)
     {
-_       (ReadLEB_u32 (& sourceMemoryIdx, & o->wasm, o->wasmEnd));
+_       (ReadLEB_u32 (mem, & sourceMemoryIdx, & o->wasm, o->wasmEnd));
         op = op_MemCopy;
     }
     else op = op_MemFill;
 
-_   (ReadLEB_u32 (& targetMemoryIdx, & o->wasm, o->wasmEnd));
+_   (ReadLEB_u32 (mem, & targetMemoryIdx, & o->wasm, o->wasmEnd));
 
 _   (CopyStackTopToRegister (o, false));
 
@@ -1798,7 +1803,7 @@ M3Result  ReadBlockType  (IM3Compilation o, IM3FuncType * o_blockType)
     M3Result result;
 
     i64 type;
-_   (ReadLebSigned (& type, 33, & o->wasm, o->wasmEnd));
+_   (ReadLebSigned (&o->runtime->memory, & type, 33, & o->wasm, o->wasmEnd));
 
     if (type < 0)
     {
@@ -2201,8 +2206,10 @@ M3Result  Compile_Load_Store  (IM3Compilation o, m3opcode_t i_opcode)
 _try {
     u32 alignHint, memoryOffset;
 
-_   (ReadLEB_u32 (& alignHint, & o->wasm, o->wasmEnd));
-_   (ReadLEB_u32 (& memoryOffset, & o->wasm, o->wasmEnd));
+    IM3Memory mem = &o->runtime->memory;
+
+_   (ReadLEB_u32 (mem, & alignHint, & o->wasm, o->wasmEnd));
+_   (ReadLEB_u32 (mem, & memoryOffset, & o->wasm, o->wasmEnd));
                                                                         m3log (compile, d_indent " (offset = %d)", get_indention_string (o), memoryOffset);
     IM3OpInfo opInfo = GetOpInfo (i_opcode);
     _throwif (m3Err_unknownOpcode, not opInfo);
@@ -2583,7 +2590,7 @@ M3Result  CompileBlockStatements  (IM3Compilation o)
 # endif
         m3opcode_t opcode;
         o->lastOpcodeStart = o->wasm;
-_       (Read_opcode (& opcode, & o->wasm, o->wasmEnd));                log_opcode (o, opcode);
+_       (Read_opcode (&o->runtime->memory, & opcode, & o->wasm, o->wasmEnd));                log_opcode (o, opcode);
 
         // Restrict opcodes when evaluating expressions
         if (not o->function) {
@@ -2770,18 +2777,20 @@ M3Result  CompileLocals  (IM3Compilation o)
 {
     M3Result result;
 
+    IM3Memory mem = &o->runtime->memory; 
+
     u32 numLocals = 0;
     u32 numLocalBlocks;
-_   (ReadLEB_u32 (& numLocalBlocks, & o->wasm, o->wasmEnd));
+_   (ReadLEB_u32 (mem, & numLocalBlocks, & o->wasm, o->wasmEnd));
 
     for (u32 l = 0; l < numLocalBlocks; ++l)
     {
         u32 varCount;
         i8 waType;
-        u8 localType;
+        u8 localType;        
 
-_       (ReadLEB_u32 (& varCount, & o->wasm, o->wasmEnd));
-_       (ReadLEB_i7 (& waType, & o->wasm, o->wasmEnd));
+_       (ReadLEB_u32 (mem, & varCount, & o->wasm, o->wasmEnd));
+_       (ReadLEB_i7 (mem, & waType, & o->wasm, o->wasmEnd));
 _       (NormalizeType (& localType, waType));
         numLocals += varCount;                                                          m3log (compile, "pushing locals. count: %d; type: %s", varCount, c_waTypes [localType]);
         while (varCount--)
@@ -2860,7 +2869,7 @@ M3Result  CompileFunction  (IM3Function io_function)
 _try {
     // skip over code size. the end was already calculated during parse phase
     u32 size;
-_   (ReadLEB_u32 (& size, & o->wasm, o->wasmEnd));                  d_m3Assert (size == (o->wasmEnd - o->wasm))
+_   (ReadLEB_u32 (&runtime->memory, & size, & o->wasm, o->wasmEnd));                  d_m3Assert (size == (o->wasmEnd - o->wasm))
 
 _   (AcquireCompilationCodePage (o, & o->page));
 
