@@ -638,12 +638,18 @@ _try {
     IM3Memory mem = NULL;
     if(o_runtime != NULL){
         if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: assigning given runtime and its memory");
-        module->runtime = &o_runtime;
+        module->runtime = o_runtime;
+
+        if(module->runtime->memory.firm != INIT_FIRM){
+            ESP_LOGE("WASM3", "m3_ParseModule: given runtime's memory is not initialized");
+            return m3Err_runtimeMemoryNotInit;
+        }
+
         mem = &module->runtime->memory;
-        module->memoryInfo.mem = &mem;
+        module->memoryInfo.mem = mem;
     }
     else {
-        //todo: create M3Memory ad hoc? mah...
+        ESP_LOGW("WASM3", "m3_ParseModule: module lacks of runtime and memory");
     }
 
     if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: assignation dones.");

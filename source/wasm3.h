@@ -165,6 +165,7 @@ d_m3ErrorConst  (functionStackUnderrun,         "compiling function underran the
 d_m3ErrorConst  (mallocFailedCodePage,          "memory allocation failed when acquiring a new M3 code page")
 d_m3ErrorConst  (memoryLimit,                   "memory limit exceeded")
 d_m3ErrorConst  (nullMemory,                    "null memory")
+d_m3ErrorConst  (runtimeMemoryNotInit,          "runtime's memory is not initialized")
 d_m3ErrorConst  (settingImmutableGlobal,        "attempting to set an immutable global")
 d_m3ErrorConst  (typeMismatch,                  "incorrect type on stack")
 d_m3ErrorConst  (typeCountMismatch,             "incorrect value count on stack")
