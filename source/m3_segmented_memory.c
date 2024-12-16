@@ -163,21 +163,31 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
 // Funzione per aggiungere un nuovo segmento
 const bool WASM_DEBUG_ADD_SEGMENT = false;
 
-M3Result InitSegment(M3Memory* memory, MemorySegment* seg){
+M3Result InitSegment(M3Memory* memory, MemorySegment* seg, bool initData){
     if (!memory ||!seg) return m3Err_nullMemory;
 
-    seg->firm = INIT_FIRM;
-
-    // Allocare i dati del segmento
-    seg->data = m3_Def_Malloc(memory->segment_size);
-    if (!seg->data) {  
-        ESP_LOGE("WASM3", "InitSegment: can't allocate segment data");          
-        return m3Err_nullSegmentData;
+    bool updateMemory = false;
+    if(seg->firm != INIT_FIRM){
+        seg->firm = INIT_FIRM;  
+        updateMemory = true;    
     }
-    
-    seg->is_allocated = true;
-    seg->size = memory->segment_size;
-    memory->total_size += memory->segment_size;  
+
+    if(initData && seg->data == NULL){
+        // Allocare i dati del segmento
+        if(WASM_DEBUG_ADD_SEGMENT) ESP_LOGI("WASM3", "InitSegment: allocating segment data");
+        seg->data = m3_Def_Malloc(memory->segment_size);
+        if (!seg->data) {  
+            ESP_LOGE("WASM3", "InitSegment: can't allocate segment data");          
+            return m3Err_nullSegmentData;
+        }
+
+        seg->is_allocated = true;
+    }        
+
+    if(updateMemory){
+        seg->size = memory->segment_size;
+        memory->total_size += memory->segment_size;      
+    }
 
     return NULL;
 }
@@ -239,7 +249,7 @@ M3Result AddSegments(M3Memory* memory, size_t set_num_segments) {
         MemorySegment* seg = memory->segments[new_idx];
         if(WASM_DEBUG_ADD_SEGMENT) ESP_LOGI("WASM3", "AddSegments: Can access segment structure");
 
-        InitSegment(memory, seg);           
+        InitSegment(memory, seg, false);           
     }
 
     memory->num_segments = new_segments;
@@ -301,7 +311,7 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
         }
 
         if(seg->data == NULL){
-            if(InitSegment(memory, seg)){
+            if(InitSegment(memory, seg, true)){
                 ESP_LOGE("WASM3", "get_segment_pointer: failed allocating segment %d", segment_index);
                 goto failResult;
             }
