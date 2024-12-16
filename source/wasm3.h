@@ -445,4 +445,4 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 #endif
 
 /// Log macro
-#define LOG_FLUSH SP_LOGI("WASM3", "flush...")
+#define LOG_FLUSH ESP_LOGI("WASM3", "flush...")
