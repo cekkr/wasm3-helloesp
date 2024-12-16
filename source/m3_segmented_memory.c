@@ -300,7 +300,14 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
         }        
     }
 
-    uint8_t* res = (uint8_t*)(memory->segments[segment_index]->data + segment_offset);
+    MemorySegment* seg = memory->segments[segment_index];
+
+    if(seg == NULL || seg->initFirm != INIT_FIRM){
+        ESP_LOGE("WASM3", "get_segment_pointer: segment %d has invalid firm (%d), or is NULL", segment_index, seg->initFirm);
+        goto failResult;
+    }
+
+    uint8_t* res = (uint8_t*)(seg->data + segment_offset);
     if(WASM_DEBUG_GET_SEGMENT_POINTER) ESP_LOGI("WASM3", "get_segment_pointer: M3Memory result: %p (from segment %d)", res, segment_index);
     return res;
 
