@@ -15,6 +15,8 @@
 #define WASM_CHUNK_SIZE 32  // Dimensione minima di un chunk di memoria
 #define M3Memory_MaxPages 1024
 
+#define INIT_FIRM 19942003
+
 // Strutture dati migliorate
 typedef struct MemoryChunk {
     size_t size;           // Dimensione totale del chunk incluso header
@@ -24,6 +26,7 @@ typedef struct MemoryChunk {
 } MemoryChunk;
 
 typedef struct MemorySegment {    
+    int initFirm;
     void* data;           
     bool is_allocated;    
     size_t size;         

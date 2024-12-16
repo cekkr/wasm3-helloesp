@@ -19,6 +19,72 @@ static size_t align_size(size_t size) {
 }
 
 
+#define PRINT_PTR(ptr) ESP_LOGI("WASM3", "Pointer value: %p (unsigned: %u, signed: %d)", \
+                               (void*)ptr, (uintptr_t)ptr, (intptr_t)ptr)
+
+IM3Memory m3_InitMemory(IM3Memory memory) {
+    if (!memory) return NULL;
+    
+    // Inizializza strutture base
+    memory->segments = m3_Def_AllocArray(MemorySegment*, 1);
+    if (!memory->segments) return NULL;
+    
+    memory->max_size = WASM_SEGMENT_SIZE * M3Memory_MaxPages;
+    memory->num_segments = 0;
+    memory->total_size = 0;
+    memory->segment_size = WASM_SEGMENT_SIZE;
+    memory->maxPages = M3Memory_MaxPages;
+    
+    // Inizializza cache dei chunk liberi
+    memory->num_free_buckets = 32;
+    memory->free_chunks = calloc(memory->num_free_buckets, sizeof(MemoryChunk*));
+    if (!memory->free_chunks) {
+        m3_Def_Free(memory->segments);
+        return NULL;
+    }
+    
+    // Alloca primo segmento
+    M3Result result = AddSegments(memory, WASM_INIT_SEGMENTS);
+    if (result != m3Err_none) {
+        ESP_LOGE("WASM3", "m3_InitMemory: Failed to add segment: %s", result);
+        m3_Def_Free(memory->segments);
+        free(memory->free_chunks);
+        return NULL;
+    }
+    
+    // Inizializza il primo chunk nel primo segmento
+    MemorySegment* first_seg = memory->segments[0];
+    if (!first_seg || !first_seg->data) {
+        m3_Def_Free(memory->segments);
+        free(memory->free_chunks);
+        return NULL;
+    }
+    
+    MemoryChunk* first_chunk = (MemoryChunk*)first_seg->data;
+    first_chunk->size = first_seg->size;
+    first_chunk->is_free = true;
+    first_chunk->next = NULL;
+    first_chunk->prev = NULL;
+    first_seg->first_chunk = first_chunk;
+    
+    // Aggiungi il primo chunk alla cache
+    size_t bucket = log2(first_chunk->size);
+    if (bucket < memory->num_free_buckets) {
+        first_chunk->next = NULL;
+        memory->free_chunks[bucket] = first_chunk;
+    }    
+
+    /// Test init
+    u32 ptr1 = m3_malloc(memory, 1);
+    u32 ptr2 = m3_malloc(memory, 1);
+
+    PRINT_PTR(ptr1);
+    PRINT_PTR(ptr2);
+    
+    return memory;
+}
+
+
 IM3Memory m3_NewMemory(){
     IM3Memory memory = m3_Def_AllocStruct (M3Memory);
 
@@ -97,6 +163,8 @@ const bool WASM_DEBUG_ADD_SEGMENT = false;
 
 M3Result InitSegment(M3Memory* memory, MemorySegment* seg){
     if (!memory ||!seg) return m3Err_nullMemory;
+
+    seg->initFirm = INIT_FIRM;
 
     // Allocare i dati del segmento
     seg->data = m3_Def_Malloc(memory->segment_size);
@@ -186,9 +254,9 @@ M3Result AddSegments(M3Memory* memory, size_t set_num_segments) {
     return m3Err_mallocFailed;
 }
 
-const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = false;
-const bool WASM_DEBUG_MEM_ACCESS = false;
-const bool WASM_DEBUG_GET_SEGMENT_POINTER = false;
+const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
+const bool WASM_DEBUG_MEM_ACCESS = true;
+const bool WASM_DEBUG_GET_SEGMENT_POINTER = true;
 
 void* get_segment_pointer(IM3Memory memory, u32 offset) {    
     //CALL_WATCHDOG
@@ -216,10 +284,16 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
             goto failResult;
         }
 
-        ESP_LOGI("WASM3", "get_segment_pointer: get new segment index %d (num_segments: %d)", segment_index, memory->num_segments);
-        if(memory->segments[segment_index] 
-            && memory->segments[segment_index]->data == NULL){
-            if(InitSegment(memory, memory->segments[segment_index])){
+        if(WASM_DEBUG_GET_SEGMENT_POINTER) ESP_LOGI("WASM3", "get_segment_pointer: get new segment index %d (num_segments: %d)", segment_index, memory->num_segments);
+        MemorySegment* seg = memory->segments[segment_index];
+
+        if(seg == NULL || seg->initFirm != INIT_FIRM){
+            ESP_LOGE("WASM3", "get_segment_pointer: invalid segment %d", segment_index);
+            goto failResult;
+        }
+
+        if(seg->data == NULL){
+            if(InitSegment(memory, seg)){
                 ESP_LOGE("WASM3", "get_segment_pointer: failed allocating segment %d", segment_index);
                 goto failResult;
             }
@@ -544,73 +618,6 @@ void m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
 }
 
 const bool WASM_DEBUG_SEGMENTED_MEMORY = false;
-
-
-#define PRINT_PTR(ptr) ESP_LOGI("WASM3", "Pointer value: %p (unsigned: %u, signed: %d)", \
-                               (void*)ptr, (uintptr_t)ptr, (intptr_t)ptr)
-
-IM3Memory m3_InitMemory(IM3Memory memory) {
-    if (!memory) return NULL;
-    
-    // Inizializza strutture base
-    memory->segments = m3_Def_AllocArray(MemorySegment*, 1);
-    if (!memory->segments) return NULL;
-    
-    memory->max_size = WASM_SEGMENT_SIZE * M3Memory_MaxPages;
-    memory->num_segments = 0;
-    memory->total_size = 0;
-    memory->segment_size = WASM_SEGMENT_SIZE;
-    memory->maxPages = M3Memory_MaxPages;
-    
-    // Inizializza cache dei chunk liberi
-    memory->num_free_buckets = 32;
-    memory->free_chunks = calloc(memory->num_free_buckets, sizeof(MemoryChunk*));
-    if (!memory->free_chunks) {
-        m3_Def_Free(memory->segments);
-        return NULL;
-    }
-    
-    // Alloca primo segmento
-    M3Result result = AddSegments(memory, WASM_INIT_SEGMENTS);
-    if (result != m3Err_none) {
-        ESP_LOGE("WASM3", "m3_InitMemory: Failed to add segment: %s", result);
-        m3_Def_Free(memory->segments);
-        free(memory->free_chunks);
-        return NULL;
-    }
-    
-    // Inizializza il primo chunk nel primo segmento
-    MemorySegment* first_seg = memory->segments[0];
-    if (!first_seg || !first_seg->data) {
-        m3_Def_Free(memory->segments);
-        free(memory->free_chunks);
-        return NULL;
-    }
-    
-    MemoryChunk* first_chunk = (MemoryChunk*)first_seg->data;
-    first_chunk->size = first_seg->size;
-    first_chunk->is_free = true;
-    first_chunk->next = NULL;
-    first_chunk->prev = NULL;
-    first_seg->first_chunk = first_chunk;
-    
-    // Aggiungi il primo chunk alla cache
-    size_t bucket = log2(first_chunk->size);
-    if (bucket < memory->num_free_buckets) {
-        first_chunk->next = NULL;
-        memory->free_chunks[bucket] = first_chunk;
-    }
-
-    /// Test init
-    u32 ptr1 = m3_malloc(memory, 1);
-    u32 ptr2 = m3_malloc(memory, 1);
-
-    PRINT_PTR(ptr1);
-    PRINT_PTR(ptr2);
-    
-    return memory;
-}
-
 
 void* m3_malloc(IM3Memory memory, size_t size) {
     if (!memory || size == 0) return NULL;
