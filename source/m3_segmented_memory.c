@@ -313,10 +313,12 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
     void* res = get_segment_pointer(memory, ptr);
 
     if(res == ERROR_POINTER || res == NULL)
-        res = &ptr;
+        res = ptr;
 
     if(!is_ptr_valid(res)){
         ESP_LOGE("WASM3", "resolve_pointer: invalid pointer %p (from %p)", res, ptr);
+        ESP_LOGE("WASM3", "resolve_pointer: flush...");
+        backtrace();
         return ERROR_POINTER;
     }
 
