@@ -105,14 +105,16 @@ bool safe_free(void* ptr) {
 ///
 
 // Verifica se un puntatore è valido per le operazioni di memoria
+const bool WASM_IS_VALID_PTR_IGNORE_DRAM = true;
 bool is_ptr_valid(const void* ptr) {
     if (!ptr) {
         ESP_LOGW("WASM3", "Null pointer detected");
         return false;
     }
     
-    if (!esp_ptr_in_dram(ptr)) {
+    if (!WASM_IS_VALID_PTR_IGNORE_DRAM && !esp_ptr_in_dram(ptr)) {        
         ESP_LOGW("WASM3", "Pointer %p not in DRAM", ptr);
+        //backtrace();
         return false;
     }
     
