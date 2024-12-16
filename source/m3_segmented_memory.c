@@ -301,7 +301,7 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
     }
 
     uint8_t* res = (uint8_t*)(memory->segments[segment_index]->data + segment_offset);
-    if(WASM_DEBUG_GET_SEGMENT_POINTER) ESP_LOGI("WASM3", "get_segment_pointer: M3Memory result: %p", res);
+    if(WASM_DEBUG_GET_SEGMENT_POINTER) ESP_LOGI("WASM3", "get_segment_pointer: M3Memory result: %p (from segment %d)", res, segment_index);
     return res;
 
     failResult:    
