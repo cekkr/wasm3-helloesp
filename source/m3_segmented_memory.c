@@ -265,7 +265,7 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
 
     if(memory->firm != INIT_FIRM){
         ESP_LOGE("WASM3", "allocate_segment_data: memory firm not valid (%d)", memory->firm);
-        backtrace();
+        backtrace(); LOG_FLUSH;
         goto failResult;
     }
 
@@ -312,7 +312,7 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
 
     if(seg == NULL || seg->firm != INIT_FIRM){
         ESP_LOGE("WASM3", "get_segment_pointer: segment %d has invalid firm (%d), or is NULL", segment_index, seg->firm);
-        backtrace();
+        backtrace(); LOG_FLUSH;
         goto failResult;
     }
 
@@ -407,8 +407,8 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
 
     if(!is_ptr_valid(res)){
         ESP_LOGE("WASM3", "resolve_pointer: invalid pointer %p (from %p)", res, ptr);
-        ESP_LOGE("WASM3", "resolve_pointer: flush...");
-        backtrace();
+        //LOG_FLUSH;
+        //backtrace();
         return ERROR_POINTER;
     }
 

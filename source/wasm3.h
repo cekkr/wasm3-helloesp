@@ -442,3 +442,6 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 #else 
 #define CALL_WATCHDOG
 #endif
+
+/// Log macro
+#define LOG_FLUSH SP_LOGI("WASM3", "flush...")
