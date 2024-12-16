@@ -74,6 +74,8 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
         memory->free_chunks[bucket] = first_chunk;
     }    
 
+    memory->firm = INIT_FIRM;
+
     /// Test init
     u32 ptr1 = m3_malloc(memory, 1);
     u32 ptr2 = m3_malloc(memory, 1);
@@ -164,7 +166,7 @@ const bool WASM_DEBUG_ADD_SEGMENT = false;
 M3Result InitSegment(M3Memory* memory, MemorySegment* seg){
     if (!memory ||!seg) return m3Err_nullMemory;
 
-    seg->initFirm = INIT_FIRM;
+    seg->firm = INIT_FIRM;
 
     // Allocare i dati del segmento
     seg->data = m3_Def_Malloc(memory->segment_size);
@@ -261,6 +263,12 @@ const bool WASM_DEBUG_GET_SEGMENT_POINTER = true;
 void* get_segment_pointer(IM3Memory memory, u32 offset) {    
     //CALL_WATCHDOG
 
+    if(memory->firm != INIT_FIRM){
+        ESP_LOGE("WASM3", "allocate_segment_data: memory firm not valid (%d)", memory->firm);
+        backtrace();
+        goto failResult;
+    }
+
     if(offset == (u32)ERROR_POINTER)
         return ERROR_POINTER;
 
@@ -287,7 +295,7 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
         if(WASM_DEBUG_GET_SEGMENT_POINTER) ESP_LOGI("WASM3", "get_segment_pointer: get new segment index %d (num_segments: %d)", segment_index, memory->num_segments);
         MemorySegment* seg = memory->segments[segment_index];
 
-        if(seg == NULL || seg->initFirm != INIT_FIRM){
+        if(seg == NULL || seg->firm != INIT_FIRM){
             ESP_LOGE("WASM3", "get_segment_pointer: invalid segment %d", segment_index);
             goto failResult;
         }
@@ -302,8 +310,9 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
 
     MemorySegment* seg = memory->segments[segment_index];
 
-    if(seg == NULL || seg->initFirm != INIT_FIRM){
-        ESP_LOGE("WASM3", "get_segment_pointer: segment %d has invalid firm (%d), or is NULL", segment_index, seg->initFirm);
+    if(seg == NULL || seg->firm != INIT_FIRM){
+        ESP_LOGE("WASM3", "get_segment_pointer: segment %d has invalid firm (%d), or is NULL", segment_index, seg->firm);
+        backtrace();
         goto failResult;
     }
 

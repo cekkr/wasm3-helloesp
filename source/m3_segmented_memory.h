@@ -26,7 +26,8 @@ typedef struct MemoryChunk {
 } MemoryChunk;
 
 typedef struct MemorySegment {    
-    int initFirm;
+    int firm;
+
     void* data;           
     bool is_allocated;    
     size_t size;         
@@ -34,6 +35,8 @@ typedef struct MemorySegment {
 } MemorySegment;
 
 typedef struct M3Memory_t {  
+    int firm;
+
     IM3Runtime runtime;
     u32 maxPages;
     
@@ -45,8 +48,7 @@ typedef struct M3Memory_t {
     
     // Cache per ottimizzare la ricerca di chunk liberi
     MemoryChunk** free_chunks;  // Array di puntatori a chunk liberi per size
-    size_t num_free_buckets;
-
+    size_t num_free_buckets;    
 } M3Memory;
 
 typedef M3Memory *          IM3Memory;
