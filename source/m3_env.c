@@ -601,7 +601,7 @@ _       (EvaluateExpression(io_module, &segmentOffset, c_m3Type_i32, &start,
             size_t end_segment = (segmentOffset + segment->size - 1) / io_memory->segment_size;
             
             // Alloca tutti i segmenti necessari se non sono già allocati
-            if (!allocate_segment_data(io_memory, end_segment)) {
+            if (!AddSegments(io_memory, end_segment)) {
                 _throw("failed to allocate memory segment");
             }
             
@@ -618,6 +618,12 @@ _       (EvaluateExpression(io_module, &segmentOffset, c_m3Type_i32, &start,
                     remaining,
                     io_memory->segment_size - segment_offset
                 );
+
+                if(!io_memory->segments[current_segment]->is_allocated){
+                    if((result = InitSegment(io_memory, io_memory->segments[current_segment], true))){
+                        _throw(result);
+                    }
+                }
                 
                 u8* dest = ((u8*)io_memory->segments[current_segment]->data) + segment_offset;
                 memcpy(dest, segment->data + src_offset, bytes_to_copy);

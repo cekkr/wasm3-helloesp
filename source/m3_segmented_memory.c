@@ -71,7 +71,7 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
         if(!first_seg->data){
             // it's always null
             if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: first_seg->data is NULL");
-            InitSegment(first_seg);
+            InitSegment(memory, first_seg, true);
         }
     }
     else {
@@ -116,45 +116,6 @@ IM3Memory m3_NewMemory(){
     m3_InitMemory(memory);
 
     return memory;
-}
-
-//todo: deprecate it
-bool allocate_segment_data(M3Memory* memory, size_t segment_index) {
-    if (!memory || segment_index >= memory->num_segments) {
-        ESP_LOGI("WASM3", "allocate_segment_data: memory null or segment_index > num_segments (%d > %d)", segment_index, memory->num_segments);
-        return false;
-    }
-
-    if (WASM_DEBUG_SEGMENTED_MEM_MAN) {
-        ESP_LOGI("WASM3", "allocate_segment_data: Allocating segment %zu of size %zu", segment_index, memory->segment_size);
-        ESP_LOGI("WASM3", "allocate_segment_data: flush");
-    }
-
-    MemorySegment* segment = memory->segments[segment_index];
-
-    // Se il segmento è già allocato, restituisci true
-    if (segment->is_allocated) {
-        return true;
-    }
-
-    // Prima prova ad allocare in SPIRAM se abilitata
-    void* ptr = default_malloc(memory->segment_size);
-
-    if (ptr) {
-        // Inizializza il segmento con zeri
-        memset(ptr, 0, memory->segment_size);
-        
-        segment->data = ptr;
-        segment->is_allocated = true;
-        
-        if (WASM_DEBUG_SEGMENTED_MEM_MAN) {
-            ESP_LOGI("WASM3", "Segment %zu successfully allocated", segment_index);
-        }
-        
-        return true;
-    }
-
-    return false;
 }
 
 M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
@@ -297,7 +258,7 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
     //CALL_WATCHDOG
 
     if(memory->firm != INIT_FIRM){
-        ESP_LOGE("WASM3", "allocate_segment_data: memory firm not valid (%d)", memory->firm);
+        ESP_LOGE("WASM3", "get_segment_pointer: memory firm not valid (%d)", memory->firm);
         backtrace(); LOG_FLUSH;
         goto failResult;
     }
@@ -469,109 +430,10 @@ void* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size)
     }
 
     return resolve_pointer(mem, ptr);
-
-    // Verifica che l'accesso sia nei limiti della memoria totale
-    if (mem->total_size > 0 && offset + size > mem->total_size){
-        ESP_LOGE("WASM3", "m3SegmentedMemAccess: requested memory exceeds total size");
-        return ERROR_POINTER;
-    }    
-
-    size_t segment_index = offset / mem->segment_size;
-    size_t segment_offset = offset % mem->segment_size;
-    
-    // Verifica se stiamo accedendo attraverso più segmenti
-    size_t end_segment = (offset + size - 1) / mem->segment_size;
-    
-    // Alloca tutti i segmenti necessari se non sono già allocati
-    for (size_t i = segment_index; i <= end_segment; i++) {
-        if (!mem->segments[i]->is_allocated) {
-            if (!allocate_segment_data(mem, i)) {
-                ESP_LOGE("WASM3", "Failed to allocate segment %zu on access", i);
-                return ERROR_POINTER;
-            }
-            if(WASM_DEBUG_SEGMENTED_MEM_ACCESS) ESP_LOGI("WASM3", "Lazy allocated segment %zu on access", i);
-        }
-    }
-    
-    // Ora possiamo essere sicuri che il segmento è allocato
-    return ((void*)mem->segments[segment_index]->data) + segment_offset;
 }
 
 void* m3SegmentedMemAccess_2(IM3Memory memory, u32 offset, size_t size) {
-    
     return resolve_pointer(memory, (void*)offset);
-
-    if (!memory || !memory->segments) {
-        ESP_LOGW("WASM3", "Invalid memory or segments pointer");
-        goto returnAsIs;
-    }
-
-    // Verifica che segment_size non sia zero
-    if (memory->segment_size == 0) {
-        ESP_LOGW("WASM3", "Invalid segment_size: 0");
-        goto returnAsIs;
-    }
-
-    ESP_LOGD("WASM3", "Memory check - segment_size: %zu, num_segments: %zu", 
-             memory->segment_size, memory->num_segments);
-
-    // Ora possiamo calcolare in sicurezza
-    size_t segment_index = offset / memory->segment_size;
-    size_t segment_offset = offset % memory->segment_size;
-
-    // Verifica se l'indice del segmento è valido
-    if (segment_index >= memory->num_segments) {
-        ESP_LOGW("WASM3", "Segment index out of bounds: %zu >= %zu", 
-                 segment_index, memory->num_segments);
-        goto returnAsIs;
-    }
-
-    MemorySegment* segment = memory->segments[segment_index];
-    if (!segment || !segment->data || !segment->is_allocated) {
-        ESP_LOGW("WASM3", "Invalid segment or segment not allocated at index %zu", 
-                 segment_index);
-        goto returnAsIs;
-    }
-
-    // Verifica se l'accesso supera i limiti del segmento
-    if (segment_offset + size > segment->size) {
-        ESP_LOGW("WASM3", "Access exceeds segment bounds: offset %zu + size %zu > %zu", 
-                 segment_offset, size, segment->size);
-        goto returnAsIs;
-    }
-
-    // Verifica che il chunk contenga l'offset richiesto
-    MemoryChunk* chunk = segment->first_chunk;
-    size_t chunk_offset = 0;
-    
-    while (chunk) {
-        size_t chunk_data_size = chunk->size - sizeof(MemoryChunk);
-        if (segment_offset >= chunk_offset && 
-            segment_offset + size <= chunk_offset + chunk_data_size) {
-            // L'accesso è all'interno di questo chunk
-            if (chunk->is_free) {
-                ESP_LOGE("WASM3", "Attempting to access freed memory");
-                return NULL;
-            }
-            // Calcola l'indirizzo effettivo
-            return (uint8_t*)chunk + sizeof(MemoryChunk) + 
-                   (segment_offset - chunk_offset);
-        }
-        chunk_offset += chunk_data_size;
-        chunk = chunk->next;
-    }
-
-    ESP_LOGE("WASM3", "No valid chunk found for offset %zu in segment %zu", 
-             segment_offset, segment_index);
-
-    returnAsIs:
-
-    if(!is_ptr_valid((void*) offset)){
-        ESP_LOGE("WASM3", "m3SegmentedMemAccess_2: invalid pointer %d", offset);
-        return ERROR_POINTER;
-    }
-
-    return (void*) offset;
 }
 
 bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size)
@@ -702,7 +564,12 @@ void* m3_malloc(IM3Memory memory, size_t size) {
     if (!found_chunk) {
         for (size_t i = 0; i < memory->num_segments && !found_chunk; i++) {
             MemorySegment* seg = memory->segments[i];
-            if (!seg || !seg->data) continue;
+            if (!seg) continue;
+
+            if(!seg->data){
+                if(InitSegment(memory, seg, true))
+                    continue;
+            }
             
             MemoryChunk* chunk = seg->first_chunk;
             while (chunk) {
@@ -734,7 +601,13 @@ void* m3_malloc(IM3Memory memory, size_t size) {
         }
         
         MemorySegment* new_seg = memory->segments[memory->num_segments - 1];
-        if (!new_seg || !new_seg->data) return NULL;
+        if (!new_seg) return NULL;
+
+        if(!new_seg->data){
+            if(InitSegment(memory, new_seg, true)){
+                return NULL;
+            }
+        }
         
         found_chunk = (MemoryChunk*)new_seg->data;
         found_chunk->size = new_seg->size;

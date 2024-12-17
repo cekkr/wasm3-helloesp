@@ -72,7 +72,6 @@ M3Result InitSegment(M3Memory* memory, MemorySegment* seg, bool initData);
 M3Result GrowMemory(M3Memory* memory, size_t additional_size);
 
 ////////////////////////////////
-bool allocate_segment_data(M3Memory* memory, size_t segment_index);
 static void* GetMemorySegment(IM3Memory memory, u32 offset);
 ////////////////////////////////////////////////////////////////
 
