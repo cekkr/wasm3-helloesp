@@ -190,7 +190,8 @@ void* default_malloc(size_t size) {
 
         if(ptr == NULL || ptr == ERROR_POINTER){
             ESP_LOGE("WASM3", "Failed to allocate memory of size %d", aligned_size);
-            esp_backtrace_print(100);
+            print_memory_info();
+            //esp_backtrace_print(100);
             return NULL;
         }
 
