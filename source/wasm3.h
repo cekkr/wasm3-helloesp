@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "esp_task_wdt.h" // for watchdog reset
+#include "esp_debug_helpers.h"
 
 #include "wasm3_defs.h"
 
@@ -448,5 +449,47 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 #define CALL_WATCHDOG
 #endif
 
-/// Log macro
+////
+//// Debug
+////
+void print_last_two_callers(void) {
+    #define MAX_BACKTRACE_SIZE 3
+    const char* TAG = "WASM3";
+
+    // Buffer per memorizzare gli indirizzi del backtrace
+    void *backtrace_buffer[MAX_BACKTRACE_SIZE];
+    
+    // Ottiene il backtrace completo
+    int frames = esp_backtrace_get(backtrace_buffer, MAX_BACKTRACE_SIZE);
+    
+    // Se abbiamo meno di 3 frame (includendo la funzione corrente),
+    // non possiamo mostrare le ultime due funzioni chiamanti
+    if (frames < 3) {
+        ESP_LOGW(TAG, "Backtrace non sufficiente per mostrare le ultime due funzioni chiamanti");
+        return;
+    }
+    
+    // Stampa solo i due frame precedenti (saltando la funzione corrente)
+    ESP_LOGI(TAG, "Ultime due funzioni chiamanti:");
+    for (int i = 1; i <= 2; i++) {
+        if (i < frames) {
+            // Converte l'indirizzo in una stringa esadecimale
+            ESP_LOGI(TAG, "Frame %d: %p", i, backtrace_buffer[i]);
+        }
+    }
+}
+
+////
+//// Log macro
+////
 #define LOG_FLUSH ESP_LOGI("WASM3", "flush...")
+
+#define ENABLE_CHECK_MEMORY 1
+
+#if ENABLE_CHECK_MEMORY
+#define CHECK_MEMORY(mem) ESP_LOGI("WASM3", "Current memory ptr: %p", mem); print_last_two_callers()
+#else 
+#define CHECK_MEMORY(mem) nothing()
+#endif
+
+void nothing(){}

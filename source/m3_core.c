@@ -683,6 +683,8 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
 M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, cbytes_t i_end) {
     if (!io_bytes || !*io_bytes || !o_value) return m3Err_malformedData;
     
+    CHECK_MEMORY(memory);
+
     const u8* ptr = (const u8*)resolve_pointer(memory, *io_bytes);
     const u8* end = (const u8*)i_end; //resolve_pointer(memory, i_end);
     

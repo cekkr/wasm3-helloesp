@@ -2590,6 +2590,7 @@ M3Result  CompileBlockStatements  (IM3Compilation o)
 # endif
         m3opcode_t opcode;
         o->lastOpcodeStart = o->wasm;
+        CHECK_MEMORY(&o->runtime->memory);
 _       (Read_opcode (&o->runtime->memory, & opcode, & o->wasm, o->wasmEnd));                log_opcode (o, opcode);
 
         // Restrict opcodes when evaluating expressions
