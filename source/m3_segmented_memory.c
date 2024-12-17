@@ -359,11 +359,15 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
         LOG_FLUSH;
     }
 
-    void* res = get_segment_pointer(memory, ptr);
+    void* res = ptr;
+
+    if(IsValidMemoryAccess(memory, ptr, 1)){
+        res = get_segment_pointer(memory, ptr);
+    }
 
     if(res == ERROR_POINTER || res == NULL){        
         res = ptr;
-        ESP_LOGW("WASM3", "resolve_pointer: pointer not in segment (ptr: %p, res: %p)", ptr, res);
+        if(WASM_DEBUG_MEM_ACCESS) ESP_LOGW("WASM3", "resolve_pointer: pointer not in segment (ptr: %p, res: %p)", ptr, res);
     }
 
     if(!is_ptr_valid(res)){

@@ -558,9 +558,11 @@ const bool WASM_READ_BACKTRACE_WASMUNDERRUN = true;
 const bool WASM_DEBUG_READ_RESOLVE_POINTER = true;
 
 M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_end) {
-    if (!io_bytes || !*io_bytes || !o_value) return m3Err_malformedData;
-    
-    const u8* ptr = (const u8*)resolve_pointer(memory, *io_bytes);
+    u8* _io_bytes = (u8*)resolve_pointer(memory, io_bytes);
+
+    if (!_io_bytes || !*_io_bytes || !o_value) return m3Err_malformedData;        
+
+    const u8* ptr = (const u8*)resolve_pointer(memory, *_io_bytes);
     const u8* end = (const u8*)resolve_pointer(memory, i_end);
     
     if (ptr == ERROR_POINTER || end == ERROR_POINTER) 
@@ -568,9 +570,9 @@ M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_
     
     ptr += sizeof(u64);
     if (ptr <= end) {
-        memcpy(o_value, *(const u8*)resolve_pointer(memory, *io_bytes), sizeof(u64));
+        memcpy(o_value, *(const u8*)resolve_pointer(memory, *_io_bytes), sizeof(u64));
         M3_BSWAP_u64(*o_value);
-        *io_bytes = ptr;
+        *_io_bytes = ptr;
         return m3Err_none;
     }
 
@@ -583,24 +585,19 @@ M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_
 }
 
 M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_end) {
-    if (!io_bytes || !*io_bytes || !o_value) return m3Err_malformedData;
-    
-    const u8* ptr = (const u8*)resolve_pointer(memory, *io_bytes);
-    const u8* end = (const u8*)i_end; // resolve_pointer(memory, i_end);
+    u8* _io_bytes = (u8*)resolve_pointer(memory, io_bytes);
+
+    if (!_io_bytes || !*_io_bytes || !o_value) return m3Err_malformedData;        
+
+    const u8* ptr = (const u8*)resolve_pointer(memory, *_io_bytes);
+    const u8* end = (const u8*)resolve_pointer(memory, i_end);
     
     if (ptr == ERROR_POINTER || end == ERROR_POINTER) 
         return m3Err_malformedData;
     
     ptr += sizeof(u32);
     if (ptr <= end) {
-        const u8* _io_bytes = (const u8*)resolve_pointer(memory, *io_bytes);
-
-        if(WASM_DEBUG_READ_RESOLVE_POINTER){
-            ESP_LOGW("WASM3", "Read_u32: _io_bytes: %p, io_bytes: %p", _io_bytes, io_bytes);
-            LOG_FLUSH;
-        }
-
-        memcpy(o_value, *_io_bytes, sizeof(u32));
+        memcpy(o_value, _io_bytes, sizeof(u32));
         M3_BSWAP_u32(*o_value);
         *io_bytes = ptr;
         return m3Err_none;        
@@ -616,9 +613,11 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
 
 #if d_m3ImplementFloat
 M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_end) {
-    if (!io_bytes || !*io_bytes || !o_value) return m3Err_malformedData;
-    
-    const u8* ptr = (const u8*)resolve_pointer(memory, *io_bytes);
+    u8* _io_bytes = (u8*)resolve_pointer(memory, io_bytes);
+
+    if (!_io_bytes || !*_io_bytes || !o_value) return m3Err_malformedData;        
+
+    const u8* ptr = (const u8*)resolve_pointer(memory, *_io_bytes);
     const u8* end = (const u8*)i_end; //resolve_pointer(memory, i_end);
     
     if (ptr == ERROR_POINTER || end == ERROR_POINTER) 
@@ -626,9 +625,9 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
     
     ptr += sizeof(f64);
     if (ptr <= end) {
-        memcpy(o_value, *(const u8*)resolve_pointer(memory, *io_bytes), sizeof(f64));
+        memcpy(o_value, *(const u8*)resolve_pointer(memory, *_io_bytes), sizeof(f64));
         M3_BSWAP_f64(*o_value);
-        *io_bytes = ptr;
+        *_io_bytes = ptr;
         return m3Err_none;
     }
 
@@ -641,9 +640,11 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
 }
 
 M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_end) {
-    if (!io_bytes || !*io_bytes || !o_value) return m3Err_malformedData;
+    u8* _io_bytes = (u8*)resolve_pointer(memory, io_bytes);
+
+    if (!_io_bytes || !*_io_bytes || !o_value) return m3Err_malformedData;    
     
-    const u8* ptr = (const u8*)resolve_pointer(memory, *io_bytes);
+    const u8* ptr = (const u8*)resolve_pointer(memory, *_io_bytes);
     const u8* end = (const u8*)i_end; //resolve_pointer(memory, i_end);
     
     if (ptr == ERROR_POINTER || end == ERROR_POINTER) 
@@ -651,9 +652,9 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
     
     ptr += sizeof(f32);
     if (ptr <= end) {
-        memcpy(o_value, *(const u8*)resolve_pointer(memory, *io_bytes), sizeof(f32));
+        memcpy(o_value, *(const u8*)resolve_pointer(memory, *_io_bytes), sizeof(f32));
         M3_BSWAP_f32(*o_value);
-        *io_bytes = ptr;
+        *_io_bytes = ptr;
         return m3Err_none;
     }
 
@@ -667,9 +668,11 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
 #endif
 
 M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_end) {
-    if (!io_bytes || !*io_bytes || !o_value) return m3Err_malformedData;
-    
-    const u8* ptr = (const u8*)resolve_pointer(memory, *io_bytes);
+    u8* _io_bytes = (u8*)resolve_pointer(memory, io_bytes);
+
+    if (!_io_bytes || !*_io_bytes || !o_value) return m3Err_malformedData;    
+
+    const u8* ptr = (const u8*)resolve_pointer(memory, *_io_bytes);
     const u8* end = (const u8*)resolve_pointer(memory, i_end);
     
     if (ptr == ERROR_POINTER || end == ERROR_POINTER) 
@@ -677,7 +680,7 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
     
     if (ptr < end) {
         *o_value = *ptr;
-        *io_bytes = ptr + 1;
+        *_io_bytes = ptr + 1;
         return m3Err_none;
     }
 
@@ -690,11 +693,13 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
 }
 
 M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, cbytes_t i_end) {
-    if (!io_bytes || !*io_bytes || !o_value) return m3Err_malformedData;
-    
-    CHECK_MEMORY_PTR(memory, "Read_opcode");
+    u8* _io_bytes = (u8*)resolve_pointer(memory, io_bytes);
 
-    const u8* ptr = (const u8*)resolve_pointer(memory, *io_bytes);
+    if (!_io_bytes || !*_io_bytes || !o_value) return m3Err_malformedData;
+    
+    CHECK_MEMORY_PTR(memory, "Read_opcode");    
+
+    const u8* ptr = (const u8*)resolve_pointer(memory, *_io_bytes);
     const u8* end = (const u8*)resolve_pointer(memory, i_end);
     
     if (ptr == ERROR_POINTER || end == ERROR_POINTER) 
@@ -711,7 +716,7 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
         }
 #endif
         *o_value = opcode;
-        *io_bytes = ptr;
+        *_io_bytes = ptr;
         return m3Err_none;
     }
 
@@ -724,9 +729,11 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
 }
 
 M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes_t* io_bytes, cbytes_t i_end) {
-    if (!io_bytes || !*io_bytes || !o_value) return m3Err_malformedData;
+    u8* _io_bytes = (u8*)resolve_pointer(memory, io_bytes);
+
+    if (!_io_bytes || !*_io_bytes || !o_value) return m3Err_malformedData;
     
-    const u8* ptr = (const u8*)resolve_pointer(memory, *io_bytes);
+    const u8* ptr = (const u8*)resolve_pointer(memory, *_io_bytes);
     const u8* end = (const u8*)resolve_pointer(memory, i_end);
     
     if (ptr == ERROR_POINTER || end == ERROR_POINTER) 
@@ -754,7 +761,7 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
     }
 
     *o_value = value;
-    *io_bytes = ptr;
+    *_io_bytes = ptr;
 
     if(WASM_READ_BACKTRACE_WASMUNDERRUN && result == m3Err_wasmUnderrun){
         ESP_LOGE("WASM3", "Read WASM underrun");
@@ -765,9 +772,11 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
 }
 
 M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t* io_bytes, cbytes_t i_end) {
-    if (!io_bytes || !*io_bytes || !o_value) return m3Err_malformedData;
+    u8* _io_bytes = (u8*)resolve_pointer(memory, io_bytes);
+
+    if (!_io_bytes || !*_io_bytes || !o_value) return m3Err_malformedData;
     
-    const u8* ptr = (const u8*)resolve_pointer(memory, *io_bytes);
+    const u8* ptr = (const u8*)resolve_pointer(memory, *_io_bytes);
     const u8* end = (const u8*)resolve_pointer(memory, i_end);
     
     if (ptr == ERROR_POINTER || end == ERROR_POINTER) 
@@ -800,7 +809,7 @@ M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t
     }
 
     *o_value = value;
-    *io_bytes = ptr;
+    *_io_bytes = ptr;
 
     if(WASM_READ_BACKTRACE_WASMUNDERRUN && result == m3Err_wasmUnderrun){
         ESP_LOGE("WASM3", "Read WASM underrun");
