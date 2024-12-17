@@ -580,7 +580,7 @@ M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_
     }
 
     if (notOverEnd) {
-        memcpy(_o_value, *(const u8*)resolve_pointer(memory, *_io_bytes), sizeof(u64));
+        memcpy(_o_value, (const u8*)resolve_pointer(memory, *_io_bytes), sizeof(u64));
         M3_BSWAP_u64(*_o_value);
         *_io_bytes = ptr;
         return m3Err_none;
@@ -615,7 +615,7 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
     }
 
     if (notOverEnd) {
-        memcpy(_o_value, *(const u8*)resolve_pointer(memory, *_io_bytes), sizeof(u32));
+        memcpy(_o_value, (const u8*)resolve_pointer(memory, *_io_bytes), sizeof(u32));
         M3_BSWAP_u32(*_o_value);
         *_io_bytes = ptr;
         return m3Err_none;        
@@ -655,7 +655,7 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
     }
 
     if (notOverEnd) {
-        memcpy(_o_value, *(const u8*)resolve_pointer(memory, *_io_bytes), sizeof(f64));
+        memcpy(_o_value, (const u8*)resolve_pointer(memory, *_io_bytes), sizeof(f64));
         M3_BSWAP_f64(*_o_value);
         *_io_bytes = ptr;
         return m3Err_none;
@@ -690,7 +690,7 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
     }
 
     if (notOverEnd) {
-        memcpy(_o_value, *(const u8*)resolve_pointer(memory, *_io_bytes), sizeof(f32));
+        memcpy(_o_value, (const u8*)resolve_pointer(memory, *_io_bytes), sizeof(f32));
         M3_BSWAP_f32(*_o_value);
         *_io_bytes = ptr;
         return m3Err_none;
