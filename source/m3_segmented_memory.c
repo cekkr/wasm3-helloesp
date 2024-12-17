@@ -255,13 +255,13 @@ const bool WASM_DEBUG_MEM_ACCESS = false;
 const bool WASM_DEBUG_GET_SEGMENT_POINTER = false;
 
 void* get_segment_pointer(IM3Memory memory, u32 offset) {    
-    if(!memory){
+    if(memory->firm != INIT_FIRM){
         ESP_LOGW("WASM3", "get_segment_pointer: null memory");
         backtrace();
         return offset;
     }
 
-     if(!memory->segments){
+     if(memory->segments == NULL){
         ESP_LOGW("WASM3", "get_segment_pointer: memory not initialized");
         backtrace();
         return offset;
@@ -333,10 +333,12 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
 const bool WASM_DEBUG_RESOLVE_POINTER_MEMORY_BACKTRACE = false;
 void* resolve_pointer(IM3Memory memory, void* ptr) {
 
+    CHECK_MEMORY_PTR(memory, "resolve_pointer");
+
     if(!is_ptr_valid(memory)){
         ESP_LOGW("WASM3", "resolve_pointer: invalid memory pointer %p", memory);
         LOG_FLUSH;
-        if(WASM_DEBUG_RESOLVE_POINTER_MEMORY_BACKTRACE || true) backtrace(); 
+        if(WASM_DEBUG_RESOLVE_POINTER_MEMORY_BACKTRACE) backtrace(); 
         return ptr;
     }
     else {
