@@ -40,5 +40,5 @@ char* error_details(const char* base_error, const char* format, ...);
 
 void custom_panic_handler(void* frame, panic_info_t* info);
 
-void print_last_two_callers();
+void print_last_two_callers(); //todo: it doens't work: deprecate it
 void nothing_todo();

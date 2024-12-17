@@ -1,4 +1,5 @@
 #include "esp_log.h"
+#include "esp_debug_helpers.h"
 
 #include "m3_exception.h"
 
@@ -28,10 +29,7 @@ void custom_panic_handler(void* frame, panic_info_t* info) {
 ///
 ///
 
-#include "esp_log.h"
-#include "esp_debug_helpers.h"
-
-void print_last_two_callers() {
+void print_last_two_callers() { //todo: deprecate it
     #define MAX_BACKTRACE_SIZE 3
     const char* TAG = "WASM3";
 
