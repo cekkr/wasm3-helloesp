@@ -215,7 +215,7 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
     if(WASM_DEBUG_NEW_RUNTIME) ESP_LOGI("WASM3", "m3_NewRuntime called");
 
     IM3Runtime runtime = m3_Def_AllocStruct (M3Runtime);
-    if(WASM_DEBUG_NEW_RUNTIME) ESP_LOGI("WASM3", "m3_NewRuntime: m3_Def_AllocStruct done");
+    if(WASM_DEBUG_NEW_RUNTIME) ESP_LOGI("WASM3", "m3_NewRuntime: m3_Def_AllocStruct done (%d bytes)", sizeof(M3Runtime));
 
     if (runtime)
     {        
