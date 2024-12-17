@@ -572,7 +572,7 @@ M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_
     
     // Convert pointer to offset and check if read would exceed i_end
     u32 offset = get_offset_pointer(memory, (void*)ptr);
-    if (!IsValidMemoryAccess(memory, offset, sizeof(u64)) || offset + sizeof(u64) > (u32)i_end)
+    if (offset + sizeof(u64) > (u32)i_end)
         return m3Err_wasmUnderrun;
 
     memcpy(_o_value, ptr, sizeof(u64));
@@ -593,7 +593,7 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
         return m3Err_malformedData;
     
     u32 offset = get_offset_pointer(memory, (void*)ptr);
-    if (!IsValidMemoryAccess(memory, offset, sizeof(u32)) || offset + sizeof(u32) > (u32)i_end)
+    if (offset + sizeof(u32) > (u32)i_end)
         return m3Err_wasmUnderrun;
 
     memcpy(_o_value, ptr, sizeof(u32));
@@ -615,7 +615,7 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
         return m3Err_malformedData;
     
     u32 offset = get_offset_pointer(memory, (void*)ptr);
-    if (!IsValidMemoryAccess(memory, offset, sizeof(f64)) || offset + sizeof(f64) > (u32)i_end)
+    if (offset + sizeof(f64) > (u32)i_end)
         return m3Err_wasmUnderrun;
 
     memcpy(_o_value, ptr, sizeof(f64));
@@ -636,7 +636,7 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
         return m3Err_malformedData;
     
     u32 offset = get_offset_pointer(memory, (void*)ptr);
-    if (!IsValidMemoryAccess(memory, offset, sizeof(f32)) || offset + sizeof(f32) > (u32)i_end)
+    if (offset + sizeof(f32) > (u32)i_end)
         return m3Err_wasmUnderrun;
 
     memcpy(_o_value, ptr, sizeof(f32));
@@ -658,7 +658,7 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
         return m3Err_malformedData;
     
     u32 offset = get_offset_pointer(memory, (void*)ptr);
-    if (!IsValidMemoryAccess(memory, offset, sizeof(u8)) || offset + sizeof(u8) > (u32)i_end)
+    if (offset + sizeof(u8) > (u32)i_end)
         return m3Err_wasmUnderrun;
 
     *_o_value = *ptr;
@@ -678,7 +678,7 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
         return m3Err_malformedData;
     
     u32 offset = get_offset_pointer(memory, (void*)ptr);
-    if (!IsValidMemoryAccess(memory, offset, 1) || offset + 1 > (u32)i_end)
+    if (offset + 1 > (u32)i_end)
         return m3Err_wasmUnderrun;
 
     m3opcode_t opcode = *ptr++;
@@ -686,7 +686,7 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
 #if d_m3CascadedOpcodes == 0
     if (M3_UNLIKELY(opcode == c_waOp_extended)) {
         offset = get_offset_pointer(memory, (void*)ptr);
-        if (!IsValidMemoryAccess(memory, offset, 1) || offset + 1 > (u32)i_end)
+        if (offset + 1 > (u32)i_end)
             return m3Err_wasmUnderrun;
         opcode = (opcode << 8) | (*ptr++);
     }
@@ -714,7 +714,7 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
     
     while (true) {
         u32 offset = get_offset_pointer(memory, (void*)ptr);
-        if (!IsValidMemoryAccess(memory, offset, 1) || offset >= (u32)i_end)
+        if (offset >= (u32)i_end)
             break;
 
         u64 byte = *ptr++;
@@ -754,7 +754,7 @@ M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t
 
     while (true) {
         u32 offset = get_offset_pointer(memory, (void*)ptr);
-        if (!IsValidMemoryAccess(memory, offset, 1) || offset >= (u32)i_end)
+        if (offset >= (u32)i_end)
             break;
 
         u64 byte = *ptr++;

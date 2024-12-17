@@ -418,7 +418,7 @@ bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size)
 
 u32 get_offset_pointer(IM3Memory memory, void* ptr) {
     if (!memory || !memory->segments || !ptr) {
-        return (u32)ERROR_POINTER;
+        return (u32)ptr;
     }
 
     // If ptr is already an offset or ERROR_POINTER, return it as is
