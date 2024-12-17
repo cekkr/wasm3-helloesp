@@ -219,6 +219,8 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
 
     if (runtime)
     {        
+        runtime->memory.runtime = runtime;    
+
         IM3Memory memory = m3_InitMemory(&runtime->memory);
         memory->runtime = runtime;
 

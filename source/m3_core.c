@@ -137,7 +137,7 @@ void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
 static const int ALLOC_SHIFT_OF = 0; // 4
 static const bool WASM_DEBUG_ALLOCS = true;
 static const bool CHECK_MEMORY_AVAILABLE = true;
-static const bool DEFAULT_ALLOC_ALIGNMENT = true;
+static const bool DEFAULT_ALLOC_ALIGNMENT = false;
 
 bool check_memory_available_bySize(size_t required_size) {
     const char * TAG = "WASM3";
@@ -188,14 +188,13 @@ void* default_malloc(size_t size) {
             ptr = heap_caps_malloc(aligned_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL); // | MALLOC_CAP_INTERNAL           
         }
 
-        if (ptr) {
-            memset(ptr, 0, aligned_size);  // Zero-fill con padding
-        }
-
         if(ptr == NULL || ptr == ERROR_POINTER){
             ESP_LOGE("WASM3", "Failed to allocate memory of size %d", aligned_size);
             esp_backtrace_print(100);
+            return NULL;
         }
+
+        memset(ptr, 0, aligned_size);  // Zero-fill con padding  
 
         return ptr;
 
