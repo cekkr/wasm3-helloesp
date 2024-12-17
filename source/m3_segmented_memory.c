@@ -19,15 +19,25 @@ static size_t align_size(size_t size) {
 }
 
 
-#define PRINT_PTR(ptr) ESP_LOGI("WASM3", "Pointer value: %p (unsigned: %u, signed: %d)", \
-                               (void*)ptr, (uintptr_t)ptr, (intptr_t)ptr)
+#define PRINT_PTR(ptr) ESP_LOGI("WASM3", "Pointer value: (unsigned: %u, signed: %d)", (uintptr_t)ptr, (intptr_t)ptr)
 
+const bool DEBUG_WASM_INIT_MEMORY = true;
 IM3Memory m3_InitMemory(IM3Memory memory) {
-    if (!memory) return NULL;
+    if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory called");
+
+    if (!memory) {
+        if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: memory pointer is NULL");
+        return NULL;
+    }
     
     // Inizializza strutture base
+    if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: allocating first segment");
     memory->segments = m3_Def_AllocArray(MemorySegment*, 1);
-    if (!memory->segments) return NULL;
+
+    if (!memory->segments) {
+        ESP_LOGE("WASM3", "m3_InitMemory: !memory->segment");
+        return NULL;
+    }
     
     memory->max_size = WASM_SEGMENT_SIZE * M3Memory_MaxPages;
     memory->num_segments = 0;
@@ -36,6 +46,7 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     memory->maxPages = M3Memory_MaxPages;
     
     // Inizializza cache dei chunk liberi
+    if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: init free chunks");
     memory->num_free_buckets = 32;
     memory->free_chunks = calloc(memory->num_free_buckets, sizeof(MemoryChunk*));
     if (!memory->free_chunks) {
@@ -44,6 +55,7 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     }
     
     // Alloca primo segmento
+    if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: AddSegments(WASM_INIT_SEGMENTS)");
     M3Result result = AddSegments(memory, WASM_INIT_SEGMENTS);
     if (result != m3Err_none) {
         ESP_LOGE("WASM3", "m3_InitMemory: Failed to add segment: %s", result);
@@ -53,6 +65,7 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     }
     
     // Inizializza il primo chunk nel primo segmento
+    if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: init first chunk's segment");
     MemorySegment* first_seg = memory->segments[0];
     if (!first_seg || !first_seg->data) {
         m3_Def_Free(memory->segments);
@@ -60,6 +73,7 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
         return NULL;
     }
     
+    if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: working on first_chunk");
     MemoryChunk* first_chunk = (MemoryChunk*)first_seg->data;
     first_chunk->size = first_seg->size;
     first_chunk->is_free = true;
@@ -77,6 +91,7 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     memory->firm = INIT_FIRM;
 
     /// Test init
+    if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: test m3_malloc");
     u32 ptr1 = m3_malloc(memory, 1);
     u32 ptr2 = m3_malloc(memory, 1);
 

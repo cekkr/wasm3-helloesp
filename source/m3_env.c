@@ -221,6 +221,12 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
     {        
         runtime->memory.runtime = runtime;    
 
+        if(WASM_DEBUG_NEW_RUNTIME){
+            ESP_LOGI("WASM3", "m3_NewRuntime: runtime ptr: %p", runtime);
+            ESP_LOGI("WASM3", "m3_NewRuntime: runtime->memory ptr: %p", runtime->memory);
+            ESP_LOGI("WASM3", "m3_NewRuntime: &runtime->memory ptr: %p", &runtime->memory);
+        }
+
         IM3Memory memory = m3_InitMemory(&runtime->memory);
         memory->runtime = runtime;
 
