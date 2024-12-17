@@ -337,6 +337,7 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
 
 const bool WASM_DEBUG_RESOLVE_POINTER_MEMORY_BACKTRACE = false;
 void* resolve_pointer(IM3Memory memory, void* ptr) {
+    if(memory == NULL) return ptr;
 
     CHECK_MEMORY_PTR(memory, "resolve_pointer");
 
