@@ -410,6 +410,9 @@ void* m3SegmentedMemAccess_2(IM3Memory memory, u32 offset, size_t size) {
 
 bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size)
 {
+    if(memory == NULL) return false;
+
+    //todo: improve precision by checking if it's inside allocated memory (?)
     return (offset + size) <= memory->total_size;
 }
 
