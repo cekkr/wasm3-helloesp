@@ -650,14 +650,14 @@ _try {
     }
     else {
         ESP_LOGW("WASM3", "m3_ParseModule: module lacks of runtime and memory");
-    }
-
-    if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: assignation dones.");
-
+    }    
+    
     module->name = ".unnamed";                                                      m3log (parse, "load module: %d bytes", i_numBytes);
     module->startFunction = -1;
     //module->hasWasmCodeCopy = false;
     module->environment = i_environment;
+
+    if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: assignation dones.");
 
     const u8 * pos = i_bytes;
     const u8 * end = pos + i_numBytes;

@@ -323,12 +323,20 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
     return ERROR_POINTER;
 }
 
+const bool WASM_DEBUG_RESOLVE_POINTER_MEMORY_BACKTRACE = true;
 void* resolve_pointer(IM3Memory memory, void* ptr) {
 
     if(!is_ptr_valid(memory)){
         ESP_LOGW("WASM3", "resolve_pointer: invalid memory pointer %p", memory);
         LOG_FLUSH;
         backtrace(); 
+    }
+    else {
+        if(WASM_DEBUG_RESOLVE_POINTER_MEMORY_BACKTRACE){
+            ESP_LOGW("WASM3", "resolve_pointer: seems valid memory pointer %p", memory);
+            LOG_FLUSH;
+            backtrace(); 
+        }
     }
 
     if(WASM_DEBUG_MEM_ACCESS) {
