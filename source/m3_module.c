@@ -92,7 +92,7 @@ _try {
         io_module->allFunctions = i_totalFunctions;
 
         for(int i=0; i<i_totalFunctions; i++){
-            io_module->functions[i]->module = io_module;
+            io_module->functions[i].module = io_module;
         }
 
         if(WASM_DEBUG_PREALLOCFUNCTIONS) ESP_LOGI("WASM", "PreallocFunctions: allFunctions updated to %lu", io_module->allFunctions);
