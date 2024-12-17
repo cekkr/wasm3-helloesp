@@ -560,14 +560,14 @@ M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_
     if (!io_bytes || !*io_bytes || !o_value) return m3Err_malformedData;
     
     const u8* ptr = (const u8*)resolve_pointer(memory, *io_bytes);
-    const u8* end = (const u8*)i_end; // resolve_pointer(memory, i_end);
+    const u8* end = (const u8*)resolve_pointer(memory, i_end);
     
     if (ptr == ERROR_POINTER || end == ERROR_POINTER) 
         return m3Err_malformedData;
     
     ptr += sizeof(u64);
     if (ptr <= end) {
-        memcpy(o_value, (const u8*)resolve_pointer(memory, *io_bytes), sizeof(u64));
+        memcpy(o_value, *(const u8*)resolve_pointer(memory, *io_bytes), sizeof(u64));
         M3_BSWAP_u64(*o_value);
         *io_bytes = ptr;
         return m3Err_none;
@@ -592,7 +592,7 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
     
     ptr += sizeof(u32);
     if (ptr <= end) {
-        memcpy(o_value, (const u8*)resolve_pointer(memory, *io_bytes), sizeof(u32));
+        memcpy(o_value, *(const u8*)resolve_pointer(memory, *io_bytes), sizeof(u32));
         M3_BSWAP_u32(*o_value);
         *io_bytes = ptr;
         return m3Err_none;        
@@ -618,7 +618,7 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
     
     ptr += sizeof(f64);
     if (ptr <= end) {
-        memcpy(o_value, (const u8*)resolve_pointer(memory, *io_bytes), sizeof(f64));
+        memcpy(o_value, *(const u8*)resolve_pointer(memory, *io_bytes), sizeof(f64));
         M3_BSWAP_f64(*o_value);
         *io_bytes = ptr;
         return m3Err_none;
@@ -643,7 +643,7 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
     
     ptr += sizeof(f32);
     if (ptr <= end) {
-        memcpy(o_value, (const u8*)resolve_pointer(memory, *io_bytes), sizeof(f32));
+        memcpy(o_value, *(const u8*)resolve_pointer(memory, *io_bytes), sizeof(f32));
         M3_BSWAP_f32(*o_value);
         *io_bytes = ptr;
         return m3Err_none;
@@ -662,7 +662,7 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
     if (!io_bytes || !*io_bytes || !o_value) return m3Err_malformedData;
     
     const u8* ptr = (const u8*)resolve_pointer(memory, *io_bytes);
-    const u8* end = (const u8*)i_end; //resolve_pointer(memory, i_end);
+    const u8* end = (const u8*)resolve_pointer(memory, i_end);
     
     if (ptr == ERROR_POINTER || end == ERROR_POINTER) 
         return m3Err_malformedData;
@@ -687,7 +687,7 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
     CHECK_MEMORY_PTR(memory, "Read_opcode");
 
     const u8* ptr = (const u8*)resolve_pointer(memory, *io_bytes);
-    const u8* end = (const u8*)i_end; //resolve_pointer(memory, i_end);
+    const u8* end = (const u8*)resolve_pointer(memory, i_end);
     
     if (ptr == ERROR_POINTER || end == ERROR_POINTER) 
         return m3Err_malformedData;
