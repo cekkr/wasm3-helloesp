@@ -32,7 +32,7 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     
     // Inizializza strutture base
     if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: allocating first segment");
-    memory->segments = m3_Def_AllocArray(MemorySegment*, 1);
+    memory->segments = NULL; //m3_Def_AllocArray(MemorySegment*, 1);
 
     if (!memory->segments) {
         ESP_LOGE("WASM3", "m3_InitMemory: !memory->segment");
@@ -67,7 +67,15 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     // Inizializza il primo chunk nel primo segmento
     if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: init first chunk's segment");
     MemorySegment* first_seg = memory->segments[0];
-    if (!first_seg || !first_seg->data) {
+    if (first_seg) {
+        if(!first_seg->data){
+            // it's always null
+            if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: first_seg->data is NULL");
+            InitSegment(first_seg);
+        }
+    }
+    else {
+        ESP_LOGE("WASM3", "m3_InitMemory: first_seg is NULL");
         m3_Def_Free(memory->segments);
         free(memory->free_chunks);
         return NULL;
