@@ -458,7 +458,8 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 #define ENABLE_CHECK_MEMORY 1
 
 #if ENABLE_CHECK_MEMORY
-#define CHECK_MEMORY(mem) ESP_LOGI("WASM3", "Current memory ptr: %p", mem); LOG_FLUSH; esp_backtrace_print(1)
+//#define CHECK_MEMORY(mem) ESP_LOGI("WASM3", "Current memory ptr: %p", mem); LOG_FLUSH; esp_backtrace_print(1)
+#define CHECK_MEMORY(mem, pos) ESP_LOGW("WASM3", "Current memory ptr: %p (in %s)", mem, pos)
 #else 
-#define CHECK_MEMORY(mem) nothing_todo()
+#define CHECK_MEMORY(mem, pos) nothing_todo()
 #endif

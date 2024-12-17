@@ -652,8 +652,8 @@ _try {
         ESP_LOGW("WASM3", "m3_ParseModule: module lacks of runtime and memory");
     }    
     
-    CHECK_MEMORY(mem);
-    CHECK_MEMORY(module->runtime->memory);
+    CHECK_MEMORY(mem, "m3_ParseModule mem");
+    CHECK_MEMORY(&module->runtime->memory, "m3_ParseModule &module->runtime->memory");
 
     module->name = ".unnamed";                                                      m3log (parse, "load module: %d bytes", i_numBytes);
     module->startFunction = -1;
