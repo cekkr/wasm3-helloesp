@@ -561,8 +561,9 @@ const bool WASM_READ_IGNORE_END = true;
 
 M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_end) {
     u8* _io_bytes = (u8*)resolve_pointer(memory, io_bytes);
+    u8* _o_value = (u8*)resolve_pointer(memory, o_value);
 
-    if (!_io_bytes || !*_io_bytes || !o_value) return m3Err_malformedData;        
+    if (!_io_bytes || !*_io_bytes || !_o_value) return m3Err_malformedData;        
 
     const u8* ptr = (const u8*)resolve_pointer(memory, *_io_bytes);
     cbytes_t end = IsValidMemoryAccess(memory, i_end, 1) ? *(cbytes_t*)resolve_pointer(memory, i_end) : i_end;
@@ -579,8 +580,8 @@ M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_
     }
 
     if (notOverEnd) {
-        memcpy(o_value, *(const u8*)resolve_pointer(memory, *_io_bytes), sizeof(u64));
-        M3_BSWAP_u64(*o_value);
+        memcpy(_o_value, *(const u8*)resolve_pointer(memory, *_io_bytes), sizeof(u64));
+        M3_BSWAP_u64(*_o_value);
         *_io_bytes = ptr;
         return m3Err_none;
     }
@@ -595,8 +596,9 @@ M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_
 
 M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_end) {
     u8* _io_bytes = (u8*)resolve_pointer(memory, io_bytes);
+    u8* _o_value = (u8*)resolve_pointer(memory, o_value);
 
-    if (!_io_bytes || !*_io_bytes || !o_value) return m3Err_malformedData;        
+    if (!_io_bytes || !*_io_bytes || !_o_value) return m3Err_malformedData;        
 
     const u8* ptr = (const u8*)resolve_pointer(memory, *_io_bytes);
     cbytes_t end = IsValidMemoryAccess(memory, i_end, 1) ? *(cbytes_t*)resolve_pointer(memory, i_end) : i_end;
@@ -613,8 +615,8 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
     }
 
     if (notOverEnd) {
-        memcpy(o_value, _io_bytes, sizeof(u32));
-        M3_BSWAP_u32(*o_value);
+        memcpy(_o_value, *(const u8*)resolve_pointer(memory, *_io_bytes), sizeof(u32));
+        M3_BSWAP_u32(*_o_value);
         *_io_bytes = ptr;
         return m3Err_none;        
     }
@@ -634,8 +636,9 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
 #if d_m3ImplementFloat
 M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_end) {
     u8* _io_bytes = (u8*)resolve_pointer(memory, io_bytes);
+    u8* _o_value = (u8*)resolve_pointer(memory, o_value);
 
-    if (!_io_bytes || !*_io_bytes || !o_value) return m3Err_malformedData;        
+    if (!_io_bytes || !*_io_bytes || !_o_value) return m3Err_malformedData;        
 
     const u8* ptr = (const u8*)resolve_pointer(memory, *_io_bytes);
     const u8* end = (const u8*)i_end; //resolve_pointer(memory, i_end);
@@ -652,8 +655,8 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
     }
 
     if (notOverEnd) {
-        memcpy(o_value, *(const u8*)resolve_pointer(memory, *_io_bytes), sizeof(f64));
-        M3_BSWAP_f64(*o_value);
+        memcpy(_o_value, *(const u8*)resolve_pointer(memory, *_io_bytes), sizeof(f64));
+        M3_BSWAP_f64(*_o_value);
         *_io_bytes = ptr;
         return m3Err_none;
     }
@@ -668,8 +671,9 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
 
 M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_end) {
     u8* _io_bytes = (u8*)resolve_pointer(memory, io_bytes);
+    u8* _o_value = (u8*)resolve_pointer(memory, o_value);
 
-    if (!_io_bytes || !*_io_bytes || !o_value) return m3Err_malformedData;    
+    if (!_io_bytes || !*_io_bytes || !_o_value) return m3Err_malformedData;    
     
     const u8* ptr = (const u8*)resolve_pointer(memory, *_io_bytes);
     const u8* end = (const u8*)i_end; //resolve_pointer(memory, i_end);
@@ -686,8 +690,8 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
     }
 
     if (notOverEnd) {
-        memcpy(o_value, *(const u8*)resolve_pointer(memory, *_io_bytes), sizeof(f32));
-        M3_BSWAP_f32(*o_value);
+        memcpy(_o_value, *(const u8*)resolve_pointer(memory, *_io_bytes), sizeof(f32));
+        M3_BSWAP_f32(*_o_value);
         *_io_bytes = ptr;
         return m3Err_none;
     }
@@ -703,8 +707,9 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
 
 M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_end) {
     u8* _io_bytes = (u8*)resolve_pointer(memory, io_bytes);
+    u8* _o_value = (u8*)resolve_pointer(memory, o_value);
 
-    if (!_io_bytes || !*_io_bytes || !o_value) return m3Err_malformedData;    
+    if (!_io_bytes || !*_io_bytes || !_o_value) return m3Err_malformedData;    
 
     const u8* ptr = (const u8*)resolve_pointer(memory, *_io_bytes);
     cbytes_t end = IsValidMemoryAccess(memory, i_end, 1) ? *(cbytes_t*)resolve_pointer(memory, i_end) : i_end;
@@ -719,7 +724,7 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
     }
 
     if (notOverEnd) {
-        *o_value = *ptr;
+        *_o_value = *ptr;
         *_io_bytes = ptr + 1;
         return m3Err_none;
     }
@@ -734,8 +739,9 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
 
 M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, cbytes_t i_end) {
     u8* _io_bytes = (u8*)resolve_pointer(memory, io_bytes);
+    u8* _o_value = (u8*)resolve_pointer(memory, o_value);
 
-    if (!_io_bytes || !*_io_bytes || !o_value) return m3Err_malformedData;
+    if (!_io_bytes || !*_io_bytes || !_o_value) return m3Err_malformedData;
     
     CHECK_MEMORY_PTR(memory, "Read_opcode");    
 
@@ -761,7 +767,7 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
             } else return m3Err_wasmUnderrun;
         }
 #endif
-        *o_value = opcode;
+        *_o_value = opcode;
         *_io_bytes = ptr;
         return m3Err_none;
     }
@@ -776,8 +782,9 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
 
 M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes_t* io_bytes, cbytes_t i_end) {
     u8* _io_bytes = (u8*)resolve_pointer(memory, io_bytes);
+    u8* _o_value = (u8*)resolve_pointer(memory, o_value);
 
-    if (!_io_bytes || !*_io_bytes || !o_value) return m3Err_malformedData;
+    if (!_io_bytes || !*_io_bytes || !_o_value) return m3Err_malformedData;
     
     const u8* ptr = (const u8*)resolve_pointer(memory, *_io_bytes);
     cbytes_t end = IsValidMemoryAccess(memory, i_end, 1) ? *(cbytes_t*)resolve_pointer(memory, i_end) : i_end;
@@ -811,7 +818,7 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
         }
     }
 
-    *o_value = value;
+    *_o_value = value;
     *_io_bytes = ptr;
 
     if(WASM_READ_BACKTRACE_WASMUNDERRUN && result == m3Err_wasmUnderrun){
@@ -824,8 +831,9 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
 
 M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t* io_bytes, cbytes_t i_end) {
     u8* _io_bytes = (u8*)resolve_pointer(memory, io_bytes);
+    u8* _o_value = (u8*)resolve_pointer(memory, o_value);
 
-    if (!_io_bytes || !*_io_bytes || !o_value) return m3Err_malformedData;
+    if (!_io_bytes || !*_io_bytes || !_o_value) return m3Err_malformedData;
     
     const u8* ptr = (const u8*)resolve_pointer(memory, *_io_bytes);
     cbytes_t end = IsValidMemoryAccess(memory, i_end, 1) ? *(cbytes_t*)resolve_pointer(memory, i_end) : i_end;
@@ -864,7 +872,7 @@ M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t
         }
     }
 
-    *o_value = value;
+    *_o_value = value;
     *_io_bytes = ptr;
 
     if(WASM_READ_BACKTRACE_WASMUNDERRUN && result == m3Err_wasmUnderrun){
@@ -883,7 +891,9 @@ M3Result  ReadLEB_u32  (IM3Memory memory, u32 * o_value, bytes_t * io_bytes, cby
 {
     u64 value;
     M3Result result = ReadLebUnsigned (memory, & value, 32, io_bytes, i_end);
-    * o_value = (u32) value;
+
+    u8* _o_value = (u8*)resolve_pointer(memory, o_value);
+    * _o_value = (u32) value;
 
     return result;
 }
@@ -893,7 +903,9 @@ M3Result  ReadLEB_u7  (IM3Memory memory, u8 * o_value, bytes_t * io_bytes, cbyte
 {
     u64 value;
     M3Result result = ReadLebUnsigned (memory, & value, 7, io_bytes, i_end);
-    * o_value = (u8) value;
+
+    u8* _o_value = (u8*)resolve_pointer(memory, o_value);
+    * _o_value = (u8) value;
 
     return result;
 }
@@ -903,7 +915,9 @@ M3Result  ReadLEB_i7  (IM3Memory memory, i8 * o_value, bytes_t * io_bytes, cbyte
 {
     i64 value;
     M3Result result = ReadLebSigned (memory, & value, 7, io_bytes, i_end);
-    * o_value = (i8) value;
+
+    u8* _o_value = (u8*)resolve_pointer(memory, o_value);
+    * _o_value = (i8) value;
 
     return result;
 }
@@ -913,7 +927,9 @@ M3Result  ReadLEB_i32  (IM3Memory memory, i32 * o_value, bytes_t * io_bytes, cby
 {
     i64 value;
     M3Result result = ReadLebSigned (memory, & value, 32, io_bytes, i_end);
-    * o_value = (i32) value;
+
+    u8* _o_value = (u8*)resolve_pointer(memory, o_value);
+    * _o_value = (i32) value;
 
     return result;
 }
@@ -923,24 +939,28 @@ M3Result  ReadLEB_i64  (IM3Memory memory, i64 * o_value, bytes_t * io_bytes, cby
 {
     i64 value;
     M3Result result = ReadLebSigned (memory, & value, 64, io_bytes, i_end);
-    * o_value = value;
+
+    u8* _o_value = (u8*)resolve_pointer(memory, o_value);
+    * _o_value = value;
 
     return result;
 }
 
 
 M3Result  Read_utf8  (IM3Memory memory, cstr_t * o_utf8, bytes_t * io_bytes, cbytes_t i_end)
-{
+{    
     *o_utf8 = NULL;
 
+    u8* _io_bytes = (u8*)resolve_pointer(memory, io_bytes);
+
     u32 utf8Length;
-    M3Result result = ReadLEB_u32 (memory, & utf8Length, io_bytes, i_end);
+    M3Result result = ReadLEB_u32 (memory, & utf8Length, _io_bytes, i_end);
 
     if (not result)
     {
         if (utf8Length <= d_m3MaxSaneUtf8Length)
         {
-            const u8 * ptr = * io_bytes;
+            const u8 * ptr = * _io_bytes;
             const u8 * end = ptr + utf8Length;
 
             if (end <= i_end)
@@ -954,7 +974,7 @@ M3Result  Read_utf8  (IM3Memory memory, cstr_t * o_utf8, bytes_t * io_bytes, cby
                     * o_utf8 = utf8;
                 }
 
-                * io_bytes = end;
+                * _io_bytes = end;
             }
             else result = m3Err_wasmUnderrun;
         }
