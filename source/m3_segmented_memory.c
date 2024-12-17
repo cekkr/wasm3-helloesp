@@ -250,9 +250,9 @@ M3Result AddSegments(M3Memory* memory, size_t set_num_segments) {
     return m3Err_mallocFailed;
 }
 
-const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = true;
-const bool WASM_DEBUG_MEM_ACCESS = true;
-const bool WASM_DEBUG_GET_SEGMENT_POINTER = true;
+const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = false;
+const bool WASM_DEBUG_MEM_ACCESS = false;
+const bool WASM_DEBUG_GET_SEGMENT_POINTER = false;
 
 void* get_segment_pointer(IM3Memory memory, u32 offset) {    
     if(!memory || !memory->segments){
@@ -323,84 +323,19 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
     return ERROR_POINTER;
 }
 
-void* resolve_pointer_uncheck(IM3Memory memory, void* ptr) {
-    if(WASM_DEBUG_MEM_ACCESS) {
-        ESP_LOGI("WASM3", "resolve_pointer_uncheck: checking pointer %p", ptr);
-    }
-    
-    // Basic memory structure validation
-    if (!memory || !memory->segments || memory->num_segments == 0) {
-        ESP_LOGE("WASM3", "Invalid memory structure");
-        return ptr;
-    }
-    
-    // Iterate through all segments to find which one contains our pointer
-    for (size_t i = 0; i < memory->num_segments; i++) {
-        MemorySegment* segment = memory->segments[i];
-        
-        // Skip invalid segments
-        if (!segment || !segment->data || !segment->is_allocated) {
-            continue;
-        }
-        
-        // Calculate segment boundaries
-        void* segment_start = segment->data;
-        void* segment_end = (uint8_t*)segment_start + segment->size;
-        
-        // Check if pointer falls within this segment's range
-        if (ptr >= segment_start && ptr < segment_end) {
-            // Calculate the offset within the segment
-            size_t segment_offset = (uint8_t*)ptr - (uint8_t*)segment_start;
-            
-            // Validate offset is within segment bounds
-            if (segment_offset >= segment->size) {
-                ESP_LOGW("WASM3", "Pointer offset exceeds segment size: %zu >= %zu", 
-                         segment_offset, segment->size);
-                return ptr;
-            }
-            
-            // If we're using chunk-based memory management, validate the chunk
-            MemoryChunk* chunk = segment->first_chunk;
-            size_t chunk_offset = 0;
-            
-            while (chunk) {
-                size_t chunk_size = chunk->size - sizeof(MemoryChunk);
-                void* chunk_data = get_chunk_data(chunk);
-                void* chunk_end = (uint8_t*)chunk_data + chunk_size;
-                
-                // Check if pointer falls within this chunk
-                if (ptr >= chunk_data && ptr < chunk_end) {
-                    if (chunk->is_free) {
-                        ESP_LOGE("WASM3", "Attempting to access freed memory chunk");
-                        return ptr;
-                    }
-                    
-                    if(WASM_DEBUG_MEM_ACCESS) {
-                        ESP_LOGI("WASM3", "resolve_pointer_uncheck: found valid pointer in segment %zu, chunk at %p", i, chunk);
-                    }
-                    
-                    return ptr;
-                }
-                
-                chunk = chunk->next;
-            }
-            
-            ESP_LOGW("WASM3", "Pointer found in segment %zu but not in any valid chunk", i);
-            return ptr;
-        }
-    }
-    
-    if(WASM_DEBUG_MEM_ACCESS) {
-        ESP_LOGI("WASM3", "Pointer not found in any segment, returning original: %p", ptr);
-    }
-    
-    return ptr;
-}
-
 void* resolve_pointer(IM3Memory memory, void* ptr) {
-    if(WASM_DEBUG_MEM_ACCESS) ESP_LOGI("WASM3", "resolve_pointer: memory ptr: %p, ptr: %p", memory, ptr);
 
-    //void* res = resolve_pointer_uncheck(memory, ptr);
+    if(!is_ptr_valid(memory)){
+        ESP_LOGW("WASM3", "resolve_pointer: invalid memory pointer %p", memory);
+        LOG_FLUSH;
+        backtrace(); 
+    }
+
+    if(WASM_DEBUG_MEM_ACCESS) {
+        ESP_LOGI("WASM3", "resolve_pointer: memory ptr: %p, ptr: %p", memory, ptr);
+        LOG_FLUSH;
+    }
+
     void* res = get_segment_pointer(memory, ptr);
 
     if(res == ERROR_POINTER || res == NULL)

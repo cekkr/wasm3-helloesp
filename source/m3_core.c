@@ -241,7 +241,7 @@ void default_free(void* ptr) {
     END_TRY;
 }
 
-static const bool REALLOC_USE_MALLOC_IF_NEW = false;
+static const bool REALLOC_USE_MALLOC_IF_NEW = true;
 void* default_realloc(void* ptr, size_t new_size) {
     if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_realloc called for %p (size: %u)", ptr, new_size);
 
@@ -271,16 +271,17 @@ void* default_realloc(void* ptr, size_t new_size) {
         size_t old_size = heap_caps_get_allocated_size(ptr);
         if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "Original block size: %zu", old_size);
 
-        void* new_ptr = WASM_ENABLE_SPI_MEM ? 
+        void* new_ptr = NULL;
+
+        if(REALLOC_USE_MALLOC_IF_NEW && ptr == NULL){
+                new_ptr = default_malloc(aligned_size);
+        }
+
+        new_ptr = WASM_ENABLE_SPI_MEM ? 
             heap_caps_realloc(ptr, aligned_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
         
         if (new_ptr == NULL) {
-            if(REALLOC_USE_MALLOC_IF_NEW && ptr == NULL){
-                new_ptr = default_malloc(aligned_size);
-            }
-            else {
-                new_ptr = heap_caps_realloc(ptr, aligned_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
-            }
+            new_ptr = heap_caps_realloc(ptr, aligned_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);            
         }
 
         if(new_ptr && aligned_size > old_size) {
