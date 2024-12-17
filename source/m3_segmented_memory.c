@@ -255,6 +255,11 @@ const bool WASM_DEBUG_MEM_ACCESS = true;
 const bool WASM_DEBUG_GET_SEGMENT_POINTER = true;
 
 void* get_segment_pointer(IM3Memory memory, u32 offset) {    
+    if(!memory || !memory->segments){
+        ESP_LOGW("WASM3", "get_segment_pointer: null memory");
+        return offset;
+    }
+
     //CALL_WATCHDOG
 
     if(memory->firm != INIT_FIRM){
