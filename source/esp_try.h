@@ -28,7 +28,8 @@ static esp_err_t last_error;
 void backtrace(){
     LOG_FLUSH;
     esp_backtrace_print(100);
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    LOG_FLUSH;
+    vTaskDelay(pdMS_TO_TICKS(2000));
 }
 
 

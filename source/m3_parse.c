@@ -578,14 +578,16 @@ _       (io_module->environment->customSectionHandler(io_module, name, i_bytes, 
 }
 
 
-static const bool WASM_DEBUG_PARSEMODULESECTION = true;
+const bool WASM_DEBUG_PARSEMODULESECTION = true;
+const bool WASM_DEBUG_PARSEMODULESECTION_FUNCTION = true;
+
 M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_bytes, u32 i_numBytes)
 {
     if(WASM_DEBUG_PARSEMODULESECTION){
         ESP_LOGI("WASM3", "ParseModuleSection called");
-        ESP_LOGI("WASM3", "ParseModuleSection: Section Type: %d", i_sectionType);
-        ESP_LOGI("WASM3", "ParseModuleSection: i_bytes Type: %d", i_sectionType);
-        ESP_LOGI("WASM3", "ParseModuleSection: NumBytes: %d", i_numBytes);
+        ESP_LOGI("WASM3", "ParseModuleSection: i_sectionType: %d", i_sectionType);
+        ESP_LOGI("WASM3", "ParseModuleSection: i_bytes: %d", i_bytes);
+        ESP_LOGI("WASM3", "ParseModuleSection: i_numBytes: %d", i_numBytes);
     }
 
     M3Result result = m3Err_none;
@@ -619,6 +621,12 @@ M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_
     if (parser)
     {
         cbytes_t end = i_bytes + i_numBytes;
+
+        if(WASM_DEBUG_PARSEMODULESECTION_FUNCTION && i_sectionType == 3){
+            ESP_LOGI("WASM3", "ParseModuleSection: Parsing Function Section");
+            backtrace();
+        }
+
         result = parser (o_module, i_bytes, end);
     }
     else
