@@ -664,6 +664,8 @@ _try {
     }
     else {
         ESP_LOGW("WASM3", "m3_ParseModule: module lacks of runtime and memory");
+        M3Memory nullRuntime = {0};
+        module->runtime = &nullRuntime;
     }    
     
     CHECK_MEMORY_PTR(mem, "m3_ParseModule mem");
