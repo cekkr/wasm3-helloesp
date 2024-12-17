@@ -574,7 +574,7 @@ M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_
     if (check_ptr > (const u8*)i_end)
         return m3Err_wasmUnderrun;
 
-    memcpy(_o_value, source_ptr, sizeof(u64));
+    memcpy(_o_value, * source_ptr, sizeof(u64));
     M3_BSWAP_u64(*_o_value);
     *_io_bytes = check_ptr;
     return m3Err_none;
@@ -596,7 +596,7 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
     if (check_ptr > (const u8*)i_end)
         return m3Err_wasmUnderrun;
 
-    memcpy(_o_value, source_ptr, sizeof(u32));
+    memcpy(_o_value, * source_ptr, sizeof(u32));
     M3_BSWAP_u32(*((u32*)_o_value));
     *_io_bytes = check_ptr;
     
@@ -619,7 +619,7 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
     if (check_ptr > (const u8*)i_end)
         return m3Err_wasmUnderrun;
 
-    memcpy(_o_value, source_ptr, sizeof(f64));
+    memcpy(_o_value, * source_ptr, sizeof(f64));
     M3_BSWAP_f64(*_o_value);
     *_io_bytes = check_ptr;
     return m3Err_none;
@@ -640,7 +640,7 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
     if (check_ptr > (const u8*)i_end)
         return m3Err_wasmUnderrun;
 
-    memcpy(_o_value, source_ptr, sizeof(f32));
+    memcpy(_o_value, * source_ptr, sizeof(f32));
     M3_BSWAP_f32(*_o_value);
     *_io_bytes = check_ptr;
     return m3Err_none;
@@ -870,7 +870,7 @@ M3Result Read_utf8(IM3Memory memory, cstr_t* o_utf8, bytes_t* io_bytes, cbytes_t
     char* utf8 = (char*)m3_Malloc("UTF8", utf8Length + 1);
     if (!utf8) return m3Err_malformedData;
 
-    memcpy(utf8, ptr, utf8Length);
+    memcpy(utf8, * ptr, utf8Length);
     utf8[utf8Length] = 0;
     *o_utf8 = utf8;
     *_io_bytes = ptr + utf8Length;
