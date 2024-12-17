@@ -117,7 +117,13 @@ _try {
     u32 index = io_module->numFunctions++;
 _   (Module_PreallocFunctions(io_module, io_module->numFunctions));
 
-    if(WASM_DEBUG_MODULE_ADDFUNCTION) ESP_LOGI("WASM3", "i_typeIndex (%d) < io_module->numFuncTyped(%d)", i_typeIndex, io_module->numFuncTypes);
+    if(WASM_DEBUG_MODULE_ADDFUNCTION) ESP_LOGW("WASM3", "i_typeIndex (%d) < io_module->numFuncTyped(%d)", i_typeIndex, io_module->numFuncTypes);
+
+    if(i_typeIndex >= io_module->numFuncTypes){
+        ESP_LOGE("WASM3", "i_typeIndex too large");
+        backtrace();
+    }
+
     _throwif ("type sig index out of bounds", i_typeIndex >= io_module->numFuncTypes);
 
     IM3FuncType ft = io_module->funcTypes [i_typeIndex];
