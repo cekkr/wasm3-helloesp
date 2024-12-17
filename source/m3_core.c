@@ -572,9 +572,7 @@ M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_
     
     const u8* check_ptr = source_ptr + sizeof(u64);
 
-    mos mos_check_ptr = get_offset_pointer(memory, (void*)check_ptr);
-    mos mos_i_end = get_offset_pointer(memory, (void*)i_end);
-    if(mos_check_ptr > mos_i_end)
+    if((void*)check_ptr > (void*)i_end)
         return m3Err_wasmUnderrun;
 
     memcpy(_o_value, * source_ptr, sizeof(u64));
@@ -594,13 +592,18 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
     if (source_ptr == ERROR_POINTER) 
         return m3Err_malformedData;
     
+    ESP_LOGW("WASM3", "Read_u32: check_ptr"); LOG_FLUSH;
     const u8* check_ptr = source_ptr + sizeof(u32);
     
+    ESP_LOGW("WASM3", "Read_u32: check_ptr get_offset_pointer"); LOG_FLUSH;
     mos mos_check_ptr = get_offset_pointer(memory, (void*)check_ptr);
+    ESP_LOGW("WASM3", "Read_u32: i_end get_offset_pointer"); LOG_FLUSH;
     mos mos_i_end = get_offset_pointer(memory, (void*)i_end);
+    ESP_LOGW("WASM3", "Read_u32: mos_check_ptr > mos_i_en"); LOG_FLUSH;
     if(mos_check_ptr > mos_i_end)
         return m3Err_wasmUnderrun;
 
+    ESP_LOGW("WASM3", "Read_u32: memcpy"); LOG_FLUSH;
     memcpy(_o_value, * source_ptr, sizeof(u32));
     M3_BSWAP_u32(*((u32*)_o_value));
     *_io_bytes = check_ptr;
@@ -622,9 +625,7 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
     
     const u8* check_ptr = source_ptr + sizeof(f64);
 
-    mos mos_check_ptr = get_offset_pointer(memory, (void*)check_ptr);
-    mos mos_i_end = get_offset_pointer(memory, (void*)i_end);
-    if(mos_check_ptr > mos_i_end)
+    if((void*)check_ptr > (void*)i_end)
         return m3Err_wasmUnderrun;
 
     memcpy(_o_value, * source_ptr, sizeof(f64));
@@ -646,9 +647,7 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
     
     const u8* check_ptr = source_ptr + sizeof(f32);
     
-    mos mos_check_ptr = get_offset_pointer(memory, (void*)check_ptr);
-    mos mos_i_end = get_offset_pointer(memory, (void*)i_end);
-    if(mos_check_ptr > mos_i_end)
+    if((void*)check_ptr > (void*)i_end)
         return m3Err_wasmUnderrun;
 
     memcpy(_o_value, * source_ptr, sizeof(f32));
@@ -671,9 +670,7 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
     
     const u8* check_ptr = source_ptr + sizeof(u8);
     
-    mos mos_check_ptr = get_offset_pointer(memory, (void*)check_ptr);
-    mos mos_i_end = get_offset_pointer(memory, (void*)i_end);
-    if(mos_check_ptr > mos_i_end)
+    if((void*)check_ptr > (void*)i_end)
         return m3Err_wasmUnderrun;
 
     *_o_value = *source_ptr;
@@ -693,10 +690,8 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
         return m3Err_malformedData;
     
     const u8* check_ptr = source_ptr + 1;
-    
-    mos mos_check_ptr = get_offset_pointer(memory, (void*)check_ptr);
-    mos mos_i_end = get_offset_pointer(memory, (void*)i_end);
-    if(mos_check_ptr > mos_i_end)
+
+    if((void*)check_ptr > (void*)i_end)
         return m3Err_wasmUnderrun;
 
     m3opcode_t opcode = *source_ptr;
