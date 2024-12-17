@@ -34,7 +34,7 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: allocating first segment");
     memory->segments = NULL; //m3_Def_AllocArray(MemorySegment*, 1);
 
-    if (!memory->segments) {
+    if (!memory->segments && false) {
         ESP_LOGE("WASM3", "m3_InitMemory: !memory->segment");
         return NULL;
     }
