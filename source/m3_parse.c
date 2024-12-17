@@ -652,10 +652,13 @@ _try {
         ESP_LOGW("WASM3", "m3_ParseModule: module lacks of runtime and memory");
     }    
     
+    CHECK_MEMORY(mem);
+    CHECK_MEMORY(module->runtime->memory);
+
     module->name = ".unnamed";                                                      m3log (parse, "load module: %d bytes", i_numBytes);
     module->startFunction = -1;
     //module->hasWasmCodeCopy = false;
-    module->environment = i_environment;
+    module->environment = i_environment;    
 
     if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: assignation dones.");
 

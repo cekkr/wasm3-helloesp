@@ -59,7 +59,12 @@ void print_last_two_callers() {
         ESP_LOGI(TAG, "Ultime due funzioni chiamanti:");
         printf("\nBacktrace:");
         for (int i = 1; i < frame_count && i <= 2; i++) {
-            printf(" 0x%08x:0x%08x", frames[i].pc, frames[i].sp);
+            // Cast a uint32_t* per accedere correttamente ai valori
+            uint32_t* frame = (uint32_t*)frames[i].exc_frame;
+            
+            // frame[0] è tipicamente l'indirizzo di ritorno (PC)
+            // frame[1] è tipicamente il frame pointer (FP)
+            printf(" 0x%08" PRIx32 ":0x%08" PRIx32, frame[0], frame[1]);
         }
         printf("\n");
     } else {
