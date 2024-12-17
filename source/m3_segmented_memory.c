@@ -398,6 +398,8 @@ void* resolve_pointer_uncheck(IM3Memory memory, void* ptr) {
 }
 
 void* resolve_pointer(IM3Memory memory, void* ptr) {
+    if(WASM_DEBUG_MEM_ACCESS) ESP_LOGI("WASM3", "resolve_pointer: memory ptr: %p, ptr: %p", memory, ptr);
+
     //void* res = resolve_pointer_uncheck(memory, ptr);
     void* res = get_segment_pointer(memory, ptr);
 
