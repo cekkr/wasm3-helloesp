@@ -555,6 +555,7 @@ u32  SizeOfType  (u8 i_m3Type)
 
 //-- Binary Wasm parsing utils  ------------------------------------------------------------------------------------------
 const bool WASM_READ_BACKTRACE_WASMUNDERRUN = true;
+const bool WASM_DEBUG_READ_RESOLVE_POINTER = true;
 
 M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_end) {
     if (!io_bytes || !*io_bytes || !o_value) return m3Err_malformedData;
@@ -592,7 +593,14 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
     
     ptr += sizeof(u32);
     if (ptr <= end) {
-        memcpy(o_value, *(const u8*)resolve_pointer(memory, *io_bytes), sizeof(u32));
+        const u8* _io_bytes = (const u8*)resolve_pointer(memory, *io_bytes);
+
+        if(WASM_DEBUG_READ_RESOLVE_POINTER){
+            ESP_LOGW("WASM3", "Read_u32: _io_bytes: %p, io_bytes: %p", _io_bytes, io_bytes);
+            LOG_FLUSH;
+        }
+
+        memcpy(o_value, *_io_bytes, sizeof(u32));
         M3_BSWAP_u32(*o_value);
         *io_bytes = ptr;
         return m3Err_none;        
