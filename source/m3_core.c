@@ -575,7 +575,7 @@ M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_
     if((void*)check_ptr > (void*)i_end)
         return m3Err_wasmUnderrun;
 
-    memcpy(_o_value, * source_ptr, sizeof(u64));
+    memcpy(_o_value, source_ptr, sizeof(u64));
     M3_BSWAP_u64(*_o_value);
     *_io_bytes = check_ptr;
     return m3Err_none;
@@ -592,19 +592,12 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
     if (source_ptr == ERROR_POINTER) 
         return m3Err_malformedData;
     
-    ESP_LOGW("WASM3", "Read_u32: check_ptr"); LOG_FLUSH;
     const u8* check_ptr = source_ptr + sizeof(u32);
     
-    ESP_LOGW("WASM3", "Read_u32: check_ptr get_offset_pointer"); LOG_FLUSH;
-    mos mos_check_ptr = get_offset_pointer(memory, (void*)check_ptr);
-    ESP_LOGW("WASM3", "Read_u32: i_end get_offset_pointer"); LOG_FLUSH;
-    mos mos_i_end = get_offset_pointer(memory, (void*)i_end);
-    ESP_LOGW("WASM3", "Read_u32: mos_check_ptr > mos_i_en"); LOG_FLUSH;
-    if(mos_check_ptr > mos_i_end)
+    if((void*)check_ptr > (void*)i_end)
         return m3Err_wasmUnderrun;
 
-    ESP_LOGW("WASM3", "Read_u32: memcpy"); LOG_FLUSH;
-    memcpy(_o_value, * source_ptr, sizeof(u32));
+    memcpy(_o_value, source_ptr, sizeof(u32));
     M3_BSWAP_u32(*((u32*)_o_value));
     *_io_bytes = check_ptr;
     
@@ -628,7 +621,7 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
     if((void*)check_ptr > (void*)i_end)
         return m3Err_wasmUnderrun;
 
-    memcpy(_o_value, * source_ptr, sizeof(f64));
+    memcpy(_o_value, source_ptr, sizeof(f64));
     M3_BSWAP_f64(*_o_value);
     *_io_bytes = check_ptr;
     return m3Err_none;
@@ -650,7 +643,7 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
     if((void*)check_ptr > (void*)i_end)
         return m3Err_wasmUnderrun;
 
-    memcpy(_o_value, * source_ptr, sizeof(f32));
+    memcpy(_o_value, source_ptr, sizeof(f32));
     M3_BSWAP_f32(*_o_value);
     *_io_bytes = check_ptr;
     return m3Err_none;
