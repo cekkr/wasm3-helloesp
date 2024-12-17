@@ -24,6 +24,7 @@
 
 #include "esp_task_wdt.h" // for watchdog reset
 #include "esp_debug_helpers.h"
+#include "esp_log.h"
 
 #include "wasm3_defs.h"
 
@@ -452,30 +453,43 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 ////
 //// Debug
 ////
+
 void print_last_two_callers(void) {
     #define MAX_BACKTRACE_SIZE 3
     const char* TAG = "WASM3";
 
-    // Buffer per memorizzare gli indirizzi del backtrace
-    void *backtrace_buffer[MAX_BACKTRACE_SIZE];
-    
-    // Ottiene il backtrace completo
-    int frames = esp_backtrace_get(backtrace_buffer, MAX_BACKTRACE_SIZE);
-    
-    // Se abbiamo meno di 3 frame (includendo la funzione corrente),
-    // non possiamo mostrare le ultime due funzioni chiamanti
-    if (frames < 3) {
-        ESP_LOGW(TAG, "Backtrace non sufficiente per mostrare le ultime due funzioni chiamanti");
-        return;
-    }
-    
-    // Stampa solo i due frame precedenti (saltando la funzione corrente)
-    ESP_LOGI(TAG, "Ultime due funzioni chiamanti:");
-    for (int i = 1; i <= 2; i++) {
-        if (i < frames) {
-            // Converte l'indirizzo in una stringa esadecimale
-            ESP_LOGI(TAG, "Frame %d: %p", i, backtrace_buffer[i]);
+    uint32_t pc, sp, next_pc;
+    esp_backtrace_frame_t frame;
+    esp_backtrace_frame_t frames[3];
+    int frame_count = 0;
+
+    // Ottiene il primo frame
+    esp_backtrace_get_start(&pc, &sp, &next_pc);
+    frame.pc = pc;
+    frame.sp = sp;
+    frame.next_pc = next_pc;
+    frame.exc_frame = NULL;
+
+    // Memorizza i primi 3 frame (incluso quello corrente)
+    while (frame_count < 3 && frame.next_pc != 0) {
+        frames[frame_count++] = frame;
+        if (!esp_backtrace_get_next_frame(&frame)) {
+            ESP_LOGW(TAG, "Errore nell'ottenere il frame successivo");
+            break;
         }
+    }
+
+    // Se abbiamo almeno 3 frame, stampiamo il secondo e il terzo
+    // (escludendo il frame corrente)
+    if (frame_count >= 2) {
+        ESP_LOGI(TAG, "Ultime due funzioni chiamanti:");
+        printf("\nBacktrace:");
+        for (int i = 1; i < frame_count && i <= 2; i++) {
+            printf(" 0x%08x:0x%08x", frames[i].pc, frames[i].sp);
+        }
+        printf("\n");
+    } else {
+        ESP_LOGW(TAG, "Non ci sono abbastanza frame per mostrare le ultime due funzioni chiamanti");
     }
 }
 
