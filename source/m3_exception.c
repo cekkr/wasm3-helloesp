@@ -57,6 +57,7 @@ void print_last_two_callers() { //todo: deprecate it
 
         int frame_up_to = 3;
         printf("Backtrace: ");
+        // this frame's addresses extraction's wrong
         for (int i = 1; i <= frame_up_to && i < frame_count; i++) { // Inizia dal frame 1, saltando quello corrente
             printf("0x%08" PRIx32, frames[i].pc);
             printf(":");
