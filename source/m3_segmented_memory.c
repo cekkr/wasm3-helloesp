@@ -257,7 +257,7 @@ const bool WASM_DEBUG_GET_SEGMENT_POINTER = false;
 static int get_segment_pointer_cycle = 0;
 void* get_segment_pointer(IM3Memory memory, u32 offset) { 
     if(get_segment_pointer_cycle++ % 3 == 0) { CALL_WATCHDOG }
-    
+
     CHECK_MEMORY_PTR(memory, "get_segment_pointer");
 
     if(memory->firm != INIT_FIRM){
@@ -361,8 +361,10 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
 
     void* res = get_segment_pointer(memory, ptr);
 
-    if(res == ERROR_POINTER || res == NULL)
+    if(res == ERROR_POINTER || res == NULL){        
         res = ptr;
+        ESP_LOGW("WASM3", "resolve_pointer: pointer not in segment (ptr: %p, res: %p)", ptr, res);
+    }
 
     if(!is_ptr_valid(res)){
         ESP_LOGE("WASM3", "resolve_pointer: invalid pointer %p (from %p)", res, ptr);
