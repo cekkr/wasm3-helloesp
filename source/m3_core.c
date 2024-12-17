@@ -571,7 +571,7 @@ M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_
         return m3Err_malformedData;
     
     const u8* check_ptr = source_ptr + sizeof(u64);
-    if ((uintptr_t)check_ptr > (uintptr_t)i_end)
+    if(get_offset_pointer(memory, (void*)check_ptr) > get_offset_pointer(memory, (void*)i_end))
         return m3Err_wasmUnderrun;
 
     memcpy(_o_value, * source_ptr, sizeof(u64));
@@ -592,8 +592,8 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
         return m3Err_malformedData;
     
     const u8* check_ptr = source_ptr + sizeof(u32);
-    
-    if ((uintptr_t)check_ptr > (uintptr_t)i_end)
+        
+    if(get_offset_pointer(memory, (void*)check_ptr) > get_offset_pointer(memory, (void*)i_end))
         return m3Err_wasmUnderrun;
 
     memcpy(_o_value, * source_ptr, sizeof(u32));
@@ -616,7 +616,7 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
         return m3Err_malformedData;
     
     const u8* check_ptr = source_ptr + sizeof(f64);
-    if ((uintptr_t)check_ptr > (uintptr_t)i_end)
+    if(get_offset_pointer(memory, (void*)check_ptr) > get_offset_pointer(memory, (void*)i_end))
         return m3Err_wasmUnderrun;
 
     memcpy(_o_value, * source_ptr, sizeof(f64));
@@ -637,7 +637,7 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
         return m3Err_malformedData;
     
     const u8* check_ptr = source_ptr + sizeof(f32);
-    if ((uintptr_t)check_ptr > (uintptr_t)i_end)
+    if(get_offset_pointer(memory, (void*)check_ptr) > get_offset_pointer(memory, (void*)i_end))
         return m3Err_wasmUnderrun;
 
     memcpy(_o_value, * source_ptr, sizeof(f32));
@@ -659,7 +659,7 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
         return m3Err_malformedData;
     
     const u8* check_ptr = source_ptr + sizeof(u8);
-    if ((uintptr_t)check_ptr > (uintptr_t)i_end)
+    if(get_offset_pointer(memory, (void*)check_ptr) > get_offset_pointer(memory, (void*)i_end))
         return m3Err_wasmUnderrun;
 
     *_o_value = *source_ptr;
@@ -679,7 +679,7 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
         return m3Err_malformedData;
     
     const u8* check_ptr = source_ptr + 1;
-    if ((uintptr_t)check_ptr > (uintptr_t)i_end)
+    if(get_offset_pointer(memory, (void*)check_ptr) > get_offset_pointer(memory, (void*)i_end))
         return m3Err_wasmUnderrun;
 
     m3opcode_t opcode = *source_ptr;
@@ -687,7 +687,7 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
     
 #if d_m3CascadedOpcodes == 0
     if (M3_UNLIKELY(opcode == c_waOp_extended)) {
-        if ((uintptr_t)check_ptr > (uintptr_t)i_end)
+        if(get_offset_pointer(memory, (void*)check_ptr) > get_offset_pointer(memory, (void*)i_end))
             return m3Err_wasmUnderrun;
         opcode = (opcode << 8) | (*check_ptr++);
     }

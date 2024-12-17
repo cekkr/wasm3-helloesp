@@ -422,7 +422,7 @@ u32 get_offset_pointer(IM3Memory memory, void* ptr) {
     }
 
     // If ptr is already an offset or ERROR_POINTER, return it as is
-    if (ptr == ERROR_POINTER || (u32)ptr < memory->segment_size) {
+    if (ptr == ERROR_POINTER || (u32)ptr < memory->total_size) {
         return (u32)ptr;
     }
 
