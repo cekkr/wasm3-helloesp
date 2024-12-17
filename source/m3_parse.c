@@ -686,6 +686,11 @@ _try {
 _   (Read_u32 (mem, & magic, & pos, end));
 _   (Read_u32 (mem, & version, & pos, end));
 
+    if(WASM_DEBUG_PARSE_MODULE){
+        ESP_LOGI("WASM3", "m3_ParseModule: magic: %x (excepted 0x6d736100)", magic);
+        ESP_LOGI("WASM3", "m3_ParseModule: version: %x", version);
+    }
+
     _throwif (m3Err_wasmMalformed, magic != 0x6d736100);
     _throwif (m3Err_incompatibleWasmVersion, version != 1);
 
