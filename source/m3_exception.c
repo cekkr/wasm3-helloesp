@@ -54,11 +54,16 @@ void print_last_two_callers() {
     }
 
     // Se ci sono almeno 2 frame successivi a quello corrente
-    if (frame_count >= 3) {
+    if (frame_count >= 3) {        
         ESP_LOGI(TAG, "Ultime due funzioni chiamanti:");
-        for (int i = 1; i < frame_count; i++) { // Inizia dal frame 1, saltando quello corrente
-            printf(" 0x%08" PRIx32 "\n", frames[i].pc);
+
+        int frame_up_to = 2 * 3;
+        printf("Backtrace: ");
+        for (int i = 2; i <= frame_up_to && i < frame_count; i++) { // Inizia dal frame 1, saltando quello corrente
+            printf("0x%08" PRIx32, frames[i].pc);
+            if(i%2 > 0) printf(" "); else printf(":");
         }
+        printf("\n");
     } else {
         ESP_LOGW(TAG, "Non ci sono abbastanza frame per mostrare le ultime due funzioni chiamanti.");
     }
