@@ -647,7 +647,7 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
 
     bool notOverEnd = ptr <= end;
     if(WASM_READ_IGNORE_END && !notOverEnd){
-       ESP_LOGW("WASM3", "Read: ignored ptr (%p) > end (%p) - i_end: %d", ptr, end, i_end);
+       ESP_LOGW("WASM3", "Read: ignored ptr (%p) > end (%p) | i_end: %d", ptr, end, i_end);
         notOverEnd = true;
     }
 
@@ -681,7 +681,7 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
 
     bool notOverEnd = ptr <= end;
     if(WASM_READ_IGNORE_END && !notOverEnd){
-        ESP_LOGW("WASM3", "Read: ignored ptr (%p) > end (%p) - i_end: %d", ptr, end, i_end);
+        ESP_LOGW("WASM3", "Read: ignored ptr (%p) > end (%p) | i_end: %d", ptr, end, i_end);
         notOverEnd = true;
     }
 
@@ -714,7 +714,7 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
     
     bool notOverEnd = ptr <= end;
     if(WASM_READ_IGNORE_END && !notOverEnd){
-        ESP_LOGW("WASM3", "Read: ignored ptr (%p) > end (%p) - i_end: %d", ptr, end, i_end);
+        ESP_LOGW("WASM3", "Read: ignored ptr (%p) > end (%p) | i_end: %d", ptr, end, i_end);
         notOverEnd = true;
     }
 
@@ -747,7 +747,7 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
     
     bool notOverEnd = ptr <= end;
     if(WASM_READ_IGNORE_END && !notOverEnd){
-        ESP_LOGW("WASM3", "Read: ignored ptr (%p) > end (%p) - i_end: %d", ptr, end, i_end);
+        ESP_LOGW("WASM3", "Read: ignored ptr (%p) > end (%p) | i_end: %d", ptr, end, i_end);
         notOverEnd = true;
     }
 
@@ -791,7 +791,7 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
 
     bool notOverEnd = ptr <= end;
     if(WASM_READ_IGNORE_END && !notOverEnd){
-        ESP_LOGW("WASM3", "Read: ignored ptr (%p) > end (%p) - i_end: %d", ptr, end, i_end);
+        ESP_LOGW("WASM3", "Read: ignored ptr (%p) > end (%p) | i_end: %d", ptr, end, i_end);
     }
 
     while (ptr <= end) {
@@ -839,7 +839,7 @@ M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t
 
     bool notOverEnd = ptr <= end;
     if(WASM_READ_IGNORE_END && !notOverEnd){
-        ESP_LOGW("WASM3", "Read: ignored ptr (%p) > end (%p) - i_end: %d", ptr, end, i_end);
+        ESP_LOGW("WASM3", "Read: ignored ptr (%p) > end (%p) | i_end: %d", ptr, end, i_end);
     }
 
     while (ptr <= end) {
