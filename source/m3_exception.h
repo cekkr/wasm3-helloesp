@@ -39,3 +39,6 @@ char* error_details(const char* base_error, const char* format, ...);
 // const char* err2 = error_details(trapStackOverflow, "Errore alla linea %d", line_number);
 
 void custom_panic_handler(void* frame, panic_info_t* info);
+
+void print_last_two_callers();
+void nothing_todo();

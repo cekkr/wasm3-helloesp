@@ -451,49 +451,6 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 #endif
 
 ////
-//// Debug
-////
-
-void print_last_two_callers(void) {
-    #define MAX_BACKTRACE_SIZE 3
-    const char* TAG = "WASM3";
-
-    uint32_t pc, sp, next_pc;
-    esp_backtrace_frame_t frame;
-    esp_backtrace_frame_t frames[3];
-    int frame_count = 0;
-
-    // Ottiene il primo frame
-    esp_backtrace_get_start(&pc, &sp, &next_pc);
-    frame.pc = pc;
-    frame.sp = sp;
-    frame.next_pc = next_pc;
-    frame.exc_frame = NULL;
-
-    // Memorizza i primi 3 frame (incluso quello corrente)
-    while (frame_count < 3 && frame.next_pc != 0) {
-        frames[frame_count++] = frame;
-        if (!esp_backtrace_get_next_frame(&frame)) {
-            ESP_LOGW(TAG, "Errore nell'ottenere il frame successivo");
-            break;
-        }
-    }
-
-    // Se abbiamo almeno 3 frame, stampiamo il secondo e il terzo
-    // (escludendo il frame corrente)
-    if (frame_count >= 2) {
-        ESP_LOGI(TAG, "Ultime due funzioni chiamanti:");
-        printf("\nBacktrace:");
-        for (int i = 1; i < frame_count && i <= 2; i++) {
-            printf(" 0x%08x:0x%08x", frames[i].pc, frames[i].sp);
-        }
-        printf("\n");
-    } else {
-        ESP_LOGW(TAG, "Non ci sono abbastanza frame per mostrare le ultime due funzioni chiamanti");
-    }
-}
-
-////
 //// Log macro
 ////
 #define LOG_FLUSH ESP_LOGI("WASM3", "flush...")
@@ -503,7 +460,5 @@ void print_last_two_callers(void) {
 #if ENABLE_CHECK_MEMORY
 #define CHECK_MEMORY(mem) ESP_LOGI("WASM3", "Current memory ptr: %p", mem); print_last_two_callers()
 #else 
-#define CHECK_MEMORY(mem) nothing()
+#define CHECK_MEMORY(mem) nothing_todo()
 #endif
-
-void nothing(){}
