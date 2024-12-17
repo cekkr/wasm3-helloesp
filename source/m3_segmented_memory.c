@@ -658,10 +658,12 @@ void m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
     }
 }
 
-const bool WASM_DEBUG_SEGMENTED_MEMORY = false;
+const bool WASM_DEBUG_SEGMENTED_MEMORY = true;
 
-void* m3_malloc(IM3Memory memory, size_t size) {
+void* m3_malloc(IM3Memory memory, size_t size) {    
     if (!memory || size == 0) return NULL;
+
+    if(WASM_DEBUG_SEGMENTED_MEMORY) ESP_LOGI("WASM3", "m3_malloc: %d size", size);
     
     // Include header size nella dimensione richiesta
     size_t total_size = size + sizeof(MemoryChunk);
@@ -770,6 +772,9 @@ void* m3_malloc(IM3Memory memory, size_t size) {
 void* m3_realloc(M3Memory* memory, void* ptr, size_t new_size) {
     if (!memory) return NULL;
     if (!ptr) return m3_malloc(memory, new_size);
+
+    if(WASM_DEBUG_SEGMENTED_MEMORY) ESP_LOGI("WASM3", "m3_realloc: ptr: %p, new size: %d ",ptr, new_size);
+
     if (new_size == 0) {
         m3_free(memory, ptr);
         return NULL;
@@ -848,6 +853,8 @@ void* m3_realloc(M3Memory* memory, void* ptr, size_t new_size) {
 // Free con supporto alla coalescenza e cache
 void m3_free(M3Memory* memory, void* ptr) {
     if (!memory || !ptr) return;
+
+    if(WASM_DEBUG_SEGMENTED_MEMORY) ESP_LOGI("WASM3", "m3_free: ptr: %p",ptr);
     
     MemoryChunk* chunk = get_chunk_header(ptr);
     chunk->is_free = true;
