@@ -17,6 +17,8 @@
 
 #define INIT_FIRM 19942003
 
+typedef u32 mos; // memory offset
+
 // Strutture dati migliorate
 typedef struct MemoryChunk {
     size_t size;           // Dimensione totale del chunk incluso header
@@ -80,7 +82,7 @@ void* get_segment_pointer(IM3Memory memory, u32 offset);
 void* resolve_pointer(M3Memory* memory, void* ptr);
 void* m3SegmentedMemAccess(IM3Memory mem, void* offset, size_t size);
 void* m3SegmentedMemAccess_2(IM3Memory memory, u32 offset, size_t size);
-u32 get_offset_pointer(IM3Memory memory, void* ptr);
+mos get_offset_pointer(IM3Memory memory, void* ptr);
 
 /// Regions
 void* m3_malloc(M3Memory* memory, size_t size);
