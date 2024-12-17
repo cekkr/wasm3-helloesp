@@ -437,7 +437,7 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 /// WATCHDOG
 ///
 
-#define ENABLE_WDT 0
+#define ENABLE_WDT 1
 
 #ifdef ENABLE_WATCHDOG // should read it from the main project
 #define ENABLE_WDT 1
