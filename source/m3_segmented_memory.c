@@ -329,7 +329,8 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
     if(!is_ptr_valid(memory)){
         ESP_LOGW("WASM3", "resolve_pointer: invalid memory pointer %p", memory);
         LOG_FLUSH;
-        backtrace(); 
+        if(WASM_DEBUG_RESOLVE_POINTER_MEMORY_BACKTRACE || true) backtrace(); 
+        return ptr;
     }
     else {
         if(WASM_DEBUG_RESOLVE_POINTER_MEMORY_BACKTRACE){

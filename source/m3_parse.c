@@ -311,6 +311,8 @@ M3Result  Parse_InitExpr  (M3Module * io_module, bytes_t * io_bytes, cbytes_t i_
 {
     M3Result result = m3Err_none;
 
+    CHECK_MEMORY_PTR(&io_module->runtime->memory, "ParseSection_Global");
+
     // this doesn't generate code pages. just walks the wasm bytecode to find the end
 
 #if defined(d_m3PreferStaticAlloc)
@@ -318,7 +320,7 @@ M3Result  Parse_InitExpr  (M3Module * io_module, bytes_t * io_bytes, cbytes_t i_
 #else
     M3Compilation compilation;
 #endif
-    compilation = (M3Compilation){ .runtime = NULL, .module = io_module, .wasm = * io_bytes, .wasmEnd = i_end };
+    compilation = (M3Compilation){ .runtime = io_module->runtime, .module = io_module, .wasm = * io_bytes, .wasmEnd = i_end };
 
     result = CompileBlockStatements (& compilation);
 
@@ -475,6 +477,8 @@ M3Result  ParseSection_Global  (M3Module * io_module, bytes_t i_bytes, cbytes_t 
     M3Result result = m3Err_none;
     IM3Memory mem = &io_module->runtime->memory;
 
+    CHECK_MEMORY_PTR(mem, "ParseSection_Global");
+
     u32 numGlobals;
 _   (ReadLEB_u32 (mem, & numGlobals, & i_bytes, i_end));                                 m3log (parse, "** Global [%d]", numGlobals);
 
@@ -586,6 +590,8 @@ M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_
 
     M3Result result = m3Err_none;
 
+    CHECK_MEMORY_PTR(&o_module->runtime->memory, "ParseModuleSection");
+
     typedef M3Result (* M3Parser) (M3Module *, bytes_t, cbytes_t);
 
     static M3Parser s_parsers [] =
@@ -652,8 +658,8 @@ _try {
         ESP_LOGW("WASM3", "m3_ParseModule: module lacks of runtime and memory");
     }    
     
-    CHECK_MEMORY(mem, "m3_ParseModule mem");
-    CHECK_MEMORY(&module->runtime->memory, "m3_ParseModule &module->runtime->memory");
+    CHECK_MEMORY_PTR(mem, "m3_ParseModule mem");
+    CHECK_MEMORY_PTR(&module->runtime->memory, "m3_ParseModule &module->runtime->memory");
 
     module->name = ".unnamed";                                                      m3log (parse, "load module: %d bytes", i_numBytes);
     module->startFunction = -1;

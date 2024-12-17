@@ -2590,7 +2590,7 @@ M3Result  CompileBlockStatements  (IM3Compilation o)
 # endif
         m3opcode_t opcode;
         o->lastOpcodeStart = o->wasm;
-        CHECK_MEMORY(&o->runtime->memory, "CompileBlockStatements");
+        CHECK_MEMORY_PTR(&o->runtime->memory, "CompileBlockStatements");
 _       (Read_opcode (&o->runtime->memory, & opcode, & o->wasm, o->wasmEnd));                log_opcode (o, opcode);
 
         // Restrict opcodes when evaluating expressions
@@ -2661,8 +2661,11 @@ _           (PushAllocatedSlot (o, type));
 
 M3Result  CompileBlock  (IM3Compilation o, IM3FuncType i_blockType, m3opcode_t i_blockOpcode)
 {
-                                                                                        d_m3Assert (not IsRegisterAllocated (o, 0));
+                                                                                        d_m3Assert (not IsRegisterAllocated (o, 0));                        
                                                                                         d_m3Assert (not IsRegisterAllocated (o, 1));
+
+    CHECK_MEMORY_PTR(&o->runtime->memory, "CompileBlock");
+
     M3CompilationScope outerScope = o->block;
     M3CompilationScope * block = & o->block;
 
