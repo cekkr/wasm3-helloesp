@@ -399,7 +399,7 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
     runtime.environment = savedRuntime->environment;
     runtime.numStackSlots = savedRuntime->numStackSlots; 
     runtime.stack = savedRuntime->stack;
-    //runtime.memory = savedRuntime->memory;
+    runtime.memory = savedRuntime->memory;
 
     m3stack_t stack = (m3stack_t)runtime.stack;
 

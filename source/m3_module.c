@@ -74,12 +74,6 @@ static const bool WASM_DEBUG_PREALLOCFUNCTIONS = true;
 static const int PreallocFunctions_PageSize = 8;
 M3Result  Module_PreallocFunctions  (IM3Module io_module, u32 i_totalFunctions)
 {
-    if(WASM_DEBUG_PREALLOCFUNCTIONS && false){
-        if(i_totalFunctions > 10000){
-            esp_backtrace_print(100);
-        }
-    }
-
 _try {
 
     i_totalFunctions = ((i_totalFunctions/PreallocFunctions_PageSize) + 1) * PreallocFunctions_PageSize;
@@ -96,6 +90,10 @@ _try {
         ESP_LOGI("WASM", "PreallocFunctions: reallocating to module->functions %d bytes", i_totalFunctions*sizeof(M3Function));
         io_module->functions = m3_Def_ReallocArray (M3Function, io_module->functions, i_totalFunctions);
         io_module->allFunctions = i_totalFunctions;
+
+        for(int i=0; i<i_totalFunctions; i++){
+            io_module->functions[i]->module = io_module;
+        }
 
         if(WASM_DEBUG_PREALLOCFUNCTIONS) ESP_LOGI("WASM", "PreallocFunctions: allFunctions updated to %lu", io_module->allFunctions);
 
@@ -130,6 +128,7 @@ _   (Module_PreallocFunctions(io_module, io_module->numFunctions));
         func = m3_Def_AllocStruct(M3Function);
     }
 
+    //func->module = io_module; // redundat (already done in Module_PreallocFunctions)
     func->funcType = ft;
 
 
