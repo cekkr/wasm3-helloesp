@@ -379,6 +379,11 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
     if(IsValidMemoryAccess(memory, ptr, 1)){
         res = get_segment_pointer(memory, ptr);
     }
+    else {
+        if(!is_ptr_valid(res)){
+            ESP_LOGW("WASM3", "resolve_pointer: ptr is neither segment pointer neither valid ptr (ptr: %p, memory.total_size: %d)", res, memory->total_size);
+        }
+    }
 
     if(res == ERROR_POINTER || res == NULL){        
         res = ptr;
