@@ -153,12 +153,17 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
 const bool WASM_DEBUG_ADD_SEGMENT = false;
 
 M3Result InitSegment(M3Memory* memory, MemorySegment* seg, bool initData){
-    if (!memory ||!seg) return m3Err_nullMemory;
+    if (!memory) return m3Err_nullMemory;
 
     bool updateMemory = false;
+
+    if(seg == NULL){
+        seg = m3_Def_Malloc(sizeof(MemorySegment));
+    }
+
     if(seg->firm != INIT_FIRM){
         seg->firm = INIT_FIRM;  
-        updateMemory = true;    
+        updateMemory = true;            
     }
 
     if(initData && seg->data == NULL){
@@ -171,12 +176,9 @@ M3Result InitSegment(M3Memory* memory, MemorySegment* seg, bool initData){
         }
 
         seg->is_allocated = true;
-    }        
-
-    if(updateMemory){
         seg->size = memory->segment_size;
-        memory->total_size += memory->segment_size;      
-    }
+        memory->total_allocated_size += memory->segment_size;      
+    }        
 
     return NULL;
 }
@@ -244,6 +246,7 @@ M3Result AddSegments(M3Memory* memory, size_t set_num_segments) {
         InitSegment(memory, seg, false);           
     }
 
+    memory->total_size = seg->segment_size * new_segments;
     memory->num_segments = new_segments;
 
     return NULL;     

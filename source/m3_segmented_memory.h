@@ -47,7 +47,8 @@ typedef struct M3Memory_t {
     
     MemorySegment** segments;    
     size_t num_segments;        
-    size_t total_size;         
+    size_t total_size;
+    size_t total_allocated_size;         
     size_t max_size;           
     size_t segment_size;
     
