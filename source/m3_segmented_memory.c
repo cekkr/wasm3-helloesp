@@ -421,7 +421,7 @@ bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size)
     return (offset + size) <= memory->total_size;
 }
 
-const debug WASM_DEBUG_GET_OFFSET_POINTER = true;
+const bool WASM_DEBUG_GET_OFFSET_POINTER = true;
 mos get_offset_pointer(IM3Memory memory, void* ptr) {
     if (!memory || memory->firm == INIT_FIRM || !memory->segments || !ptr) {
         if(WASM_DEBUG_GET_OFFSET_POINTER) ESP_LOGW("WASM3", "get_offset_pointer: null memory or invalid ptr");
