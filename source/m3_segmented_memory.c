@@ -212,7 +212,7 @@ M3Result AddSegments(M3Memory* memory, size_t additional_segments) {
     return m3Err_none;
 }
 
-const bool WASM_DEBUG_INIT_MEMORY = true;
+const bool WASM_DEBUG_M3_INIT_MEMORY = true;
 IM3Memory m3_InitMemory(IM3Memory memory) {
     if (!memory) return NULL;
     
@@ -237,7 +237,7 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
         return NULL;
     }
 
-    if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: trying to allocate memory");
+    if(WASM_DEBUG_M3_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: trying to allocate memory");
     void* ptr1 = m3_malloc(memory, 1);
     void* ptr2 = m3_malloc(memory, 1);
     PRINT_PTR(ptr1);
