@@ -246,7 +246,7 @@ M3Result AddSegments(M3Memory* memory, size_t set_num_segments) {
         InitSegment(memory, seg, false);           
     }
 
-    memory->total_size = seg->segment_size * new_segments;
+    memory->total_size = memory->segment_size * new_segments;
     memory->num_segments = new_segments;
 
     return NULL;     
