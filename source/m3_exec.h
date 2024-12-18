@@ -744,92 +744,52 @@ d_m3Op (MemGrow) //todo: convert it to new memory model
 }
 
 // Memory Copy operation
+const bool WASM_MemCopy_DisableCheck = true;
 d_m3Op (MemCopy)
 {
     u32 size = (u32) _r0;
     u32 source = slot (u32);
     u32 destination = slot (u32);
     
-    if (M3_UNLIKELY(!IsValidMemoryAccess(_mem, source, size) ||
-                    !IsValidMemoryAccess(_mem, destination, size)))
-    {
-        d_outOfBoundsMemOp((source > destination) ? source : destination, size);
-        return;
+    if(!WASM_MemCopy_DisableCheck){
+        if (M3_UNLIKELY(!IsValidMemoryAccess(_mem, source, size) ||
+                        !IsValidMemoryAccess(_mem, destination, size)))
+        {
+            d_outOfBoundsMemOp((source > destination) ? source : destination, size);
+            return;
+        }
     }
     
-    // Handle overlapping regions across segments
-    size_t src_segment = source / _mem->segment_size;
-    size_t dst_segment = destination / _mem->segment_size;
-    size_t src_offset = source % _mem->segment_size;
-    size_t dst_offset = destination % _mem->segment_size;
-    size_t remaining = size;
-    
-    while (remaining > 0)
-    {
-        if (M3_UNLIKELY(!_mem->segments[src_segment]->is_allocated ||
-                        !_mem->segments[dst_segment]->is_allocated))
-        {
-            return m3Err_mallocFailed;
-        }
-        
-        size_t src_available = _mem->segment_size - src_offset;
-        size_t dst_available = _mem->segment_size - dst_offset;
-        size_t copy_size = min3(remaining, src_available, dst_available);
-        
-        u8* src_ptr = (u8*)_mem->segments[src_segment]->data + src_offset;
-        u8* dst_ptr = (u8*)_mem->segments[dst_segment]->data + dst_offset;
-        
-        memmove(dst_ptr, src_ptr, copy_size);
-        
-        remaining -= copy_size;
-        src_segment++;
-        dst_segment++;
-        src_offset = 0;
-        dst_offset = 0;
+    M3Result res = m3_memcpy(_mem, destination, source, size);
+    if(res != NULL){
+        ESP_LOGE("WASM3", "MemCopy: m3_memcpy failed");
+        LOG_FLUSH;
+        // todo: handle error in operations
     }
     
     nextOp();
 }
 
+const bool WASM_MemFill_DisableCheck = true;
 d_m3Op (MemFill)
 {
     u32 size = (u32) _r0;
     u32 byte = slot (u32);
     u64 destination = slot (u32);
     
-    if (M3_UNLIKELY(destination + size > _mem->total_size))
-    {
-        d_outOfBoundsMemOp (destination, size);
-        return;
+    if(!WASM_MemFill_DisableCheck){
+        if (M3_UNLIKELY(destination + size > _mem->total_size))
+        {
+            d_outOfBoundsMemOp (destination, size);
+            return;
+        }
     }
 
-    // Calcola il segmento iniziale e l'offset
-    size_t start_segment = destination / _mem->segment_size;
-    size_t start_offset = destination % _mem->segment_size;
-    
-    // Bytes rimanenti da scrivere
-    size_t remaining = size;
-    
-    while (remaining > 0)
-    {
-        // Verifica che il segmento sia allocato
-        if (M3_UNLIKELY(!_mem->segments[start_segment]->is_allocated))
-        {
-            return m3Err_mallocFailed;
-        }
-        
-        // Calcola quanti bytes possiamo scrivere in questo segmento
-        size_t bytes_in_segment = _mem->segment_size - start_offset;
-        size_t bytes_to_write = (remaining < bytes_in_segment) ? remaining : bytes_in_segment;
-        
-        // Esegui il fill nel segmento corrente
-        u8* segment_data = (u8*)_mem->segments[start_segment]->data;
-        m3_memset(_mem, segment_data + start_offset, (u8)byte, bytes_to_write);
-        
-        // Aggiorna i contatori
-        remaining -= bytes_to_write;
-        start_segment++;
-        start_offset = 0;  // Reset offset per i segmenti successivi
+    M3Result res = m3_memset(_mem, destination, byte, size);
+    if(res != NULL){
+        ESP_LOGE("WASM3", "MemFill: m3_memset failed");
+        LOG_FLUSH;
+        // todo: handle error in operations
     }
     
     nextOp();

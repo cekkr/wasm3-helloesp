@@ -825,12 +825,13 @@ void* m3_realloc(M3Memory* memory, void* offset_ptr, size_t new_size) {
     return new_ptr;
 }
 
-void m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
-    if (!dest || !src || !n) return;
+M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
+    if (!dest || !src || !n) 
+        return m3Err_malformedData;
 
     if(!IsValidMemory(memory)){
         memcpy(dest, src, n);
-        return;
+        return NULL;
     }
     
     // Calcola segmenti e offset per source e destination
@@ -882,14 +883,17 @@ void m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
         src_pos += copy_size;
         dest_pos += copy_size;
     }
+
+    return NULL;
 }
 
-void m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
+//todo: implement overflow handling
+M3Result m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
     if (!ptr || !n) return;
 
     if(!IsValidMemory(memory)){
         memset(ptr, value, n);
-        return;
+        return NULL;
     }
     
     // Verifica se ptr è un offset M3Memory o un puntatore normale
@@ -917,7 +921,7 @@ void m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
     // Se il puntatore è normale e la dimensione è contenuta in un segmento
     if (!is_offset || (intra_offset + n <= memory->segment_size)) {
         memset(real_ptr, value, n);
-        return;
+        return NULL;
     }
     
     // Gestione multi-segmento
@@ -969,6 +973,8 @@ void m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
             }
         }
     }
+    
+    return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////
