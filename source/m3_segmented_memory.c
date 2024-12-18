@@ -20,7 +20,7 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     
     // Inizializza strutture base
     if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: allocating first segment");
-    memory->segments = NULL; //m3_Def_AllocArray(MemorySegment*, 1);
+    memory->segments = NULL;
 
     if (!memory->segments && false) {
         ESP_LOGE("WASM3", "m3_InitMemory: !memory->segment");
@@ -57,7 +57,6 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     MemorySegment* first_seg = memory->segments[0];
     if (first_seg) {
         if(!first_seg->data){
-            // it's always null
             if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: first_seg->data is NULL");
             InitSegment(memory, first_seg, true);
         }
@@ -71,10 +70,24 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     
     if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: working on first_chunk");
     MemoryChunk* first_chunk = (MemoryChunk*)first_seg->data;
+    // Inizializza i campi base
     first_chunk->size = first_seg->size;
     first_chunk->is_free = true;
     first_chunk->next = NULL;
     first_chunk->prev = NULL;
+    
+    // Inizializza i nuovi campi per multi-segment
+    first_chunk->num_segments = 1;  // Il primo chunk occupa un solo segmento
+    first_chunk->start_segment = 0; // Inizia dal segmento 0
+    first_chunk->segment_sizes = m3_Def_Malloc(sizeof(size_t)); // Alloca array per un segmento
+    if (!first_chunk->segment_sizes) {
+        ESP_LOGE("WASM3", "m3_InitMemory: Failed to allocate segment_sizes");
+        m3_Def_Free(memory->segments);
+        free(memory->free_chunks);
+        return NULL;
+    }
+    first_chunk->segment_sizes[0] = first_seg->size; // Dimensione del primo segmento
+    
     first_seg->first_chunk = first_chunk;
     
     // Aggiungi il primo chunk alla cache
@@ -89,12 +102,14 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     u32 ptr1 = m3_malloc(memory, 1);
     u32 ptr2 = m3_malloc(memory, 1);
 
-    PRINT_PTR(ptr1);
-    PRINT_PTR(ptr2);
+    if(DEBUG_WASM_INIT_MEMORY) {
+        ESP_LOGI("WASM3", "m3_InitMemory: First 2 pointers init result:");
+        PRINT_PTR(ptr1);
+        PRINT_PTR(ptr2);
+    }
     
     return memory;
 }
-
 
 IM3Memory m3_NewMemory(){
     IM3Memory memory = m3_Def_AllocStruct (M3Memory);
