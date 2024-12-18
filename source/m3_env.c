@@ -860,6 +860,7 @@ M3Result  m3_LoadModule  (IM3Runtime io_runtime, IM3Module io_module)
     }
     else {        
         if(io_runtime != io_module->runtime){
+            ESP_LOGW("WASM3", "m3_LoadModule: m3Err_moduleAlreadyLinked");
             return m3Err_moduleAlreadyLinked;
         }
     }

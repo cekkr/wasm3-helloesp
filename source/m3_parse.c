@@ -136,13 +136,20 @@ _               (NormalizeType (& retType, wasmType));
 }
 
 
+const bool WASM_DEBUG_ParseSection_Function = true;
 M3Result  ParseSection_Function  (IM3Module io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
     IM3Memory mem = &io_module->runtime->memory;
 
+    if(mem == NULL || mem->firm != INIT_FIRM){
+        if(WASM_DEBUG_ParseSection_Function) ESP_LOGW("WASM3", "ParseSection_Function: mem not initialized");
+    }
+
     u32 numFunctions;
 _   (ReadLEB_u32 (mem, & numFunctions, & i_bytes, i_end));                               m3log (parse, "** Function [%d]", numFunctions);
+
+    if(WASM_DEBUG_ParseSection_Function) ESP_LOGW("WASM3", "ParseSection_Function: numFunctions: %d", numFunctions);    
 
     _throwif("too many functions", numFunctions > d_m3MaxSaneFunctionsCount);
 
