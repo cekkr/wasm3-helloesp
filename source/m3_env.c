@@ -772,11 +772,11 @@ M3Result  m3_LoadModule  (IM3Runtime io_runtime, IM3Module io_module)
     ESP_LOGI("WASM3", "Before LoadModule - Free: %d bytes, Largest block: %d bytes", 
         info.total_free_bytes, info.largest_free_block);
 
-    if(!is_ptr_valid(io_module->runtime) || io_module->runtime->memory.firm == DUMMY_MEMORY_FIRM){                        
+    if(!is_ptr_valid(io_module->runtime) || io_module->runtime->memory.firm != INIT_FIRM){                        
         io_module->runtime = io_runtime;        
     }
     else {
-        ESP_LOGE("WASM3", "m3_LoadModule: old runtime recognized as valid (memory.firm: %d instead of %d)", io_module->runtime->memory.firm, DUMMY_MEMORY_FIRM);
+        ESP_LOGE("WASM3", "m3_LoadModule: old runtime recognized as valid (memory.firm: %d)", io_module->runtime->memory.firm);
         return m3Err_moduleAlreadyLinked;
     }
 
