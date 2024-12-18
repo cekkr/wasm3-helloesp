@@ -17,6 +17,7 @@ M3Result  ParseType_Table  (IM3Module io_module, bytes_t i_bytes, cbytes_t i_end
 }
 
 
+const bool WASM3_FORCE_MAX_PAGE_SIZE = true;
 M3Result  ParseType_Memory  (M3MemoryInfo * o_memory, bytes_t * io_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
@@ -35,6 +36,11 @@ _       (ReadLEB_u32 (o_memory->mem, & o_memory->maxPages, io_bytes, i_end));
         u32 logPageSize;
 _       (ReadLEB_u32 (o_memory->mem, & logPageSize, io_bytes, i_end));
         o_memory->pageSize = 1u << logPageSize;
+    }
+    
+    if(WASM3_FORCE_MAX_PAGE_SIZE){
+        //o_memory->pageSize = 1024*1024*4; // 4 GB
+        o_memory->pageSize = 1024; 
     }
 
     _catch: return result;
