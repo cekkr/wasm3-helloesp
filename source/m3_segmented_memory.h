@@ -82,8 +82,6 @@ M3Result AddSegments(M3Memory* memory, size_t set_num_segments);
 M3Result InitSegment(M3Memory* memory, MemorySegment* seg, bool initData);
 M3Result GrowMemory(M3Memory* memory, size_t additional_size);
 
-////////////////////////////////
-static void* GetMemorySegment(IM3Memory memory, u32 offset);
 ////////////////////////////////////////////////////////////////
 
 bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size);
