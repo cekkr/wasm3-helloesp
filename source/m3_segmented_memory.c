@@ -182,8 +182,8 @@ M3Result InitSegment(M3Memory* memory, MemorySegment* seg, bool initData){
 }
 
 M3Result AddSegments(M3Memory* memory, size_t set_num_segments) {
-    if(memory->segment_size == 0){
-        ESP_LOGE("WASM3", "AddSegments: memory->segment_size is zero");
+    if(memory->firm != INIT_FIRM){
+        ESP_LOGE("WASM3", "AddSegments: memory's firm is wrong");
         backtrace();
         return m3Err_nullMemory;
     }
@@ -210,6 +210,9 @@ M3Result AddSegments(M3Memory* memory, size_t set_num_segments) {
         }
 
         memory->segments = segments;
+    }
+    else {
+        return NULL;
     }
 
     if(WASM_DEBUG_ADD_SEGMENT)

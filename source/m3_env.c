@@ -372,7 +372,7 @@ void  m3_FreeRuntime  (IM3Runtime i_runtime)
     }
 }
 
-const bool WASM_DEBUG_EvaluateExpression = false;
+const bool WASM_DEBUG_EvaluateExpression = true;
 M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type, bytes_t * io_bytes, cbytes_t i_end)
 {
     CALL_WATCHDOG
@@ -415,16 +415,16 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
     o->block.depth = -1;  // so that root compilation depth = 0
 
     //  OPTZ: this code page could be erased after use.  maybe have 'empty' list in addition to full and open?
-    ESP_LOGI("WASM3", "EvaluateExpression: AcquireCodePage");
+    if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: AcquireCodePage");
     o->page = AcquireCodePage (& runtime);  // AcquireUnusedCodePage (...)
 
     if (o->page)
     {
         IM3FuncType ftype = runtime.environment->retFuncTypes[i_type];
 
-        ESP_LOGI("WASM3", "EvaluateExpression: GetPagePC");
+        if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: GetPagePC");
         pc_t m3code = GetPagePC (o->page);
-        ESP_LOGI("WASM3", "EvaluateExpression: CompileBlock");
+        if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: CompileBlock");
         result = CompileBlock (o, ftype, c_waOp_block);
 
         if (not result && o->maxStackSlots >= runtime.numStackSlots) {
@@ -433,7 +433,7 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
 
         if (not result)
         {
-            ESP_LOGI("WASM3", "EvaluateExpression: RunCode");
+            if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: RunCode");
 
             # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
             m3ret_t r = RunCode (m3code, stack, &o->runtime->memory , d_m3OpDefaultArgs, d_m3BaseCstr); // NULL or &o->runtime ?
@@ -441,7 +441,7 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
             m3ret_t r = RunCode (m3code, stack, &o->runtime->memory , d_m3OpDefaultArgs); 
             # endif
             
-            ESP_LOGI("WASM3", "EvaluateExpression: RunCode r: %d", r);
+            if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: RunCode r: %d", r);
             if (r == 0)
             {                                                                               
                 m3log (runtime, "expression result: %s", SPrintValue (stack, i_type));
@@ -458,7 +458,7 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
         }
 
         // TODO: EraseCodePage (...) see OPTZ above
-        ESP_LOGI("WASM3", "EvaluateExpression: ReleaseCodePage");
+        if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: ReleaseCodePage");
         //ReleaseCodePage (& runtime, o->page);
     }
     else result = m3Err_mallocFailedCodePage;
@@ -468,10 +468,14 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
     i_module->runtime = savedRuntime;
     * io_bytes = o->wasm;
 
-    if(result != NULL)
-        ESP_LOGI("WASM3", "EvaluateExpression: return %s", result);
-    else 
-        ESP_LOGI("WASM3", "EvaluateExpression: return ok");
+    if(WASM_DEBUG_EvaluateExpression){
+        if(result != NULL){
+            ESP_LOGI("WASM3", "EvaluateExpression: return %s", result);
+        }
+        else {
+            ESP_LOGI("WASM3", "EvaluateExpression: return ok");
+        }
+    }
 
     return result;
 }
@@ -574,12 +578,13 @@ M3Result  InitGlobals  (IM3Module io_module)
 }
 
 
-M3Result InitDataSegments(M3Memory* io_memory, IM3Module io_module)
+const bool WASM_DEBUG_INIT_DATA_SEGMENTS = true;
+M3Result InitDataSegments(IM3Memory io_memory, IM3Module io_module)
 {
     M3Result result = m3Err_none;
     
     // Verifica che la struttura di memoria sia inizializzata
-    _throwif("uninitialized memory structure", !io_memory || !io_memory->segments);
+    _throwif("uninitialized M3Memory structure", !io_memory || io_memory->firm != INIT_FIRM);
 
     for (u32 i = 0; i < io_module->numDataSegments; ++i)
     {
@@ -601,7 +606,8 @@ _       (EvaluateExpression(io_module, &segmentOffset, c_m3Type_i32, &start,
             size_t end_segment = (segmentOffset + segment->size - 1) / io_memory->segment_size;
             
             // Alloca tutti i segmenti necessari se non sono già allocati
-            if (!AddSegments(io_memory, end_segment)) {
+            if(WASM_DEBUG_INIT_DATA_SEGMENTS) ESP_LOGI("WASM3", "InitDataSegments: add segments up to %d", end_segment);
+            if (end_segment > io_memory->num_segments && !AddSegments(io_memory, end_segment)) {
                 _throw("failed to allocate memory segment");
             }
             
@@ -808,8 +814,8 @@ _   (InitElements (io_module));
 _catch:
     // Log di debug per capire dove è fallito
     heap_caps_get_info(&info, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
-    ESP_LOGE("WASM3", "LoadModule failed - Free: %d bytes, Largest block: %d bytes", 
-         info.total_free_bytes, info.largest_free_block);
+    ESP_LOGE("WASM3", "LoadModule failed - Free: %d bytes, Largest block: %d bytes", info.total_free_bytes, info.largest_free_block);
+    ESP_LOGE("WASM3", "LoadModule failed with result: %d", result);
     
     io_module->runtime = NULL;
     return result;
