@@ -148,7 +148,7 @@ void* resolve_pointer(M3Memory* memory, void* ptr) {
 // Memory initialization and growth
 const bool WASM_DEBUG_INITSEGMENT = true;
 M3Result InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) {
-    if (memory == NULL || memory->firm == INIT_FIRM){ 
+    if (memory == NULL || memory->firm != INIT_FIRM){ 
         ESP_LOGW("WASM", "InitSegment: memory not initialized");
         return m3Err_nullMemory;
     }
@@ -182,9 +182,12 @@ M3Result InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) {
 
 const bool WASM_DEBUG_ADDSEGMENT = true;
 const bool WASM_ADD_SEGMENTS_MALLOC_SEGMENT = false;
-M3Result AddSegments(M3Memory* memory, size_t additional_segments) {
+M3Result AddSegments(IM3Memory memory, size_t additional_segments) {
     if(WASM_DEBUG_ADDSEGMENT) ESP_LOGI("WASM3", "AddSegments: adding %zu additional segments", additional_segments);
-    if (memory == NULL || memory->firm != INIT_FIRM) return m3Err_nullMemory;    
+    if (memory == NULL || memory->firm != INIT_FIRM) {
+        ESP_LOGE("WASM3", "AddSegments: memory is not initialized");
+        return m3Err_nullMemory;    
+    }
 
     size_t new_num_segments = additional_segments == 0 ? (memory->num_segments + 1) : additional_segments;
 
