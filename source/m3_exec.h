@@ -1279,35 +1279,6 @@ d_m3Op  (ContinueLoopIf)
     }
     else nextOp ();
 }
-
-
-/*d_m3Op (Const32) {
-    u32 value = MEMACCESS(u32, _mem, _pc++);
-    void* dest = (void*)m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(u32));
-    
-    if (!dest) {
-        return m3Err_mallocFailed;  // o un altro codice di errore appropriato
-    }
-    
-    * (u32*) dest = value;
-    nextOp();
-}
-
-
-d_m3Op (Const64) {
-    u64 value = MEMACCESS(u64, _mem, _pc);  
-    _pc += 2;  // Su ESP32 sempre 2 perché M3_SIZEOF_PTR == 4
-
-    void* dest = (void*)m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(u64));
-    
-    if (!dest) {
-        return m3Err_mallocFailed;  // o un altro codice di errore appropriato
-    }
-
-    memcpy(dest, &value, sizeof(u64));  
-
-    nextOp();
-}*/
  
 #define MEMACCESS_SAFE(type, mem, offset) \
     ({ \
@@ -1351,7 +1322,7 @@ d_m3Op (Const64) {
         m3_memcpy(_mem, &value, src_ptr, sizeof(u64));
     }   
 
-   _pc += 2;  // Su ESP32 sempre 2 perché M3_SIZEOF_PTR == 4
+   _pc += (M3_SIZEOF_PTR == 4) ? 2 : 1;  // Su ESP32 sempre 2 perché M3_SIZEOF_PTR == 4
 
    // Calcola l'offset di destinazione
    u32 dest_offset = _sp + immediate(i32);
