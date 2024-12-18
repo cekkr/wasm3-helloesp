@@ -1508,7 +1508,7 @@ d_m3Op (Const64) {
  
 #define MEMACCESS_SAFE(type, mem, offset) \
     ({ \
-        void* ptr = m3SegmentedMemAccess_2(mem, offset, sizeof(type)); \
+        void* ptr = m3SegmentedMemAccess(mem, offset, sizeof(type)); \
         if (!ptr) { \
             ESP_LOGE("WASM3", "Memory access failed at offset %u", (unsigned)offset); \
             return m3Err_pointerOverflow; \
@@ -1521,7 +1521,7 @@ d_m3Op (Const32) {
 
     //ESP_ERROR_CHECK(heap_caps_check_integrity_all(true));
 
-    void* dest = m3SegmentedMemAccess_2(_mem, _sp + immediate(i32), sizeof(u32));
+    void* dest = m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(u32));
     
     if (dest == ERROR_POINTER) {
         ESP_LOGE("WASM3", "Destination memory access failed at sp=%u, immediate=%d", 
@@ -1535,7 +1535,7 @@ d_m3Op (Const32) {
 
 d_m3Op (Const64) {
    // Prima verifica la validità dell'accesso alla memoria sorgente
-   void* src_ptr = m3SegmentedMemAccess_2(_mem, (u32)_pc, sizeof(u64));
+   void* src_ptr = m3SegmentedMemAccess(_mem, (u32)_pc, sizeof(u64));
 
     // Leggi il valore usando memcpy per evitare problemi di allineamento
     u64 value = 0;
@@ -1554,7 +1554,7 @@ d_m3Op (Const64) {
    u32 dest_offset = _sp + immediate(i32);
    
    // Verifica l'accesso alla memoria di destinazione
-   void* dest = m3SegmentedMemAccess_2(_mem, dest_offset, sizeof(u64));
+   void* dest = m3SegmentedMemAccess(_mem, dest_offset, sizeof(u64));
    if (dest == ERROR_POINTER) {
        ESP_LOGE("WASM3", "Destination memory access failed at sp=%u, immediate=%d", 
                 (unsigned)_sp, immediate(i32));

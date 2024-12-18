@@ -260,9 +260,7 @@ const bool WASM_DEBUG_MEM_ACCESS = false;
 const bool WASM_DEBUG_GET_SEGMENT_POINTER = false;
 const bool WASM_DEBUG_GET_SEGMENT_POINTER_NULLMEMORY_BACKTRACE = false;
 
-static u32 get_segment_pointer_cycle = 0;
 void* get_segment_pointer(IM3Memory memory, u32 offset) { 
-    if(get_segment_pointer_cycle++ % 3 == 0) { CALL_WATCHDOG }
 
     if(memory == NULL){
         return offset;
@@ -346,8 +344,11 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
 }
 
 const bool WASM_DEBUG_RESOLVE_POINTER_MEMORY_BACKTRACE = false;
+static u32 resolve_pointer_cycle = 0;
 void* resolve_pointer(IM3Memory memory, void* ptr) {
-    if(memory == NULL) return ptr;
+    if(resolve_pointer_cycle++ % 3 == 0) { CALL_WATCHDOG }
+
+    if(memory == NULL || memory->firm != INIT_FIRM) return ptr;
 
     CHECK_MEMORY_PTR(memory, "resolve_pointer");
 
@@ -392,7 +393,12 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
 }
 
 const bool WASM_DEBUG_MEM_ACCESS_BACKTRACE = false;
-void* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size) 
+
+void* m3SegmentedMemAccess(IM3Memory memory, void* offset, size_t size) {
+    return resolve_pointer(memory, (void*)offset);
+}
+
+void* m3SegmentedMemAccess__old(IM3Memory mem, void* ptr, size_t size) 
 {
     u32 offset = (u32)ptr;
 
@@ -412,10 +418,6 @@ void* m3SegmentedMemAccess(IM3Memory mem, void* ptr, size_t size)
     }
 
     return resolve_pointer(mem, ptr);
-}
-
-void* m3SegmentedMemAccess_2(IM3Memory memory, u32 offset, size_t size) {
-    return resolve_pointer(memory, (void*)offset);
 }
 
 bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size)
