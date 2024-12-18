@@ -25,6 +25,33 @@ static size_t get_segment_index(M3Memory* memory, void* ptr) {
     return (size_t)-1;
 }
 
+////////////////////////////////////////////////////////////////////////
+
+IM3MemoryPoint m3_GetMemoryPoint(IM3Memory mem){
+    IM3MemoryPoint res = m3_Def_AllocStruct(M3MemoryPoint);
+    if(res != NULL){
+        res->memory = mem;
+        res->firm = 20190394;
+    }
+    return res;
+}
+
+IM3MemoryPoint ValidateMemoryPoint(void* ptr) {
+    if (ptr == NULL) {
+        return NULL;
+    }
+    
+    IM3MemoryPoint point = (IM3MemoryPoint)ptr;
+    
+    // Verifica la firma
+    if (point->firm != M3PTR_FIRM) {
+        return NULL;
+    }
+    
+    return point;
+}
+
+////////////////////////////////////////////////////////////////
 
 const bool WASM_DEBUG_GET_OFFSET_POINTER = true;
 mos get_offset_pointer(IM3Memory memory, void* ptr) {

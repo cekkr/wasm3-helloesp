@@ -16,9 +16,8 @@
 #define M3Memory_MaxPages 1024
 
 #define INIT_FIRM 19942003
-
-// Dummy M3Memory firm (to use when there is a placeholder memory)
-#define DUMMY_MEMORY_FIRM  6991
+#define DUMMY_MEMORY_FIRM  6991 // Dummy M3Memory firm (to use when there is a placeholder memory)
+#define M3PTR_FIRM 20190394
 
 typedef u32 mos; // memory offset
 
@@ -69,20 +68,24 @@ typedef struct M3Memory_t {
 
 typedef M3Memory *          IM3Memory;
 
-/* // Currently unused
+// Currently unused
 typedef struct M3MemoryPoint_t {  
+    u32 firm;
     IM3Memory memory;
-    size_t offset;
+    mos offset;
 } M3MemoryPoint;
 
 typedef M3MemoryPoint *          IM3MemoryPoint;
-*/
 
 ////////////////////////////////
 IM3Memory m3_NewMemory();
 IM3Memory m3_InitMemory(IM3Memory memory);
 bool IsValidMemory(IM3Memory memory);
-//IM3MemoryPoint m3_GetMemoryPoint(IM3Memory mem);
+
+////////////////////////////////////////////////////////////////
+IM3MemoryPoint m3_GetMemoryPoint(IM3Memory mem);
+IM3MemoryPoint ValidateMemoryPoint(void* ptr);
+////////////////////////////////////////////////////////////////
 
 M3Result AddSegments(M3Memory* memory, size_t set_num_segments);
 MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData);
