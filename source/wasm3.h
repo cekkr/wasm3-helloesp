@@ -455,7 +455,7 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 ////
 #define LOG_FLUSH ESP_LOGI("WASM3", "flush...")
 
-#define ENABLE_CHECK_MEMORY_PTR 1
+#define ENABLE_CHECK_MEMORY_PTR 0
 
 #if ENABLE_CHECK_MEMORY_PTR
 //#define CHECK_MEMORY_PTR(mem) ESP_LOGI("WASM3", "Current memory ptr: %p", mem); LOG_FLUSH; esp_backtrace_print(1)
