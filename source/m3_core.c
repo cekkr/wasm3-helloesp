@@ -559,6 +559,15 @@ const bool WASM_DEBUG_READ_RESOLVE_POINTER = true;
 
 const bool WASM_READ_IGNORE_END = false;
 
+const bool WASM_DEBUG_READ_CHECKWASMUNDERRUN = false;
+void __read_checkWasmUnderrun(){
+    if(WASM_DEBUG_READ_CHECKWASMUNDERRUN){
+        ESP_LOGE("WASM3", "m3Err_wasmUnderrun");
+        LOG_FLUSH;
+        backtrace();
+    }
+}
+
 M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_end) {
     if (!io_bytes || !o_value) 
         return m3Err_malformedData;
@@ -580,8 +589,10 @@ M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_
     
     const u8* check_ptr = source_ptr + sizeof(u64);
     
-    if ((void*)check_ptr > (void*)i_end)
+    if ((void*)check_ptr > (void*)i_end){
+        __read_checkWasmUnderrun(check_ptr, i_end);
         return m3Err_wasmUnderrun;
+    }
 
     memcpy(dest_ptr, source_ptr, sizeof(u64));
     M3_BSWAP_u64(*(u64*)dest_ptr);
@@ -610,8 +621,10 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
     
     const u8* check_ptr = source_ptr + sizeof(u32);
     
-    if ((void*)check_ptr > (void*)i_end)
+    if ((void*)check_ptr > (void*)i_end){
+         __read_checkWasmUnderrun(check_ptr, i_end);
         return m3Err_wasmUnderrun;
+    }
 
     memcpy(dest_ptr, source_ptr, sizeof(u32));
     M3_BSWAP_u32(*(u32*)dest_ptr);
@@ -641,8 +654,10 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
     
     const u8* check_ptr = source_ptr + sizeof(f64);
     
-    if ((void*)check_ptr > (void*)i_end)
+    if ((void*)check_ptr > (void*)i_end){
+         __read_checkWasmUnderrun(check_ptr, i_end);
         return m3Err_wasmUnderrun;
+    }
 
     memcpy(dest_ptr, source_ptr, sizeof(f64));
     M3_BSWAP_f64(*(f64*)dest_ptr);
@@ -671,8 +686,10 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
     
     const u8* check_ptr = source_ptr + sizeof(f32);
     
-    if ((void*)check_ptr > (void*)i_end)
+    if ((void*)check_ptr > (void*)i_end){
+         __read_checkWasmUnderrun(check_ptr, i_end);
         return m3Err_wasmUnderrun;
+    }
 
     memcpy(dest_ptr, source_ptr, sizeof(f32));
     M3_BSWAP_f32(*(f32*)dest_ptr);
@@ -702,8 +719,10 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
     
     const u8* check_ptr = source_ptr + sizeof(u8);
     
-    if ((void*)check_ptr > (void*)i_end)
+    if ((void*)check_ptr > (void*)i_end){
+         __read_checkWasmUnderrun(check_ptr, i_end);
         return m3Err_wasmUnderrun;
+    }
 
     *dest_ptr = *source_ptr;
     *io_bytes = check_ptr;
@@ -731,15 +750,19 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
 
     const u8* check_ptr = source_ptr + 1;
     
-    if ((void*)check_ptr > (void*)i_end)
+    if ((void*)check_ptr > (void*)i_end){
+         __read_checkWasmUnderrun(check_ptr, i_end);
         return m3Err_wasmUnderrun;
+    }
 
     m3opcode_t opcode = *source_ptr++;
 
 #if d_m3CascadedOpcodes == 0
     if (M3_UNLIKELY(opcode == c_waOp_extended)) {
-        if ((void*)source_ptr > (void*)i_end)
+        if ((void*)source_ptr > (void*)i_end){
+             __read_checkWasmUnderrun(source_ptr, i_end);
             return m3Err_wasmUnderrun;
+        }
         opcode = (opcode << 8) | (*source_ptr++);
     }
 #endif
@@ -791,6 +814,11 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
 
     *dest_ptr = value;
     *io_bytes = check_ptr;
+
+    if(result == m3Err_wasmUnderrun) {
+         __read_checkWasmUnderrun(check_ptr, i_end);
+    }
+
     return result;
 }
 
@@ -836,10 +864,15 @@ M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t
             result = m3Err_lebOverflow;
             break;
         }
-    }
+    }    
 
     *dest_ptr = value;
     *io_bytes = check_ptr;
+
+    if(result == m3Err_wasmUnderrun) {
+         __read_checkWasmUnderrun(check_ptr, i_end);
+    }
+
     return result;
 }
 
@@ -951,8 +984,10 @@ M3Result Read_utf8(IM3Memory memory, cstr_t* o_utf8, bytes_t* io_bytes, cbytes_t
             
         // Check if we have enough space to read in segmented memory
         u32 offset = get_offset_pointer(memory, (void*)source_ptr);
-        if (!IsValidMemoryAccess(memory, offset, utf8Length) || 
-            offset + utf8Length > (u32)i_end) {
+        u32 end = get_offset_pointer(memory, (void*)i_end);
+        if (offset + utf8Length > end) {
+            __read_checkWasmUnderrun(offset, i_end);
+    
             return m3Err_wasmUnderrun;
         }
     } else {
@@ -961,8 +996,10 @@ M3Result Read_utf8(IM3Memory memory, cstr_t* o_utf8, bytes_t* io_bytes, cbytes_t
         source_ptr = (const u8*)*io_bytes;
         
         // Check if we have enough space to read in normal memory
-        if (source_ptr + utf8Length > (const u8*)i_end) 
+        if (source_ptr + utf8Length > (const u8*)i_end) {
+            __read_checkWasmUnderrun((source_ptr + utf8Length), i_end);
             return m3Err_wasmUnderrun;
+        }
     }
 
     // Allocate and copy the string
