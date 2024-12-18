@@ -561,13 +561,20 @@ u32  SizeOfType  (u8 i_m3Type)
     if(WASM_DEBUG_SizeOfType) ESP_LOGI("WASM3", "SizeOfType called with i_m3Type: %d", i_m3Type);
 
     u32 res;
-    if (i_m3Type == c_m3Type_i32 or i_m3Type == c_m3Type_f32)
+    if (i_m3Type == c_m3Type_i32 or i_m3Type == c_m3Type_f32){
         res = sizeof (i32);
-        if(WASM_DEBUG_SizeOfType) ESP_LOGI("WASM3", "SizeOfType res: %d", res); LOG_FLUSH;
+        if(WASM_DEBUG_SizeOfType){ 
+            ESP_LOGI("WASM3", "SizeOfType res: %d", res); 
+            LOG_FLUSH;
+        }
         return res;
+    }
 
     res = sizeof (i64);
-    if(WASM_DEBUG_SizeOfType) ESP_LOGI("WASM3", "SizeOfType res: %d", res); LOG_FLUSH;
+    if(WASM_DEBUG_SizeOfType){ 
+        ESP_LOGI("WASM3", "SizeOfType res: %d", res); 
+        LOG_FLUSH;
+    }
     return res;
 }
 
