@@ -536,10 +536,12 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
 ///
 ///
 
+const bool WASM_DEBUG_InitGlobals = true;
 M3Result  InitGlobals  (IM3Module io_module)
 {
     M3Result result = m3Err_none;
 
+    if(WASM_DEBUG_InitGlobals) ESP_LOG("InitGlobals: io_module->numGlobals = %d", io_module->numGlobals);
     if (io_module->numGlobals)
     {
         // placing the globals in their structs isn't good for cache locality, but i don't really know what the global
@@ -552,10 +554,13 @@ M3Result  InitGlobals  (IM3Module io_module)
             for (u32 i = 0; i < io_module->numGlobals; ++i)
             {
                 M3Global * g = & io_module->globals [i];                        m3log (runtime, "initializing global: %d", i);
-
+                if(WASM_DEBUG_InitGlobals) ESP_LOG("InitGlobals: init global: %d", i);
                 if (g->initExpr)
                 {
                     bytes_t start = g->initExpr;
+                    
+                    if(WASM_DEBUG_InitGlobals) ESP_LOG("InitGlobals: EvaluateExpression(i64Value: %p, type: %d, start: %p, initExpr: %d, initExprSize: %d", 
+                        & g->i64Value, g->type, & start, g->initExpr, g->initExprSize); LOG_FLUSH;
                     
                     result = EvaluateExpression (io_module, & g->i64Value, g->type, & start, g->initExpr + g->initExprSize);
 
