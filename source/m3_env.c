@@ -776,7 +776,8 @@ M3Result  m3_LoadModule  (IM3Runtime io_runtime, IM3Module io_module)
         io_module->runtime = io_runtime;        
     }
     else {
-       return m3Err_moduleAlreadyLinked;
+        ESP_LOGE("WASM3", "m3_LoadModule: old runtime recognized as valid (memory.firm: %d instead of %d)", io_module->runtime->memory.firm, DUMMY_MEMORY_FIRM);
+        return m3Err_moduleAlreadyLinked;
     }
 
     ESP_LOGI("WASM3", "Starting InitMemory");
