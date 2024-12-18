@@ -632,7 +632,8 @@ _       (EvaluateExpression(io_module, &segmentOffset, c_m3Type_i32, &start,
                 }
                 
                 u8* dest = ((u8*)io_memory->segments[current_segment]->data) + segment_offset;
-                memcpy(dest, segment->data + src_offset, bytes_to_copy);
+                //memcpy(dest, segment->data + src_offset, bytes_to_copy);
+                m3_memcpy(io_memory, dest, segment->data + src_offset, bytes_to_copy);
                 
                 remaining -= bytes_to_copy;
                 src_offset += bytes_to_copy;
