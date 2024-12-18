@@ -651,8 +651,11 @@ d_m3Op (CallRawFunction)
 
     // Aggiungi controlli di sicurezza
     if (runtime == NULL) {
+        ESP_LOGE("WASM3", "CallRawFunction: no runtime");
+        LOG_FLUSH;
         backtrace();
-        return m3Err_nullRuntime;  // o un altro codice di errore appropriato
+        forwardTrap(m3Err_nullRuntime);  // o un altro codice di errore appropriato
+        return;
     }
 
     void* stack_backup = NULL;

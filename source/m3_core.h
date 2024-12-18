@@ -95,6 +95,7 @@ uint64_t    m3_GetTimestamp         ();
 #define     m3_GetTimestamp()       ""
 #endif
 
+//todo: reimplement m3_Malloc_Impl, m3_Realloc_Impl, m3_Free_Impl, m3_CopyMem
 void        m3_Abort                (const char* message);
 void *      m3_Malloc_Impl          (size_t i_size);
 void *      m3_Realloc_Impl         (void * i_ptr, size_t i_newSize, size_t i_oldSize);
