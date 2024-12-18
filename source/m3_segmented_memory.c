@@ -240,8 +240,8 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: trying to allocate memory");
     void* ptr1 = m3_malloc(memory, 1);
     void* ptr2 = m3_malloc(memory, 1);
-    PRINT_PTR1(ptr1);
-    PRINT_PTR2(ptr2);
+    PRINT_PTR(ptr1);
+    PRINT_PTR(ptr2);
     
     return memory;
 }
