@@ -633,6 +633,8 @@ _       (EvaluateExpression(io_module, &segmentOffset, c_m3Type_i32, &start,
                 
                 u8* dest = ((u8*)io_memory->segments[current_segment]->data) + segment_offset;
                 //memcpy(dest, segment->data + src_offset, bytes_to_copy);
+
+                if(WASM_DEBUG_INIT_DATA_SEGMENTS) ESP_LOGI("WASM3", "InitDataSegments: m3_memcpy");
                 m3_memcpy(io_memory, dest, segment->data + src_offset, bytes_to_copy);
                 
                 remaining -= bytes_to_copy;

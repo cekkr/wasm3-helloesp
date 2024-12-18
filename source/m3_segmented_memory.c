@@ -29,6 +29,8 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
         if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: memory pointer is NULL");
         return NULL;
     }
+
+    memory->firm = INIT_FIRM;
     
     // Inizializza strutture base
     if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: allocating first segment");
@@ -95,8 +97,6 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
         first_chunk->next = NULL;
         memory->free_chunks[bucket] = first_chunk;
     }    
-
-    memory->firm = INIT_FIRM;
 
     /// Test init
     if(DEBUG_WASM_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: test m3_malloc");
@@ -481,43 +481,125 @@ mos get_offset_pointer(IM3Memory memory, void* ptr) {
 ////
 ////
 
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
+#define MIN(x, y) ((x) < (y) ? (x) : (y)) // is it used?
 
-// Custom memcpy for potentially cross-segment regions
+// Debug flag for m3_memcpy
+const bool WASM_DEBUG_MEMCPY = false;
+
 void m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
-    u8* d = (u8*)dest;
-    const u8* s = (const u8*)src;
+    if (!memory || !dest || !src || !n) return;
     
-    while (n > 0) {
-        // Calculate current segment boundaries
-        size_t src_offset = (size_t)s - (size_t)memory->segments[0]->data;
-        size_t dest_offset = (size_t)d - (size_t)memory->segments[0]->data;
-        
-        // Get source and destination segments
-        u8* src_ptr = m3SegmentedMemAccess(memory, src_offset, 1);
-        u8* dest_ptr = m3SegmentedMemAccess(memory, dest_offset, 1);
-        
-        if (!src_ptr || !dest_ptr) {
-            // Handle error - invalid memory access
+    // Check if memory is valid
+    if (memory->firm != INIT_FIRM) {
+        if (WASM_DEBUG_MEMCPY) ESP_LOGI("WASM3", "m3_memcpy: using standard memcpy (invalid memory)");
+        memcpy(dest, src, n);
+        return;
+    }
+
+    // Convert pointers to their actual memory locations if needed
+    void* real_src = (void*)src;
+    void* real_dest = dest;
+    
+    // Check if source is a memory offset
+    if (IsValidMemoryAccess(memory, (u64)src, n)) {
+        real_src = get_segment_pointer(memory, (u32)src);
+        if (real_src == ERROR_POINTER) {
+            if (WASM_DEBUG_MEMCPY) ESP_LOGE("WASM3", "m3_memcpy: invalid source offset");
             return;
         }
+    } else {
+        // Try to resolve as a pointer if not a valid offset
+        real_src = resolve_pointer(memory, (void*)src);
+        if (real_src == ERROR_POINTER) {
+            // If not in memory segments, use original pointer
+            real_src = (void*)src;
+        }
+    }
+    
+    // Check if destination is a memory offset
+    if (IsValidMemoryAccess(memory, (u64)dest, n)) {
+        real_dest = get_segment_pointer(memory, (u32)dest);
+        if (real_dest == ERROR_POINTER) {
+            if (WASM_DEBUG_MEMCPY) ESP_LOGE("WASM3", "m3_memcpy: invalid destination offset");
+            return;
+        }
+    } else {
+        // Try to resolve as a pointer if not a valid offset
+        real_dest = resolve_pointer(memory, dest);
+        if (real_dest == ERROR_POINTER) {
+            // If not in memory segments, use original pointer
+            real_dest = dest;
+        }
+    }
+
+    if (WASM_DEBUG_MEMCPY) {
+        ESP_LOGI("WASM3", "m3_memcpy: src=%p->%p, dest=%p->%p, size=%zu",
+                 src, real_src, dest, real_dest, n);
+    }
+
+    // Check if we need to handle cross-segment copying
+    bool src_in_memory = false;
+    bool dest_in_memory = false;
+    
+    for (size_t i = 0; i < memory->num_segments; i++) {
+        MemorySegment* seg = memory->segments[i];
+        if (!seg || !seg->data) continue;
         
-        // Calculate how many bytes we can copy within current segments
-        size_t src_segment_end = (src_offset / memory->segment_size + 1) * memory->segment_size;
-        size_t dest_segment_end = (dest_offset / memory->segment_size + 1) * memory->segment_size;
-        size_t bytes_to_copy = n;
+        if (real_src >= seg->data && real_src < (void*)((char*)seg->data + seg->size)) {
+            src_in_memory = true;
+        }
+        if (real_dest >= seg->data && real_dest < (void*)((char*)seg->data + seg->size)) {
+            dest_in_memory = true;
+        }
+    }
+
+    // If either source or destination spans multiple segments, use segment-aware copy
+    if ((src_in_memory && ((u64)real_src + n > memory->segment_size)) ||
+        (dest_in_memory && ((u64)real_dest + n > memory->segment_size))) {
         
-        // Limit copy to smallest segment boundary
-        bytes_to_copy = MIN(bytes_to_copy, src_segment_end - src_offset);
-        bytes_to_copy = MIN(bytes_to_copy, dest_segment_end - dest_offset);
+        u8* d = (u8*)real_dest;
+        const u8* s = (const u8*)real_src;
         
-        // Perform the copy
-        memcpy(dest_ptr, src_ptr, bytes_to_copy);
-        
-        // Update pointers and remaining size
-        d += bytes_to_copy;
-        s += bytes_to_copy;
-        n -= bytes_to_copy;
+        while (n > 0) {
+            size_t bytes_to_copy = n;
+            
+            // If source is in segmented memory, calculate segment boundary
+            if (src_in_memory) {
+                size_t src_segment_idx = ((u64)s - (u64)memory->segments[0]->data) / memory->segment_size;
+                size_t src_offset = ((u64)s - (u64)memory->segments[0]->data) % memory->segment_size;
+                size_t src_remaining = memory->segment_size - src_offset;
+                bytes_to_copy = MIN(bytes_to_copy, src_remaining);
+            }
+            
+            // If destination is in segmented memory, calculate segment boundary
+            if (dest_in_memory) {
+                size_t dest_segment_idx = ((u64)d - (u64)memory->segments[0]->data) / memory->segment_size;
+                size_t dest_offset = ((u64)d - (u64)memory->segments[0]->data) % memory->segment_size;
+                size_t dest_remaining = memory->segment_size - dest_offset;
+                bytes_to_copy = MIN(bytes_to_copy, dest_remaining);
+            }
+            
+            // Perform the copy for this segment
+            memcpy(d, s, bytes_to_copy);
+            
+            // Update pointers and remaining size
+            d += bytes_to_copy;
+            s += bytes_to_copy;
+            n -= bytes_to_copy;
+            
+            // Resolve new pointers if needed
+            if (src_in_memory && n > 0) {
+                s = resolve_pointer(memory, (void*)s);
+                if (s == ERROR_POINTER) return;
+            }
+            if (dest_in_memory && n > 0) {
+                d = resolve_pointer(memory, (void*)d);
+                if (d == ERROR_POINTER) return;
+            }
+        }
+    } else {
+        // For non-spanning copies, use standard memcpy
+        memcpy(real_dest, real_src, n);
     }
 }
 
