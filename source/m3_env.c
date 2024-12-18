@@ -448,10 +448,12 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
                 
                 if (SizeOfType (i_type) == sizeof (u32))
                 {
+                    if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: going to: * (u32 *) o_expressed = * ((u32 *) stack);");
                     * (u32 *) o_expressed = * ((u32 *) stack);
                 }
                 else
                 {
+                    if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: going to: * (u64 *) o_expressed = * ((u64 *) stack);");
                     * (u64 *) o_expressed = * ((u64 *) stack);
                 }
             }
