@@ -17,8 +17,8 @@ M3Result  ParseType_Table  (IM3Module io_module, bytes_t i_bytes, cbytes_t i_end
 }
 
 
-const bool WASM3_FORCE_MAX_PAGE_SIZE = false;
-const bool WASM3_DEBUG_PARSETYPE_MEMORY = true;
+const bool WASM_FORCE_MAX_PAGE_SIZE = false;
+const bool WASM_DEBUG_PARSETYPE_MEMORY = true;
 M3Result  ParseType_Memory  (M3MemoryInfo * o_memory, bytes_t * io_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
@@ -39,11 +39,13 @@ _       (ReadLEB_u32 (o_memory->mem, & logPageSize, io_bytes, i_end));
         o_memory->pageSize = 1u << logPageSize;
     }
 
-    if(WASM3_DEBUG_PARSETYPE_MEMORY){
-        EPS_LOGI("WASM3", "ParseType_Memory: o_memory->pageSize = %d", o_memory->pageSize);
+    if(WASM_DEBUG_PARSETYPE_MEMORY){
+        ESP_LOGI("WASM3", "ParseType_Memory: o_memory->initPages = %d", o_memory->initPages);
+        ESP_LOGI("WASM3", "ParseType_Memory: o_memory->maxPages = %d", o_memory->maxPages);
+        ESP_LOGI("WASM3", "ParseType_Memory: o_memory->pageSize = %d", o_memory->pageSize);
     }
     
-    if(WASM3_FORCE_MAX_PAGE_SIZE){
+    if(WASM_FORCE_MAX_PAGE_SIZE){
         //o_memory->pageSize = 1024*1024*4; // 4 GB
         o_memory->pageSize = 1024; 
     }
@@ -164,7 +166,7 @@ M3Result  ParseSection_Import  (IM3Module io_module, bytes_t i_bytes, cbytes_t i
     M3Result result = m3Err_none;
     IM3Memory mem = &io_module->runtime->memory;
 
-    M3ImportInfo import = { NULL, NULL }, clearImport = { NULL, NULL };
+    M3ImportInfo import = { 0 }, clearImport = { 0 };
 
     u32 numImports;
 _   (ReadLEB_u32 (mem, & numImports, & i_bytes, i_end));                                 m3log (parse, "** Import [%d]", numImports);
@@ -425,7 +427,7 @@ _                   (NormalizeType (& normalType, wasmType));
     return result;
 }
 
-
+const bool WASM_DEBUG_PARSESECTION_DATA = true;
 M3Result  ParseSection_Data  (M3Module * io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
@@ -439,6 +441,8 @@ _   (ReadLEB_u32 (mem, & numDataSegments, & i_bytes, i_end));                   
     io_module->dataSegments = m3_Def_AllocArray (M3DataSegment, numDataSegments);
     _throwifnull(io_module->dataSegments);
     io_module->numDataSegments = numDataSegments;
+
+    if(WASM_DEBUG_PARSESECTION_DATA) ESP_LOGI("WASM3", "ParseSection_Data: numDataSegments = %d", numDataSegments);
 
     for (u32 i = 0; i < numDataSegments; ++i)
     {
@@ -457,6 +461,12 @@ _       (ReadLEB_u32 (mem, & segment->size, & i_bytes, i_end));
                                                                                        i, segment->memoryRegion, segment->initExprSize, segment->size);
         i_bytes += segment->size;
 
+        if(WASM_DEBUG_PARSESECTION_DATA) {
+            ESP_LOGI("WASM3", "ParseSection_Data: segment: %d, initExpr: %p, initExprSize: %d, size: %d, i_bytes: %p, i_end: %p", 
+            i, segment->initExpr, segment->initExprSize, segment->size, i_bytes, i_end);
+            ESP_LOGI("WASM3", "ParseSection_Data: segment->memoryRegion = %d", segment->memoryRegion);
+        }
+
         _throwif("data segment underflow", i_bytes > i_end);
     }
 
@@ -466,6 +476,7 @@ _       (ReadLEB_u32 (mem, & segment->size, & i_bytes, i_end));
 }
 
 
+const bool WASM_DEBUG_PARSESECTION_MEMORY = true;
 M3Result  ParseSection_Memory  (M3Module * io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
@@ -474,6 +485,8 @@ M3Result  ParseSection_Memory  (M3Module * io_module, bytes_t i_bytes, cbytes_t 
 
     u32 numMemories;
 _   (ReadLEB_u32 (&io_module->runtime->memory, & numMemories, & i_bytes, i_end));                             m3log (parse, "** Memory [%d]", numMemories);
+
+    if(WASM_DEBUG_PARSESECTION_MEMORY) ESP_LOGI("WASM3", "ParseSection_Memory: numMemories = %d", numMemories);
 
     _throwif (m3Err_tooManyMemorySections, numMemories != 1);
 

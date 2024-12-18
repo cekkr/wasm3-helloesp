@@ -14,8 +14,11 @@
 
 //typedef M3Runtime; // forced pre-declaration (m3_env.h)
 
+const bool WASM_DEBUG_NEWCODEPAGE = true;
 IM3CodePage  NewCodePage  (IM3Runtime i_runtime, u32 i_minNumLines)
 {
+    if(WASM_DEBUG_NEWCODEPAGE) ESP_LOGI("WASM3", "NewCodePage called");
+    
     IM3CodePage page;
 
     // check multiplication overflow
