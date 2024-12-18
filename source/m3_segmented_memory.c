@@ -196,7 +196,6 @@ MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) 
 }
 
 const bool WASM_DEBUG_ADDSEGMENT = true;
-const bool WASM_ADD_SEGMENTS_MALLOC_SEGMENT = false;
 M3Result AddSegments(IM3Memory memory, size_t additional_segments) {
     if(WASM_DEBUG_ADDSEGMENT) ESP_LOGI("WASM3", "AddSegments: requested %zu segments", additional_segments);
     if (memory == NULL || memory->firm != INIT_FIRM) {
@@ -235,13 +234,15 @@ M3Result AddSegments(IM3Memory memory, size_t additional_segments) {
 
         memory->segments[i]->index = i;
         
-        M3Result result = InitSegment(memory, memory->segments[i], false);
-        if (result) {
+        void* seg = InitSegment(memory, memory->segments[i], false);
+        if (seg == NULL) {
+            ESP_LOGE("WASM3", "AddSegment: InitSegment %d failed", i);
+
             // Cleanup on failure
             for (size_t j = memory->num_segments; j <= i; j++) {
                 m3_Def_Free(memory->segments[j]);
             }
-            return result;
+            return m3Err_mallocFailed;
         }
     }
     
