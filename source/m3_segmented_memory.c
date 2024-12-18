@@ -1123,3 +1123,93 @@ static bool is_part_of_active_multisegment(M3Memory* memory, size_t segment_inde
     }
     return false;
 }
+
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+///// Memory chunks
+
+ChunkInfo get_chunk_info(M3Memory* memory, void* ptr) {
+    ChunkInfo result = { NULL, 0 };
+    if (!memory || !ptr) return result;
+    
+    // Prima verifica se il puntatore è un offset
+    bool is_offset = ((uintptr_t)ptr < memory->total_size);
+    size_t segment_index;
+    size_t intra_offset;
+    
+    if (is_offset) {
+        // Calcola segmento e offset dall'offset fornito
+        segment_index = (uintptr_t)ptr / memory->segment_size;
+        intra_offset = (uintptr_t)ptr % memory->segment_size;
+    } else {
+        // Cerca in quale segmento si trova il puntatore diretto
+        bool found = false;
+        for (size_t i = 0; i < memory->num_segments; i++) {
+            MemorySegment* seg = memory->segments[i];
+            if (!seg || !seg->data) continue;
+            
+            if (ptr >= seg->data && ptr < (char*)seg->data + seg->size) {
+                segment_index = i;
+                intra_offset = (char*)ptr - (char*)seg->data;
+                found = true;
+                break;
+            }
+        }
+        if (!found) return result;
+    }
+    
+    // Verifica validità del segmento
+    if (segment_index >= memory->num_segments) return result;
+    MemorySegment* seg = memory->segments[segment_index];
+    if (!seg || !seg->data) return result;
+    
+    // Cerca il chunk che contiene questo puntatore
+    MemoryChunk* current = seg->first_chunk;
+    while (current) {
+        // Calcola l'area di memoria occupata da questo chunk
+        void* chunk_start = (void*)current;
+        void* chunk_end = (void*)((char*)chunk_start + current->size);
+        
+        // Per chunk multi-segmento
+        if (current->num_segments > 1) {
+            size_t total_size = 0;
+            for (size_t i = 0; i < current->num_segments; i++) {
+                total_size += current->segment_sizes[i];
+            }
+            chunk_end = (void*)((char*)chunk_start + total_size);
+        }
+        
+        // Verifica se il puntatore cade in questo chunk
+        if ((is_offset && intra_offset >= (uintptr_t)chunk_start - (uintptr_t)seg->data && 
+             intra_offset < (uintptr_t)chunk_end - (uintptr_t)seg->data) ||
+            (!is_offset && ptr >= chunk_start && ptr < chunk_end)) {
+            
+            result.chunk = current;
+            // Calcola l'offset base del chunk
+            result.base_offset = (current->start_segment * memory->segment_size) + 
+                               ((char*)current - (char*)memory->segments[current->start_segment]->data) +
+                               sizeof(MemoryChunk);
+            break;
+        }
+        
+        current = current->next;
+    }
+    
+    if (WASM_DEBUG_SEGMENTED_MEMORY_ALLOC && result.chunk) {
+        ESP_LOGI("WASM3", "Found chunk: segment=%d, size=%zu, base_offset=%u", 
+                 result.chunk->start_segment, result.chunk->size, result.base_offset);
+    }
+    
+    return result;
+}
+
+// Funzione helper per ottenere solo il chunk
+MemoryChunk* get_chunk(M3Memory* memory, void* ptr) {
+    return get_chunk_info(memory, ptr).chunk;
+}
+
+// Funzione helper per ottenere solo l'offset base
+u32 get_chunk_base_offset(M3Memory* memory, void* ptr) {
+    return get_chunk_info(memory, ptr).base_offset;
+}

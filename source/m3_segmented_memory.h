@@ -33,6 +33,11 @@ typedef struct MemoryChunk {
     size_t* segment_sizes;     // Array of sizes in each segment
 } MemoryChunk;
 
+typedef struct ChunkInfo {
+    MemoryChunk* chunk;
+    u32 base_offset;
+} ChunkInfo;
+
 typedef struct MemorySegment {    
     int firm;
 
@@ -99,5 +104,8 @@ void m3_memset(M3Memory* memory, void* ptr, int value, size_t n);
 
 /// Garbage collection
 void m3_collect_empty_segments(M3Memory* memory);
+
+/// Memory chunks
+ChunkInfo get_chunk_info(M3Memory* memory, void* ptr);
 
 static u8 ERROR_POINTER[sizeof(u64)] __attribute__((aligned(8)));
