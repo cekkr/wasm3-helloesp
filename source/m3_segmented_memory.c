@@ -260,7 +260,7 @@ const bool WASM_DEBUG_MEM_ACCESS = false;
 const bool WASM_DEBUG_GET_SEGMENT_POINTER = false;
 const bool WASM_DEBUG_GET_SEGMENT_POINTER_NULLMEMORY_BACKTRACE = false;
 
-static int get_segment_pointer_cycle = 0;
+static u32 get_segment_pointer_cycle = 0;
 void* get_segment_pointer(IM3Memory memory, u32 offset) { 
     if(get_segment_pointer_cycle++ % 3 == 0) { CALL_WATCHDOG }
 

@@ -135,7 +135,7 @@ void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
 // Allocatore di default che usa heap_caps
 //static const int WASM_ENABLE_SPI_MEM = 0;
 static const int ALLOC_SHIFT_OF = 0; // 4
-static const bool WASM_DEBUG_ALLOCS = true;
+static const bool WASM_DEBUG_ALLOCS = false;
 static const bool CHECK_MEMORY_PTR_AVAILABLE = false;
 static const bool DEFAULT_ALLOC_ALIGNMENT = false;
 
@@ -165,8 +165,15 @@ bool check_memory_available_bySize(size_t required_size) {
     #endif
 }
 
+static u32 call_default_alloc_cycle = 0;
+void call_default_alloc(){
+    if(call_default_alloc_cycle++ % 3 == 0) { CALL_WATCHDOG }
+}
+
 void* default_malloc(size_t size) {
     if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_malloc called size: %u", size);
+
+    call_default_alloc();
 
     TRY {
         if(CHECK_MEMORY_PTR_AVAILABLE){
@@ -215,6 +222,8 @@ static const bool WAMS_DEFAULT_FREE_CHECK_FREEEABLE = true;
 void default_free(void* ptr) {
     if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_free called for %p", ptr);
 
+    call_default_alloc();
+
     TRY {
         if (!ptr || ptr == ERROR_POINTER) return;
         
@@ -245,6 +254,8 @@ void default_free(void* ptr) {
 static const bool REALLOC_USE_MALLOC_IF_NEW = true;
 void* default_realloc(void* ptr, size_t new_size) {
     if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_realloc called for %p (size: %u)", ptr, new_size);
+
+    call_default_alloc();
 
     size_t aligned_size = DEFAULT_ALLOC_ALIGNMENT ? (new_size + 7) & ~7 : new_size;
     aligned_size += ALLOC_SHIFT_OF;

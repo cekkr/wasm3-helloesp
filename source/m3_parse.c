@@ -579,7 +579,7 @@ _       (io_module->environment->customSectionHandler(io_module, name, i_bytes, 
 
 
 const bool WASM_DEBUG_PARSEMODULESECTION = true;
-const bool WASM_DEBUG_PARSEMODULESECTION_FUNCTION = true;
+const bool WASM_DEBUG_PARSEMODULESECTION_FUNCTION = false;
 
 M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_bytes, u32 i_numBytes)
 {
