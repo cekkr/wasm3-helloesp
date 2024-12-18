@@ -635,43 +635,6 @@ d_m3Op (CallIndirect)
     else forwardTrap(r);
 }
 
-/*d_m3Op (CallRawFunction)
-{
-    d_m3TracePrepare
-
-    M3ImportContext ctx;
-
-    M3RawCall call = (M3RawCall) (*MEMACCESS(M3RawCall, _mem, _pc++));
-    ctx.function = immediate (IM3Function);
-    ctx.userdata = immediate (void *);
-    u64* const sp = ((u64*)_sp);
-    IM3Memory memory =_mem; //  m3MemInfo (_mem);
-    IM3Runtime runtime = m3MemRuntime(_mem);
-
-#if d_m3EnableStrace
-    // ... (il codice di tracing rimane invariato)
-#endif
-
-    void* stack_backup = runtime->stack;
-    runtime->stack = sp;
-    
-    // Per le funzioni raw, dobbiamo fornire un modo sicuro per accedere ai dati
-    // attraverso i segmenti. Creiamo una funzione helper che gestisce questo.
-    m3ret_t possible_trap = call(runtime, &ctx, sp, memory);
-    
-    runtime->stack = stack_backup;
-
-#if d_m3EnableStrace
-    // ... (il codice di tracing rimane invariato)
-#endif
-
-    if (M3_UNLIKELY(possible_trap)) {
-        // Non serve più refreshare _mem
-        pushBacktraceFrame();
-    }
-    forwardTrap(possible_trap);
-}*/
-
 d_m3Op (CallRawFunction)
 {
     CALL_WATCHDOG
@@ -858,7 +821,7 @@ d_m3Op (MemFill)
         
         // Esegui il fill nel segmento corrente
         u8* segment_data = (u8*)_mem->segments[start_segment]->data;
-        memset(segment_data + start_offset, (u8)byte, bytes_to_write);
+        m3_memset(_mem, segment_data + start_offset, (u8)byte, bytes_to_write);
         
         // Aggiorna i contatori
         remaining -= bytes_to_write;
@@ -897,135 +860,7 @@ d_m3Op  (Compile)
     newTrap (result);
 }
 
-
-/*static const bool WASM_Entry_IgnoreBufferOverflow = true;
-d_m3Op  (Entry)
-{
-    d_m3ClearRegisters
-    
-    d_m3TracePrepare
-
-    IM3Function function = immediate (IM3Function);
-    IM3Memory memory =_mem; //  m3MemInfo (_mem);
-
-#if d_m3SkipStackCheck
-    if (true)
-#else
-    // Usa total_size invece di maxStack per il controllo
-    if (WASM_Entry_IgnoreBufferOverflow || M3_LIKELY ((void *)(_sp + function->maxStackSlots) <  (void *)(memory->total_size))) //todo: DEPRECATE IT?
-#endif
-    {
-#if defined(DEBUG)
-        function->hits++;
-#endif
-        u8* stack = (u8*)((m3slot_t*)_sp + function->numRetAndArgSlots);
-        
-        // Assicuriamoci che i segmenti necessari per lo stack siano allocati
-        size_t stack_start_offset = (size_t)stack;
-        size_t required_size = function->numLocalBytes + function->numConstantBytes;
-        
-        // Alloca i segmenti necessari per lo stack
-        size_t start_segment = stack_start_offset / memory->segment_size;
-        size_t end_segment = (stack_start_offset + required_size - 1) / memory->segment_size;
-                            
-        if(end_segment > memory->num_segments){
-            // realloc new segments
-            memory->num_segments = end_segment;
-            ESP_LOGI("WASM3", "(Entry): Going to reallocate %u memory->segments", end_segment);
-            if(current_allocator->realloc(memory->segments, memory->num_segments * sizeof(MemorySegment*)) == NULL){
-                forwardTrap(error_details(m3Err_mallocFailed, "during segments realloc in (Entry)"));
-                return NULL;
-            }
-        }
-
-        if (AddSegments(memory, end_segment)) {
-            forwardTrap(error_details(m3Err_mallocFailed, "during AddSegments in (Entry)"));
-            return NULL;
-        }
-        
-        // Zero-inizializza i locali attraverso i segmenti
-        size_t remaining_locals = function->numLocalBytes;
-        size_t current_offset = stack_start_offset;
-        
-        while (remaining_locals > 0) {
-            size_t seg_idx = current_offset / memory->segment_size;
-            size_t seg_offset = current_offset % memory->segment_size;
-            size_t bytes_to_clear = M3_MIN(
-                remaining_locals,
-                memory->segment_size - seg_offset
-            );
-            
-            memset(
-                ((u8*)memory->segments[seg_idx]->data) + seg_offset,
-                0x0,
-                bytes_to_clear
-            );
-            
-            remaining_locals -= bytes_to_clear;
-            current_offset += bytes_to_clear;
-        }
-        
-        stack += function->numLocalBytes;
-
-        // Copia le costanti se presenti
-        if (function->constants) {
-            size_t remaining_constants = function->numConstantBytes;
-            current_offset = (size_t)stack;
-            const u8* src = function->constants;
-            
-            while (remaining_constants > 0) {
-                size_t seg_idx = current_offset / memory->segment_size;
-                size_t seg_offset = current_offset % memory->segment_size;
-                size_t bytes_to_copy = M3_MIN(
-                    remaining_constants,
-                    memory->segment_size - seg_offset
-                );
-                
-                memcpy(
-                    ((u8*)memory->segments[seg_idx]->data) + seg_offset,
-                    src,
-                    bytes_to_copy
-                );
-                
-                remaining_constants -= bytes_to_copy;
-                current_offset += bytes_to_copy;
-                src += bytes_to_copy;
-            }
-        }
-
-#if d_m3EnableStrace >= 2
-        d_m3TracePrint("%s %s {", m3_GetFunctionName(function), 
-                      SPrintFunctionArgList(function, _sp + function->numRetSlots));
-        trace_rt->callDepth++;
-#endif
-
-        m3ret_t r = nextOpImpl();
-
-#if d_m3EnableStrace >= 2
-        trace_rt->callDepth--;
-
-        if (r) {
-            d_m3TracePrint("} !trap = %s", (char*)r);
-        } else {
-            int rettype = GetSingleRetType(function->funcType);
-            if (rettype != c_m3Type_none) {
-                char str[128] = { 0 };
-                SPrintArg(str, 127, _sp, rettype);
-                d_m3TracePrint("} = %s", str);
-            } else {
-                d_m3TracePrint("}");
-            }
-        }
-#endif
-
-        if (M3_UNLIKELY(r)) {
-            // Non abbiamo più bisogno di refreshare _mem
-            fillBacktraceFrame();
-        }
-        forwardTrap(r);
-    }
-    else newTrap(error_details(m3Err_trapStackOverflow, "in d_m30p (Entry)"));
-}*/
+////////////////////////////////
 
 d_m3Op  (Entry)
 {
@@ -1048,7 +883,7 @@ d_m3Op  (Entry)
 #endif
         u8 * stack = (u8 *) ((m3slot_t *) _sp + function->numRetAndArgSlots);
 
-        memset (stack, 0x0, function->numLocalBytes);
+        m3_memset (_mem, stack, 0x0, function->numLocalBytes);
         stack += function->numLocalBytes;
 
         if (function->constants)
@@ -1715,101 +1550,6 @@ d_m3Load_i (i64, i64);
 ///
 /// Segmented memory store
 ///
-
-//todo: old implementation ([I hope] to remove ASAP)
-/*#define d_m3Store(REG, SRC_TYPE, DEST_TYPE)             \
-d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_rs)             \
-{                                                       \
-    d_m3TracePrepare                                    \
-    u64 operand = slot (u32);                           \
-    u32 offset = immediate (u32);                       \
-    operand += offset;                                  \
-                                                        \
-    if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
-    )){                                                \
-        {                                               \
-            d_m3TraceStore(SRC_TYPE, operand, REG);     \
-            u8* mem8 = m3SegmentedMemAccess(_mem, operand, sizeof(DEST_TYPE)); \
-            if (mem8) {                                 \
-                DEST_TYPE val = (DEST_TYPE) REG;        \
-                M3_BSWAP_##DEST_TYPE(val);              \
-                memcpy(mem8, &val, sizeof(val));        \
-            } else d_outOfBounds;                       \
-        }                                               \
-    nextOp();                                           \
-    } else  d_outOfBounds;                               \
-}                                                       \
-d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_sr)             \
-{                                                       \
-    d_m3TracePrepare                                    \
-    const SRC_TYPE value = slot (SRC_TYPE);             \
-    u64 operand = (u32) _r0;                            \
-    u32 offset = immediate (u32);                       \
-    operand += offset;                                  \
-                                                        \
-    if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
-    )){                                                \
-        {                                               \
-            d_m3TraceStore(SRC_TYPE, operand, value);   \
-            u8* mem8 = m3SegmentedMemAccess(_mem, operand, sizeof(DEST_TYPE)); \
-            if (mem8) {                                 \
-                DEST_TYPE val = (DEST_TYPE) value;      \
-                M3_BSWAP_##DEST_TYPE(val);              \
-                memcpy(mem8, &val, sizeof(val));        \
-            } else d_outOfBounds;                       \
-        }                                               \
-        nextOp();                                       \
-    } else d_outOfBounds;                                \
-}                                                       \
-d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_ss)             \
-{                                                       \
-    d_m3TracePrepare                                    \
-    const SRC_TYPE value = slot (SRC_TYPE);             \
-    u64 operand = slot (u32);                           \
-    u32 offset = immediate (u32);                       \
-    operand += offset;                                  \
-                                                        \
-    if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
-    )){                                                \
-        {                                               \
-            d_m3TraceStore(SRC_TYPE, operand, value);   \
-            u8* mem8 = m3SegmentedMemAccess(_mem, operand, sizeof(DEST_TYPE)); \
-            if (mem8) {                                 \
-                DEST_TYPE val = (DEST_TYPE) value;      \
-                M3_BSWAP_##DEST_TYPE(val);              \
-                memcpy(mem8, &val, sizeof(val));        \
-            } else d_outOfBounds;                       \
-        }                                               \
-        nextOp();                                       \
-    } else d_outOfBounds;                                \
-}
-
-#define d_m3StoreFp(REG, TYPE)                          \
-d_m3Op(TYPE##_Store_##TYPE##_rr)                      \
-{                                                       \
-    d_m3TracePrepare                                    \
-    u64 operand = (u32) _r0;                            \
-    u32 offset = immediate (u32);                       \
-    operand += offset;                                  \
-                                                        \
-    if (m3MemCheck(                                     \
-        operand + sizeof (TYPE) <= _mem->total_size         \
-    )){                                                \
-        {                                               \
-            d_m3TraceStore(TYPE, operand, REG);         \
-            u8* mem8 = m3SegmentedMemAccess(_mem, operand, sizeof(TYPE)); \
-            if (mem8) {                                 \
-                TYPE val = (TYPE) REG;                  \
-                M3_BSWAP_##TYPE(val);                   \
-                memcpy(mem8, &val, sizeof(val));        \
-            } else d_outOfBounds;                       \
-        }                                               \
-        nextOp();                                       \
-    } else  d_outOfBounds;                                \
-}*/
 
 #define d_m3Store(REG, SRC_TYPE, DEST_TYPE)             \
 d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_rs)             \
