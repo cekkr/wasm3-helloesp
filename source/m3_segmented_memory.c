@@ -826,7 +826,12 @@ void* m3_realloc(M3Memory* memory, void* offset_ptr, size_t new_size) {
 }
 
 void m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
-    if (!memory || !dest || !src || !n) return;
+    if (!dest || !src || !n) return;
+
+    if(!IsValidMemory(memory)){
+        memcpy(dest, src, n);
+        return;
+    }
     
     // Calcola segmenti e offset per source e destination
     u32 src_offset = (u32)src;
@@ -880,7 +885,12 @@ void m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
 }
 
 void m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
-    if (!memory || !ptr || !n) return;
+    if (!ptr || !n) return;
+
+    if(!IsValidMemory(memory)){
+        memset(ptr, value, n);
+        return;
+    }
     
     // Verifica se ptr è un offset M3Memory o un puntatore normale
     bool is_offset = ((uintptr_t)ptr < memory->total_size);

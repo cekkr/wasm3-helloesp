@@ -888,7 +888,7 @@ d_m3Op  (Entry)
 
         if (function->constants)
         {
-            memcpy (stack, function->constants, function->numConstantBytes);
+            m3_memcpy (_mem, stack, function->constants, function->numConstantBytes);
         }
 
 #if d_m3EnableStrace >= 2
@@ -1380,7 +1380,7 @@ d_m3Op (Const64) {
         //return m3Err_mallocFailed;
     }
     else {
-        memcpy(&value, src_ptr, sizeof(u64));
+        m3_memcpy(_mem, &value, src_ptr, sizeof(u64));
     }   
 
    _pc += 2;  // Su ESP32 sempre 2 perché M3_SIZEOF_PTR == 4
@@ -1402,7 +1402,7 @@ d_m3Op (Const64) {
    }
 
    // Copia il valore usando sempre memcpy per sicurezza
-   memcpy(dest, &value, sizeof(u64));
+   m3_memcpy(_mem, dest, &value, sizeof(u64));
 
    nextOp();
 }
@@ -1487,7 +1487,7 @@ d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_r)                 \
             u8* src8 = m3SegmentedMemAccess(_mem, operand, sizeof(SRC_TYPE)); \
             if (src8) {                                 \
                 SRC_TYPE value;                         \
-                memcpy(&value, src8, sizeof(value));    \
+                m3_memcpy(_mem, &value, src8, sizeof(value));    \
                 M3_BSWAP_##SRC_TYPE(value);            \
                 REG = (DEST_TYPE)value;                 \
                 d_m3TraceLoad(DEST_TYPE, operand, REG); \
@@ -1511,7 +1511,7 @@ d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_s)                 \
             u8* src8 = m3SegmentedMemAccess(_mem, operand, sizeof(SRC_TYPE)); \
             if (src8) {                                 \
                 SRC_TYPE value;                         \
-                memcpy(&value, src8, sizeof(value));    \
+                m3_memcpy(_mem, &value, src8, sizeof(value));    \
                 M3_BSWAP_##SRC_TYPE(value);            \
                 REG = (DEST_TYPE)value;                 \
                 d_m3TraceLoad(DEST_TYPE, operand, REG); \
