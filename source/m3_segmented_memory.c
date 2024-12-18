@@ -323,17 +323,17 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
         if(seg == NULL || seg->firm != INIT_FIRM){
             ESP_LOGE("WASM3", "get_segment_pointer: invalid segment %d", segment_index);
             goto failResult;
-        }
-
-        if(seg->data == NULL){
-            if(InitSegment(memory, seg, true)){
-                ESP_LOGE("WASM3", "get_segment_pointer: failed allocating segment %d", segment_index);
-                goto failResult;
-            }
-        }        
+        }      
     }
 
     MemorySegment* seg = memory->segments[segment_index];
+
+    if(seg->data == NULL){
+        if(InitSegment(memory, seg, true)){
+            ESP_LOGE("WASM3", "get_segment_pointer: failed allocating segment %d", segment_index);
+            goto failResult;
+        }
+    }  
 
     if(seg == NULL || seg->firm != INIT_FIRM){
         ESP_LOGE("WASM3", "get_segment_pointer: segment %d has invalid firm (%d), or is NULL", segment_index, seg->firm);
@@ -389,7 +389,8 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
     }
     else {
         if(!is_ptr_valid(res)){
-            ESP_LOGW("WASM3", "resolve_pointer: ptr is neither segment pointer neither valid ptr (ptr: %p, memory.total_size: %d)", res, memory->total_size);
+            ESP_LOGW("WASM3", "resolve_pointer: ptr is neither segment pointer neither valid ptr (ptr: %p, memory.total_size+req: %d)", 
+                res, (memory->total_size + memory->total_requested_size));
         }
     }
 
@@ -400,8 +401,7 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
 
     if(!is_ptr_valid(res)){
         ESP_LOGE("WASM3", "resolve_pointer: invalid pointer %p (from %p)", res, ptr);
-        //LOG_FLUSH;
-        //backtrace();
+        LOG_FLUSH; backtrace(); // break the comment in case of necessity
         return ERROR_POINTER;
     }
 
