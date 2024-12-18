@@ -40,6 +40,10 @@ IM3MemoryPoint ValidateMemoryPoint(void* ptr) {
     if (ptr == NULL) {
         return NULL;
     }
+
+    if(!is_ptr_valid(ptr)){
+        return NULL;
+    }
     
     IM3MemoryPoint point = (IM3MemoryPoint)ptr;
     
