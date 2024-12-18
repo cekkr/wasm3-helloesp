@@ -185,6 +185,7 @@ d_m3ErrorConst  (globalTypeMismatch,            "global type mismatch")
 d_m3ErrorConst  (globalNotMutable,              "global is not mutable")
 d_m3ErrorConst  (nullRuntime,                   "runtime is null")
 d_m3ErrorConst  (nullSegmentData,               "unable to allocate segment data")
+d_m3ErrorConst  (nullPointer,                   "null pointer")
 d_m3ErrorConst  (malformedData,                  "malformed data")
 
 // traps
