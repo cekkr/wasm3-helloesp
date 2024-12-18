@@ -95,6 +95,9 @@ mos get_offset_pointer(IM3Memory memory, void* ptr);
 void* m3_malloc(M3Memory* memory, size_t size);
 void m3_free(M3Memory* memory, void* ptr);
 void* m3_realloc(M3Memory* memory, void* ptr, size_t new_size);
+void m3_memset(M3Memory* memory, void* ptr, int value, size_t n);
 
+/// Garbage collection
+void m3_collect_empty_segments(M3Memory* memory);
 
 static u8 ERROR_POINTER[sizeof(u64)] __attribute__((aligned(8)));
