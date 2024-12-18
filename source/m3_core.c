@@ -135,7 +135,7 @@ void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
 // Allocatore di default che usa heap_caps
 //static const int WASM_ENABLE_SPI_MEM = 0;
 static const int ALLOC_SHIFT_OF = 0; // 4
-static const bool WASM_DEBUG_ALLOCS = true;
+static const bool WASM_DEBUG_DEFAULT_ALLOCS = false;
 static const bool CHECK_RAM_MEMORY_AVAILABLE = false;
 static const bool DEFAULT_ALLOC_ALIGNMENT = false;
 
@@ -171,7 +171,7 @@ void call_default_alloc(){
 }
 
 void* default_malloc(size_t size) {
-    if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_malloc called size: %u", size);
+    if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "default_malloc called size: %u", size);
 
     call_default_alloc();
 
@@ -202,11 +202,11 @@ void* default_malloc(size_t size) {
             return NULL;
         }
 
-        if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_malloc resulting ptr: %p", ptr);
+        if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "default_malloc resulting ptr: %p", ptr);
 
         memset(ptr, 0, aligned_size);  // Zero-fill con padding  
 
-        if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_malloc resulting ptr after memset: %p", ptr);
+        if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "default_malloc resulting ptr after memset: %p", ptr);
 
         return ptr;
 
@@ -218,9 +218,9 @@ void* default_malloc(size_t size) {
 }
 
 static const bool WASM_DEBUG_DEFAULT_FREE = false;
-static const bool WAMS_DEFAULT_FREE_CHECK_FREEEABLE = false;
+static const bool WAMS_DEFAULT_FREE_CHECK_FREEEABLE = true;
 void default_free(void* ptr) {
-    if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_free called for %p", ptr);
+    if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "default_free called for %p", ptr);
 
     call_default_alloc();
 
@@ -253,7 +253,7 @@ void default_free(void* ptr) {
 
 static const bool REALLOC_USE_MALLOC_IF_NEW = true;
 void* default_realloc(void* ptr, size_t new_size) {
-    if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_realloc called for %p (size: %u)", ptr, new_size);
+    if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "default_realloc called for %p (size: %u)", ptr, new_size);
 
     call_default_alloc();
 
@@ -281,7 +281,7 @@ void* default_realloc(void* ptr, size_t new_size) {
 
         // Ottieni la dimensione originale del blocco
         size_t old_size = heap_caps_get_allocated_size(ptr);
-        if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "Original block size: %zu", old_size);
+        if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "Original block size: %zu", old_size);
 
         void* new_ptr = NULL;
 
@@ -299,7 +299,7 @@ void* default_realloc(void* ptr, size_t new_size) {
         if(new_ptr && aligned_size > old_size) {
             // Azzera solo la nuova porzione allocata
             memset((uint8_t*)new_ptr + old_size, 0, aligned_size - old_size);
-            if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "Zeroed %zu bytes from offset %zu", 
+            if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "Zeroed %zu bytes from offset %zu", 
                                           aligned_size - old_size, old_size);
         }
 

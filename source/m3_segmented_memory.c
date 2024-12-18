@@ -653,8 +653,14 @@ void* m3_malloc(M3Memory* memory, size_t size) {
         ESP_LOGI("WASM3", "m3_malloc: entering with size=%zu", size);
     
     size_t total_size = size + sizeof(MemoryChunk);
+    // Allinea la dimensione totale a WASM_CHUNK_SIZE
+    total_size = (total_size + (WASM_CHUNK_SIZE-1)) & ~(WASM_CHUNK_SIZE-1);
+    
     size_t bucket = log2(total_size);
     MemoryChunk* found_chunk = NULL;    
+    
+    if (WASM_DEBUG_SEGMENTED_MEMORY_ALLOC) 
+        ESP_LOGI("WASM3", "m3_malloc: calculated bucket=%zu for total_size=%zu", bucket, total_size);
     
     // 1. Prima cerca nei chunk liberi
     if (bucket < memory->num_free_buckets) {
@@ -673,22 +679,16 @@ void* m3_malloc(M3Memory* memory, size_t size) {
     
     // 2. Se non trova chunk liberi, cerca spazio alla fine dei segmenti esistenti
     if (!found_chunk) {
-        if (WASM_DEBUG_SEGMENTED_MEMORY_ALLOC) ESP_LOGI("WASM3", "m3_malloc: searching for space in existing segments");
+        if (WASM_DEBUG_SEGMENTED_MEMORY_ALLOC) 
+            ESP_LOGI("WASM3", "m3_malloc: searching for space in existing segments");
             
         for (size_t i = 0; i < memory->num_segments; i++) {
+            if (WASM_DEBUG_SEGMENTED_MEMORY_ALLOC)
+                ESP_LOGI("WASM3", "m3_malloc: cycling segment %zu (%p)", i, (void*)memory->segments[i]);
+                
             MemorySegment* seg = memory->segments[i];
-            if (WASM_DEBUG_SEGMENTED_MEMORY_ALLOC){ 
-                ESP_LOGI("WASM3", "m3_malloc: cycling segment %d (%p)", i, seg);                     
-            }
-
-            if(seg == NULL){
-                ESP_LOGE("WASM3", "m3_malloc: NULL segment found at index %zu", i);
-                continue;
-            }
-
-            if (!seg->is_allocated) {
-                seg = InitSegment(memory, seg, true);
-                if (seg != NULL)
+            if (!seg || !seg->data) {
+                if (InitSegment(memory, seg, true) != NULL)
                     continue;
             }
             
@@ -703,6 +703,9 @@ void* m3_malloc(M3Memory* memory, size_t size) {
             if (last_chunk) {
                 used_space += last_chunk->size;
             }
+            
+            // Allinea used_space a WASM_CHUNK_SIZE
+            used_space = (used_space + (WASM_CHUNK_SIZE-1)) & ~(WASM_CHUNK_SIZE-1);
             
             // Se c'è spazio sufficiente dopo l'ultimo chunk
             if (used_space + total_size <= seg->size) {
@@ -739,7 +742,7 @@ void* m3_malloc(M3Memory* memory, size_t size) {
         size_t segments_needed = (total_size + memory->segment_size - 1) / memory->segment_size;
         
         // Aggiungi i segmenti necessari
-        M3Result result = AddSegments(memory, segments_needed);
+        M3Result result = AddSegments(memory, segments_needed+1);
         if (result != NULL) {
             ESP_LOGE("WASM3", "m3_malloc: failed to add new segments");
             return NULL;
@@ -749,19 +752,18 @@ void* m3_malloc(M3Memory* memory, size_t size) {
         size_t new_segment_index = memory->num_segments - segments_needed;
         MemorySegment* new_seg = memory->segments[new_segment_index];
         
-        if (!new_seg->data) {
+        if (new_seg == NULL || !new_seg->is_allocated) {
             new_seg = InitSegment(memory, new_seg, true);
-            if (new_seg != NULL) {
+            if (new_seg == NULL) {
                 ESP_LOGE("WASM3", "m3_malloc: failed to initialize new segment");
                 return NULL;
             }
         }
         
         found_chunk = (MemoryChunk*)new_seg->data;
+        memset(found_chunk, 0, sizeof(MemoryChunk));  // Zero initialize
         found_chunk->size = total_size;
         found_chunk->is_free = false;
-        found_chunk->next = NULL;
-        found_chunk->prev = NULL;
         found_chunk->num_segments = segments_needed;
         found_chunk->start_segment = new_segment_index;
         found_chunk->segment_sizes = m3_Def_Malloc(sizeof(size_t) * segments_needed);
@@ -782,10 +784,18 @@ void* m3_malloc(M3Memory* memory, size_t size) {
     if (found_chunk) {
         // Calcola l'offset relativo al primo segmento
         u32 offset = (found_chunk->start_segment * memory->segment_size) + sizeof(MemoryChunk);
+
+        // Verifica che l'offset sia allineato
+        if (offset % WASM_CHUNK_SIZE != 0) {
+            offset = (offset + (WASM_CHUNK_SIZE-1)) & ~(WASM_CHUNK_SIZE-1);
+        }
         
         if (WASM_DEBUG_SEGMENTED_MEMORY_ALLOC) {
             ESP_LOGI("WASM3", "m3_malloc: returning offset=%u", offset);
         }
+        
+        // Registra l'allocazione per debug
+        memory->total_requested_size += size;
         
         return (void*)offset;
     }
