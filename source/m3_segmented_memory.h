@@ -51,6 +51,7 @@ typedef struct M3Memory_t {
     size_t total_allocated_size;         
     size_t max_size;           
     size_t segment_size;
+    size_t total_requested_size;
     
     // Cache per ottimizzare la ricerca di chunk liberi
     MemoryChunk** free_chunks;  // Array di puntatori a chunk liberi per size

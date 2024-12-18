@@ -352,6 +352,11 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
 const bool WASM_DEBUG_RESOLVE_POINTER_MEMORY_BACKTRACE = false;
 static u32 resolve_pointer_cycle = 0;
 void* resolve_pointer(IM3Memory memory, void* ptr) {
+    if(is_ptr_valid(ptr)){
+        if(WASM_DEBUG_MEM_ACCESS) ESP_LOG("WASM3", "resolve_pointer: ptr %p is valid as is", ptr);
+        return ptr;
+    }
+
     if(resolve_pointer_cycle++ % 3 == 0) { CALL_WATCHDOG }
 
     if(memory == NULL || memory->firm != INIT_FIRM) return ptr;
@@ -436,7 +441,7 @@ bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size)
     if(memory == NULL) return false;
 
     //todo: improve precision by checking if it's inside allocated memory (?)
-    return (offset + size) <= memory->total_size;
+    return (offset + size) <= (memory->total_size + memory->total_requested_size);
 }
 
 const bool WASM_DEBUG_GET_OFFSET_POINTER = true;

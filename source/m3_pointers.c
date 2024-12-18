@@ -4,6 +4,8 @@
 #include "esp_system.h"
 #include "esp_memory_utils.h"
 #include <setjmp.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 #include "m3_pointers.h"
 
@@ -104,22 +106,64 @@ bool safe_free(void* ptr) {
 ///
 ///
 
+void* realign_heap_ptr(void* ptr) {
+    if (ptr == NULL) {
+        return NULL;
+    }
+
+    // Convert to uintptr_t for arithmetic operations
+    uintptr_t addr = (uintptr_t)ptr;
+    
+    // Heap blocks in ESP32 are typically aligned to 8 bytes
+    const size_t HEAP_ALIGNMENT = 8;
+    
+    // Mask to clear lower bits and align to HEAP_ALIGNMENT
+    uintptr_t mask = ~(HEAP_ALIGNMENT - 1);
+    
+    // Try alignments before the pointer
+    for (size_t i = 0; i < HEAP_ALIGNMENT; i++) {
+        uintptr_t test_addr = (addr - i) & mask;
+        void* aligned_ptr = (void*)test_addr;
+        
+        if (heap_caps_check_integrity_addr(aligned_ptr, false)) {
+            return aligned_ptr;
+        }
+    }
+    
+    // If not found before, try some alignments after the pointer
+    // (in case ptr points to middle/end of block)
+    for (size_t i = 0; i < HEAP_ALIGNMENT; i++) {
+        uintptr_t test_addr = ((addr + i) & mask);
+        void* aligned_ptr = (void*)test_addr;
+        
+        if (heap_caps_check_integrity_addr(aligned_ptr, false)) {
+            return aligned_ptr;
+        }
+    }
+    
+    // No valid heap block found nearby
+    return NULL;
+}
+
 // Verifica se un puntatore è valido per le operazioni di memoria
 const bool WASM_IS_VALID_PTR_IGNORE_DRAM = true;
+const bool WASM_IS_PTR_VALID_VERBOSE = false;
 bool is_ptr_valid(const void* ptr) {
     if (!ptr) {
-        ESP_LOGW("WASM3", "Null pointer detected");
+        if(WASM_IS_PTR_VALID_VERBOSE) ESP_LOGW("WASM3", "Null pointer detected");
         return false;
     }
     
     if (!WASM_IS_VALID_PTR_IGNORE_DRAM && !esp_ptr_in_dram(ptr)) {        
-        ESP_LOGW("WASM3", "Pointer %p not in DRAM", ptr);
+        if(WASM_IS_PTR_VALID_VERBOSE) ESP_LOGW("WASM3", "Pointer %p not in DRAM", ptr);
         //backtrace();
         return false;
     }
     
     if (!heap_caps_check_integrity_addr(ptr, false)) {
-        ESP_LOGW("WASM3", "Heap corruption detected at %p", ptr);
+        if(realign_heap_ptr(ptr) == NULL){
+            if(WASM_IS_PTR_VALID_VERBOSE) ESP_LOGW("WASM3", "Heap corruption detected at %p", ptr);
+        }
         return false;
     }
     
