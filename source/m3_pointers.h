@@ -75,33 +75,25 @@ ptr_status_t validate_ptr_for_free(const void* ptr);
 #define     m3_Free(MEM, PTR)                              m3_free(MEM, PTR)
 //#define     m3_FreeMemory(P)                        do { m3_free((void*)(P), true); (P) = NULL; } while(0) 
 
+#define m3_Int_As_Def 1
+#if m3_Dyn_As_Def
+
+#define     m3_Dyn_Malloc(SIZE)                         default_malloc(SIZE)
+#define     m3_Dyn_Realloc(PTR, NEW)                    default_realloc(PTR, NEW)
+#define     m3_Dyn_AllocStruct(STRUCT)                  (STRUCT *)default_malloc (sizeof (STRUCT))
+#define     m3_Dyn_AllocArray(STRUCT, NUM)              (STRUCT *)default_malloc (sizeof (STRUCT) * (NUM))
+#define     m3_Dyn_ReallocArray(STRUCT, PTR, NEW)       (STRUCT *)default_realloc (PTR, sizeof (STRUCT) * (NEW)) // , sizeof (STRUCT) * (OLD)
+#define     m3_Dyn_Free(P)                              default_free(P)
+
+#else 
+
 #define     m3_Dyn_Malloc(MEM, SIZE)                   m3_Malloc(MEM, SIZE)      
 #define     m3_Dyn_Realloc(MEM, PTR, NEW)               m3_Realloc(MEM, PTR, NEW)
 #define     m3_Dyn_AllocStruct(MEM, STRUCT)                  m3_AllocStruct(MEM, STRUCT)
 #define     m3_Dyn_AllocArray(MEM, STRUCT, NUM)              m3_AllocArray(MEM, STRUCT, NUM)
 #define     m3_Dyn_ReallocArray(MEM, PTR, STRUCT, NEW)          m3_ReallocArray(MEM, PTR, STRUCT, NEW)
-#define     m3_Dyn_Free(MEM, PTR)                              m3_Free(MEM, PTR) 
+#define     m3_Dyn_Free(MEM, PTR)    
 
-//#define m3_Int_As_Def
-#ifdef m3_Int_As_Def
-
-#define     m3_Int_Malloc(SIZE)                         default_malloc(SIZE)
-#define     m3_Int_Realloc(PTR, NEW)                    default_realloc(PTR, NEW)
-#define     m3_Int_AllocStruct(STRUCT)                  (STRUCT *)default_malloc (sizeof (STRUCT))
-#define     m3_Int_AllocArray(STRUCT, NUM)              (STRUCT *)default_malloc (sizeof (STRUCT) * (NUM))
-#define     m3_Int_ReallocArray(STRUCT, PTR, NEW)       (STRUCT *)default_realloc (PTR, sizeof (STRUCT) * (NEW)) // , sizeof (STRUCT) * (OLD)
-#define     m3_Int_Free(P)                              default_free(P)
-
-#else 
-
-/*
-#define     m3_Int_Malloc(SIZE)                         m3_Malloc(&globalMemory, SIZE)
-#define     m3_Int_Realloc(PTR, NEW)                    m3_Realloc(&globalMemory, PTR, NEW)
-#define     m3_Int_AllocStruct(STRUCT)                  m3_AllocStruct(&globalMemory, STRUCT)     
-#define     m3_Int_AllocArray(STRUCT, NUM)              m3_AllocArray(&globalMemory, STRUCT, NUM)   
-#define     m3_Int_ReallocArray(STRUCT, PTR, NEW)       m3_ReallocArray(&globalMemory, PTR, STRUCT, NEW) // , sizeof (STRUCT) * (OLD)
-#define     m3_Int_Free(PTR)                              m3_Free(&globalMemory, PTR)
-*/
 #endif
 
 /*

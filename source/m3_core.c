@@ -1005,7 +1005,7 @@ M3Result Read_utf8(IM3Memory memory, cstr_t* o_utf8, bytes_t* io_bytes, cbytes_t
     // I guess it's okay copying it to default malloc 
     // Anyway, it's possible to check if is related to M3Memory using IsValidMemory and use m3_Malloc instead
     // Allocate and copy the string
-    char* utf8 = (char*)m3_Def_Malloc("UTF8", utf8Length + 1);
+    char* utf8 = (char*)m3_Def_Malloc(utf8Length + 1); // name: "UTF8",
     if (!utf8) return m3Err_malformedData;
 
     memcpy(utf8, source_ptr, utf8Length);
