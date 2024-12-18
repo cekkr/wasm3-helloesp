@@ -249,9 +249,13 @@ IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes
             ESP_LOGI("WASM3", "flush");
         }
 
+        #if M3Runtime_Stack_Segmented
         runtime->originStack = m3_Malloc (memory, i_stackSizeInBytes + 4 * sizeof (m3slot_t)); // TODO: more precise stack checks
+        #else
+        runtime->originStack = m3_Def_Malloc (stackSize); // default malloc
+        #endif 
         //runtime->originStack = m3_NewStack(); // (not implemented) ad hoc M3Memory for stack        
-        //runtime->originStack = m3_Def_Malloc (stackSize); // default malloc
+        
 
         if (runtime->originStack)
         {
@@ -316,33 +320,86 @@ void *  _FreeModule  (IM3Module i_module, void * i_info)
 
 static const int DEBUG_TOP_MEMORY = 1;
 void FreeMemory(IM3Memory memory) {
-    if(DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory called");
+    if (!memory) return;
+    if (DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory called");
 
-    if(memory->segment_size != WASM_SEGMENT_SIZE) return;
-
-    if (is_ptr_valid(memory->segments)) {
-        // Libera la memoria di ogni segmento allocato
-        for (size_t i = 0; i < memory->num_segments; i++) {
-            if(DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory: freeing segment %d", i);
-            if(is_ptr_valid(memory->segments[i])){
-                if (memory->segments[i]->is_allocated && memory->segments[i]->data) {
-                    m3_Def_Free(memory->segments[i]->data);
-                }
-
-                m3_Def_Free(memory->segments[i]);
-            }   
-            else {
-                if(DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory: segment %d not freeable", i);
-            }         
-        }
-        // Libera l'array dei segmenti
-        m3_Def_Free(memory->segments);
-        memory->segments = NULL;
-        memory->num_segments = 0;
+    // Verifica integrità della memoria
+    if (!IsValidMemory(memory) || memory->segment_size != WASM_SEGMENT_SIZE) {
+        if (DEBUG_TOP_MEMORY) ESP_LOGW("WASM3", "FreeMemory: invalid memory structure");
+        return;
     }
 
-    //memory->numPages = 0;
+    // Prima libera le free lists
+    if (memory->free_chunks) {
+        for (size_t i = 0; i < memory->num_free_buckets; i++) {
+            MemoryChunk* chunk = memory->free_chunks[i];
+            while (chunk) {
+                MemoryChunk* next = chunk->next;
+                if (chunk->segment_sizes) {
+                    m3_Def_Free(chunk->segment_sizes);
+                }
+                chunk = next;
+            }
+        }
+        m3_Def_Free(memory->free_chunks);
+        memory->free_chunks = NULL;
+    }
+
+    if (is_ptr_valid(memory->segments)) {
+        // Libera tutti i segmenti e le loro strutture
+        for (size_t i = 0; i < memory->num_segments; i++) {
+            if (DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory: processing segment %zu", i);
+            
+            MemorySegment* segment = memory->segments[i];
+            if (!is_ptr_valid(segment)) {
+                if (DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory: segment %zu not valid", i);
+                continue;
+            }
+
+            if (segment->data) {
+                // Libera segment_sizes di ogni chunk nel segmento
+                // ma solo per i chunk che iniziano in questo segmento
+                MemoryChunk* chunk = segment->first_chunk;
+                while (chunk) {
+                    if (chunk->start_segment == i && chunk->segment_sizes) {
+                        if (DEBUG_TOP_MEMORY) {
+                            ESP_LOGI("WASM3", "FreeMemory: freeing chunk segment_sizes at segment %zu", i);
+                        }
+                        m3_Def_Free(chunk->segment_sizes);
+                        chunk->segment_sizes = NULL;
+                    }
+                    chunk = chunk->next;
+                }
+
+                if (segment->is_allocated) {
+                    if (DEBUG_TOP_MEMORY) {
+                        ESP_LOGI("WASM3", "FreeMemory: freeing segment %zu data", i);
+                    }
+                    m3_Def_Free(segment->data);
+                    segment->data = NULL;
+                }
+            }
+
+            m3_Def_Free(segment);
+            memory->segments[i] = NULL;
+        }
+
+        // Libera l'array dei segmenti
+        if (DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory: freeing segments array");
+        m3_Def_Free(memory->segments);
+        memory->segments = NULL;
+    }
+
+    // Resetta tutti i contatori e gli stati
+    memory->num_segments = 0;
+    memory->total_size = 0;
+    memory->total_allocated_size = 0;
+    memory->total_requested_size = 0;
     memory->maxPages = 0;
+    memory->num_free_buckets = 0;
+    memory->firm = 0;  // Invalida la struttura della memoria
+
+    if (DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory completed");
 }
 
 
@@ -449,12 +506,22 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
                 if (SizeOfType (i_type) == sizeof (u32))
                 {
                     if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: going to: * (u32 *) o_expressed = * ((u32 *) stack);");
-                    * (u32 *) o_expressed = * ((u32 *) stack);
+
+                    #if M3Runtime_Stack_Segmented
+                    * (u32 *) o_expressed = * ((u32 *) resolve_pointer(&i_module->runtime->memory, stack));
+                    #else 
+                    * (u32 *) o_expressed = * (u32 *) o_expressed = * ((u32 *) stack);
+                    #endif
                 }
                 else
-                {
+                {                    
                     if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: going to: * (u64 *) o_expressed = * ((u64 *) stack);");
-                    * (u64 *) o_expressed = * ((u64 *) stack);
+
+                    #if M3Runtime_Stack_Segmented
+                    * (u64 *) o_expressed = * ((u64 *) resolve_pointer(&i_module->runtime->memory, stack));
+                    #else 
+                    * (u64 *) o_expressed = * (u64 *) o_expressed = * ((u64 *) stack);
+                    #endif
                 }
             }
         }

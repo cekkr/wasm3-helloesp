@@ -463,3 +463,5 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 #else 
 #define CHECK_MEMORY_PTR(mem, pos) nothing_todo()
 #endif
+
+#define M3Runtime_Stack_Segmented 1
