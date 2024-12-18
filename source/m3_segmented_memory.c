@@ -253,22 +253,27 @@ M3Result AddSegments(M3Memory* memory, size_t set_num_segments) {
 const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = false;
 const bool WASM_DEBUG_MEM_ACCESS = false;
 const bool WASM_DEBUG_GET_SEGMENT_POINTER = false;
+const bool WASM_DEBUG_GET_SEGMENT_POINTER_NULLMEMORY_BACKTRACE = false;
 
 static int get_segment_pointer_cycle = 0;
 void* get_segment_pointer(IM3Memory memory, u32 offset) { 
     if(get_segment_pointer_cycle++ % 3 == 0) { CALL_WATCHDOG }
 
+    if(memory == NULL){
+        return offset;
+    }
+
     CHECK_MEMORY_PTR(memory, "get_segment_pointer");
 
     if(memory->firm != INIT_FIRM){
         ESP_LOGW("WASM3", "get_segment_pointer: null memory (firm: %d)", memory->firm);
-        backtrace();
+        if(WASM_DEBUG_GET_SEGMENT_POINTER_NULLMEMORY_BACKTRACE) backtrace();
         return offset;
     }
 
      if(memory->segments == NULL){
         ESP_LOGW("WASM3", "get_segment_pointer: memory not initialized");
-        backtrace();
+        if(WASM_DEBUG_GET_SEGMENT_POINTER_NULLMEMORY_BACKTRACE) backtrace();
         return offset;
     }
 
