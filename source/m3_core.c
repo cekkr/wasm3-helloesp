@@ -555,8 +555,11 @@ bool  Is64BitType  (u8 i_m3Type)
         return (sizeof (voidptr_t) == 8); // all other cases are pointers
 }
 
+const bool WASM_DEBUG_SizeOfType = true;
 u32  SizeOfType  (u8 i_m3Type)
 {
+    if(WASM_DEBUG_SizeOfType) ESP_LOG("WASM3", "SizeOfType called with i_m3Type: %d", i_m3Type);
+
     if (i_m3Type == c_m3Type_i32 or i_m3Type == c_m3Type_f32)
         return sizeof (i32);
 
