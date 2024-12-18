@@ -639,6 +639,7 @@ M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_
 
 static const bool WASM_DEBUG_PARSE_MODULE = true;
 static const bool WASM_PARSE_MODULE_IGNORE_SECTION_ORDER = true;
+static const bool WASM_DEBUG_PARSE_MODULE_EXCEPTED_SECTION = true;
 M3Result  m3_ParseModule  (IM3Environment i_environment, IM3Module * o_module, cbytes_t i_bytes, u32 i_numBytes, IM3Runtime o_runtime)
 {
     IM3Module module;          
@@ -709,6 +710,11 @@ _       (ReadLEB_u7 (mem, & section, & pos, end));
         if (section != 0 && !WASM_PARSE_MODULE_IGNORE_SECTION_ORDER) {
             // Ensure sections appear only once and in order
             while (sectionsOrder[expectedSection++] != section) {
+                if(expectedSection >= 12){
+                    ESP_LOGE("WASM3", "m3_ParseModule: WASM section not found on not in order (expected: 12, found: %d)", expectedSection);       
+                    LOG_FLUSH;
+                    backtrace();             
+                }
                 _throwif(m3Err_misorderedWasmSection, expectedSection >= 12);
             }
         }
