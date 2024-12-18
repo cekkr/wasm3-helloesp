@@ -857,7 +857,6 @@ static MemoryChunk* create_multi_segment_chunk(M3Memory* memory, size_t size, si
 ///
 ///
 
-// Helper per convertire da puntatore a offset
 static u32 ptr_to_offset(M3Memory* memory, void* ptr) {
     if (!memory || !ptr) return 0;
     
@@ -865,8 +864,20 @@ static u32 ptr_to_offset(M3Memory* memory, void* ptr) {
         MemorySegment* seg = memory->segments[i];
         if (!seg || !seg->data) continue;
         
+        // Verifica se il puntatore è all'interno di questo segmento
         if (ptr >= seg->data && ptr < (void*)((char*)seg->data + seg->size)) {
-            return (i * memory->segment_size) + ((char*)ptr - (char*)seg->data);
+            // Se il puntatore è all'interno del segmento, calcola l'offset
+            size_t segment_base_offset = i * memory->segment_size;
+            size_t intra_segment_offset = (char*)ptr - (char*)seg->data;
+            
+            // Se stiamo ritornando un offset per i dati (non per il MemoryChunk stesso)
+            // dobbiamo sottrarre la dimensione dell'header dal calcolo dell'offset
+            if (intra_segment_offset >= sizeof(MemoryChunk)) {
+                size_t data_offset = intra_segment_offset - sizeof(MemoryChunk);
+                return segment_base_offset + data_offset;
+            }
+            
+            return segment_base_offset + intra_segment_offset;
         }
     }
     
@@ -924,9 +935,13 @@ void* m3_malloc(M3Memory* memory, size_t size) {
         }
     }
     
-    // Calcola l'offset relativo invece del puntatore assoluto
-    u32 offset = ptr_to_offset(memory, found_chunk);
-    return (void*)(offset + sizeof(MemoryChunk));
+    if (found_chunk) {
+        // Calcola l'offset per i dati del chunk (non per il MemoryChunk stesso)
+        size_t segment_base_offset = found_chunk->start_segment * memory->segment_size;
+        return (void*)(segment_base_offset + sizeof(MemoryChunk));
+    }
+
+    return NULL;
 }
 
 void m3_free(M3Memory* memory, void* offset_ptr) {
