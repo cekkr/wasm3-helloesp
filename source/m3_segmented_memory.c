@@ -936,9 +936,32 @@ void* m3_malloc(M3Memory* memory, size_t size) {
     }
     
     if (found_chunk) {
-        // Calcola l'offset per i dati del chunk (non per il MemoryChunk stesso)
-        size_t segment_base_offset = found_chunk->start_segment * memory->segment_size;
-        return (void*)(segment_base_offset + sizeof(MemoryChunk));
+        // Marca come allocato e calcola l'offset
+        found_chunk->is_free = false;
+        
+        // Calcola l'offset corretto
+        // Trova in quale segmento si trova il chunk
+        size_t seg_index = 0;
+        for (size_t i = 0; i < memory->num_segments; i++) {
+            if (memory->segments[i]->data <= (void*)found_chunk && 
+                (char*)memory->segments[i]->data + memory->segment_size > (void*)found_chunk) {
+                seg_index = i;
+                break;
+            }
+        }
+
+        // Calcola l'offset dall'inizio del segmento
+        size_t intra_segment_offset = ((char*)found_chunk - (char*)memory->segments[seg_index]->data) + sizeof(MemoryChunk);
+        
+        // Calcola l'offset totale
+        u32 total_offset = (seg_index * memory->segment_size) + intra_segment_offset;
+        
+        if (WASM_DEBUG_SEGMENTED_MEMORY) {
+            ESP_LOGI("WASM3", "m3_malloc: returning offset=%u (segment=%zu, intra_offset=%zu)", 
+                    total_offset, seg_index, intra_segment_offset);
+        }
+        
+        return (void*)total_offset;
     }
 
     return NULL;
