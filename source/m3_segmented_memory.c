@@ -956,7 +956,7 @@ void* m3_malloc(M3Memory* memory, size_t size) {
         // Calcola l'offset totale
         u32 total_offset = (seg_index * memory->segment_size) + intra_segment_offset;
         
-        if (WASM_DEBUG_SEGMENTED_MEMORY) {
+        if (WASM_DEBUG_SEGMENTED_MEMORY_ALLOC) {
             ESP_LOGI("WASM3", "m3_malloc: returning offset=%u (segment=%zu, intra_offset=%zu)", 
                     total_offset, seg_index, intra_segment_offset);
         }
