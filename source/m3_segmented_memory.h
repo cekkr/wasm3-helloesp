@@ -22,12 +22,15 @@
 
 typedef u32 mos; // memory offset
 
-// Strutture dati migliorate
 typedef struct MemoryChunk {
-    size_t size;           // Dimensione totale del chunk incluso header
-    bool is_free;          // Flag per chunk libero
+    size_t size;           // Total size including header
+    bool is_free;          // Free flag
     struct MemoryChunk* next;
     struct MemoryChunk* prev;
+    // New fields for multi-segment support
+    uint16_t num_segments;     // Number of segments this chunk spans
+    uint16_t start_segment;    // Starting segment index
+    size_t* segment_sizes;     // Array of sizes in each segment
 } MemoryChunk;
 
 typedef struct MemorySegment {    

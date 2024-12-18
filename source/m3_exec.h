@@ -1819,24 +1819,25 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_rs)             \
     u32 offset = immediate (u32);                       \
     operand += offset;                                  \
                                                         \
-    if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
-    )){                                                \
-        {                                               \
-            d_m3TraceStore(SRC_TYPE, operand, REG);     \
-            u8* mem8;                                    \
-            if (_mem) {                                  \
-                mem8 = (u8*)resolve_pointer(_mem, (void*)operand); \
-                if (!mem8 || mem8 == ERROR_POINTER) d_outOfBounds; \
-            } else {                                     \
-                mem8 = (u8*)operand;                     \
+    if (_mem && _mem->firm == INIT_FIRM) {              \
+        if (operand + sizeof(DEST_TYPE) <= _mem->total_size) { \
+            d_m3TraceStore(SRC_TYPE, operand, REG);      \
+            void* dest_ptr = get_segment_pointer(_mem, operand); \
+            if (dest_ptr != ERROR_POINTER) {             \
+                DEST_TYPE val = (DEST_TYPE) REG;         \
+                M3_BSWAP_##DEST_TYPE(val);               \
+                m3_memcpy(_mem, dest_ptr, &val, sizeof(val)); \
+                nextOp();                                \
+                return;                                  \
             }                                           \
-            DEST_TYPE val = (DEST_TYPE) REG;            \
-            M3_BSWAP_##DEST_TYPE(val);                  \
-            memcpy(mem8, &val, sizeof(val));            \
         }                                               \
-    nextOp();                                           \
-    } else  d_outOfBounds;                               \
+        d_outOfBounds;                                  \
+    } else {                                            \
+        DEST_TYPE val = (DEST_TYPE) REG;                \
+        M3_BSWAP_##DEST_TYPE(val);                      \
+        m3_memcpy(NULL, (u8*)operand, &val, sizeof(val)); \
+        nextOp();                                       \
+    }                                                   \
 }                                                       \
 d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_sr)             \
 {                                                       \
@@ -1846,24 +1847,25 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_sr)             \
     u32 offset = immediate (u32);                       \
     operand += offset;                                  \
                                                         \
-    if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
-    )){                                                \
-        {                                               \
-            d_m3TraceStore(SRC_TYPE, operand, value);   \
-            u8* mem8;                                    \
-            if (_mem) {                                  \
-                mem8 = (u8*)resolve_pointer(_mem, (void*)operand); \
-                if (!mem8 || mem8 == ERROR_POINTER) d_outOfBounds; \
-            } else {                                     \
-                mem8 = (u8*)operand;                     \
+    if (_mem && _mem->firm == INIT_FIRM) {              \
+        if (operand + sizeof(DEST_TYPE) <= _mem->total_size) { \
+            d_m3TraceStore(SRC_TYPE, operand, value);    \
+            void* dest_ptr = get_segment_pointer(_mem, operand); \
+            if (dest_ptr != ERROR_POINTER) {             \
+                DEST_TYPE val = (DEST_TYPE) value;       \
+                M3_BSWAP_##DEST_TYPE(val);               \
+                m3_memcpy(_mem, dest_ptr, &val, sizeof(val)); \
+                nextOp();                                \
+                return;                                  \
             }                                           \
-            DEST_TYPE val = (DEST_TYPE) value;          \
-            M3_BSWAP_##DEST_TYPE(val);                  \
-            memcpy(mem8, &val, sizeof(val));            \
         }                                               \
+        d_outOfBounds;                                  \
+    } else {                                            \
+        DEST_TYPE val = (DEST_TYPE) value;              \
+        M3_BSWAP_##DEST_TYPE(val);                      \
+        m3_memcpy(NULL, (u8*)operand, &val, sizeof(val)); \
         nextOp();                                       \
-    } else d_outOfBounds;                                \
+    }                                                   \
 }                                                       \
 d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_ss)             \
 {                                                       \
@@ -1873,24 +1875,25 @@ d_m3Op(SRC_TYPE##_Store_##DEST_TYPE##_ss)             \
     u32 offset = immediate (u32);                       \
     operand += offset;                                  \
                                                         \
-    if (m3MemCheck(                                     \
-        operand + sizeof (DEST_TYPE) <= _mem->total_size    \
-    )){                                                \
-        {                                               \
-            d_m3TraceStore(SRC_TYPE, operand, value);   \
-            u8* mem8;                                    \
-            if (_mem) {                                  \
-                mem8 = (u8*)resolve_pointer(_mem, (void*)operand); \
-                if (!mem8 || mem8 == ERROR_POINTER) d_outOfBounds; \
-            } else {                                     \
-                mem8 = (u8*)operand;                     \
+    if (_mem && _mem->firm == INIT_FIRM) {              \
+        if (operand + sizeof(DEST_TYPE) <= _mem->total_size) { \
+            d_m3TraceStore(SRC_TYPE, operand, value);    \
+            void* dest_ptr = get_segment_pointer(_mem, operand); \
+            if (dest_ptr != ERROR_POINTER) {             \
+                DEST_TYPE val = (DEST_TYPE) value;       \
+                M3_BSWAP_##DEST_TYPE(val);               \
+                m3_memcpy(_mem, dest_ptr, &val, sizeof(val)); \
+                nextOp();                                \
+                return;                                  \
             }                                           \
-            DEST_TYPE val = (DEST_TYPE) value;          \
-            M3_BSWAP_##DEST_TYPE(val);                  \
-            memcpy(mem8, &val, sizeof(val));            \
         }                                               \
+        d_outOfBounds;                                  \
+    } else {                                            \
+        DEST_TYPE val = (DEST_TYPE) value;              \
+        M3_BSWAP_##DEST_TYPE(val);                      \
+        m3_memcpy(NULL, (u8*)operand, &val, sizeof(val)); \
         nextOp();                                       \
-    } else d_outOfBounds;                                \
+    }                                                   \
 }
 
 #define d_m3StoreFp(REG, TYPE)                          \
@@ -1901,24 +1904,25 @@ d_m3Op(TYPE##_Store_##TYPE##_rr)                      \
     u32 offset = immediate (u32);                       \
     operand += offset;                                  \
                                                         \
-    if (m3MemCheck(                                     \
-        operand + sizeof (TYPE) <= _mem->total_size         \
-    )){                                                \
-        {                                               \
-            d_m3TraceStore(TYPE, operand, REG);         \
-            u8* mem8;                                    \
-            if (_mem) {                                  \
-                mem8 = (u8*)resolve_pointer(_mem, (void*)operand); \
-                if (!mem8 || mem8 == ERROR_POINTER) d_outOfBounds; \
-            } else {                                     \
-                mem8 = (u8*)operand;                     \
+    if (_mem && _mem->firm == INIT_FIRM) {              \
+        if (operand + sizeof(TYPE) <= _mem->total_size) { \
+            d_m3TraceStore(TYPE, operand, REG);          \
+            void* dest_ptr = get_segment_pointer(_mem, operand); \
+            if (dest_ptr != ERROR_POINTER) {             \
+                TYPE val = (TYPE) REG;                   \
+                M3_BSWAP_##TYPE(val);                    \
+                m3_memcpy(_mem, dest_ptr, &val, sizeof(val)); \
+                nextOp();                                \
+                return;                                  \
             }                                           \
-            TYPE val = (TYPE) REG;                      \
-            M3_BSWAP_##TYPE(val);                       \
-            memcpy(mem8, &val, sizeof(val));            \
         }                                               \
+        d_outOfBounds;                                  \
+    } else {                                            \
+        TYPE val = (TYPE) REG;                          \
+        M3_BSWAP_##TYPE(val);                           \
+        m3_memcpy(NULL, (u8*)operand, &val, sizeof(val)); \
         nextOp();                                       \
-    } else  d_outOfBounds;                                \
+    }                                                   \
 }
 
 #define d_m3Store_i(SRC_TYPE, DEST_TYPE) d_m3Store(_r0, SRC_TYPE, DEST_TYPE)

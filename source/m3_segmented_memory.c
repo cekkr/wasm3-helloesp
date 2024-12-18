@@ -5,20 +5,6 @@
 #define WASM_DEBUG_SEGMENTED_MEM_MAN 1
 
 
-// Funzioni helper migliorate
-static MemoryChunk* get_chunk_header(void* ptr) {
-    return (MemoryChunk*)((char*)ptr - sizeof(MemoryChunk));
-}
-
-static void* get_chunk_data(MemoryChunk* chunk) {
-    return (void*)((char*)chunk + sizeof(MemoryChunk));
-}
-
-static size_t align_size(size_t size) {
-    return ((size + sizeof(MemoryChunk) + (WASM_CHUNK_SIZE-1)) & ~(WASM_CHUNK_SIZE-1));
-}
-
-
 #define PRINT_PTR(ptr) ESP_LOGI("WASM3", "Pointer value: (unsigned: %u, signed: %d)", (uintptr_t)ptr, (intptr_t)ptr)
 
 const bool DEBUG_WASM_INIT_MEMORY = true;
@@ -266,85 +252,165 @@ const bool WASM_DEBUG_MEM_ACCESS = false;
 const bool WASM_DEBUG_GET_SEGMENT_POINTER = true;
 const bool WASM_DEBUG_GET_SEGMENT_POINTER_NULLMEMORY_BACKTRACE = false;
 
-void* get_segment_pointer(IM3Memory memory, u32 offset) { 
-    if(WASM_DEBUG_GET_SEGMENT_POINTER) ESP_LOGI("WASM3", "get_segment_pointer");
+////////////////////////////////////////////////////////////////
+///////////////////////// Unused functions /////////////////////
+////////////////////////////////////////////////////////////////
 
-    if(memory == NULL){
-        if(WASM_DEBUG_GET_SEGMENT_POINTER) ESP_LOGW("WASM3", "get_segment_pointer: null memory");
+// Modifica della funzione get_chunk_header per supportare multi-segment
+static MemoryChunk* get_chunk_header(void* ptr) { //todo: unused
+    if (!ptr) return NULL;
+    
+    // Se il puntatore è all'interno di un chunk multi-segmento,
+    // dobbiamo trovare l'header nel primo segmento
+    IM3Memory memory = NULL; // Questo dovrebbe essere passato come parametro o accessibile globalmente
+    
+    for (size_t i = 0; i < memory->num_segments; i++) {
+        MemorySegment* seg = memory->segments[i];
+        if (!seg || !seg->data) continue;
+        
+        MemoryChunk* chunk = seg->first_chunk;
+        while (chunk) {
+            // Calcola l'area dati del chunk corrente
+            void* chunk_data = (void*)((char*)chunk + sizeof(MemoryChunk));
+            size_t total_size = 0;
+            
+            // Per chunk multi-segmento, calcola la dimensione totale
+            for (size_t j = 0; j < chunk->num_segments; j++) {
+                total_size += chunk->segment_sizes[j];
+            }
+            
+            // Verifica se il puntatore è all'interno di questo chunk
+            if (ptr >= chunk_data && ptr < (void*)((char*)chunk_data + total_size)) {
+                return chunk;
+            }
+            
+            chunk = chunk->next;
+        }
+    }
+    
+    // Se non troviamo il chunk, assumiamo che sia un puntatore normale
+    return (MemoryChunk*)((char*)ptr - sizeof(MemoryChunk));
+}
+
+// Funzione aggiornata per gestire i chunk multi-segmento
+static void* get_chunk_data(MemoryChunk* chunk) { //todo: unused
+    if (!chunk) return NULL;
+    return (void*)((char*)chunk + sizeof(MemoryChunk));
+}
+
+// Nuova funzione per calcolare l'offset totale in un chunk multi-segmento
+static size_t get_chunk_offset(MemoryChunk* chunk, void* ptr) { //todo: unused
+    if (!chunk || !ptr) return 0;
+    
+    size_t offset = 0;
+    void* chunk_start = get_chunk_data(chunk);
+    
+    for (size_t i = 0; i < chunk->num_segments; i++) {
+        void* segment_start = (void*)((char*)chunk_start + offset);
+        void* segment_end = (void*)((char*)segment_start + chunk->segment_sizes[i]);
+        
+        if (ptr >= segment_start && ptr < segment_end) {
+            return offset + ((char*)ptr - (char*)segment_start);
+        }
+        
+        offset += chunk->segment_sizes[i];
+    }
+    
+    return (size_t)-1; // Error case
+}
+
+// Funzione aggiornata per il calcolo della dimensione allineata
+static size_t align_size(size_t size) { //todo: unused
+    // Include spazio per l'header e l'array delle dimensioni dei segmenti
+    size_t base_size = size + sizeof(MemoryChunk);
+    size_t num_segments = (base_size + WASM_SEGMENT_SIZE - 1) / WASM_SEGMENT_SIZE;
+    base_size += num_segments * sizeof(size_t); // Spazio per segment_sizes array
+    
+    return ((base_size + (WASM_CHUNK_SIZE-1)) & ~(WASM_CHUNK_SIZE-1));
+}
+
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+// Funzione aggiornata per validare l'accesso alla memoria
+bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
+    if (!memory) return false;
+    
+    // Verifica se l'accesso è all'interno della memoria totale
+    if (offset + size > memory->total_size) {
+        return false;
+    }
+    
+    // Per accessi che attraversano più segmenti
+    size_t start_segment = offset / memory->segment_size;
+    size_t end_segment = (offset + size - 1) / memory->segment_size;
+    
+    // Verifica che tutti i segmenti necessari esistano
+    for (size_t i = start_segment; i <= end_segment; i++) {
+        if (i >= memory->num_segments || !memory->segments[i]) {
+            return false;
+        }
+        
+        // Verifica che il segmento sia stato inizializzato
+        if (!memory->segments[i]->data) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Funzione aggiornata per ottenere il puntatore a un segmento
+void* get_segment_pointer(IM3Memory memory, u32 offset) {
+    if (!memory || memory->firm != INIT_FIRM) {
         return offset;
     }
-
-    CHECK_MEMORY_PTR(memory, "get_segment_pointer");
-
-    if(memory->firm != INIT_FIRM){
-        ESP_LOGW("WASM3", "get_segment_pointer: null memory (firm: %d)", memory->firm);
-        if(WASM_DEBUG_GET_SEGMENT_POINTER_NULLMEMORY_BACKTRACE) backtrace();
-        return offset;
-    }
-
-     if(memory->segments == NULL){
-        ESP_LOGW("WASM3", "get_segment_pointer: memory not initialized");
-        if(WASM_DEBUG_GET_SEGMENT_POINTER_NULLMEMORY_BACKTRACE) backtrace();
-        return offset;
-    }
-
-    //CALL_WATCHDOG
-
-    if(memory->firm != INIT_FIRM){
-        ESP_LOGE("WASM3", "get_segment_pointer: memory firm not valid (%d)", memory->firm);
-        backtrace(); LOG_FLUSH;
-        goto failResult;
-    }
-
-    if(offset == (u32)ERROR_POINTER)
-        return ERROR_POINTER;
-
-    // Calculate segment index and offset
+    
+    // Calcola indici di segmento e offset
     size_t segment_index = offset / memory->segment_size;
     size_t segment_offset = offset % memory->segment_size;
-
-    // Check if segment exists and is valid
+    
+    // Verifica validità del segmento
     if (segment_index >= memory->num_segments) {
-        if(segment_index - memory->num_segments <= 2){
-            if(AddSegments(memory, segment_index) != NULL){
-                ESP_LOGW("WASM3", "get_segment_pointer: requested unallocated segment %d", segment_index);
-                goto failResult;
+        if (segment_index - memory->num_segments <= 2) {
+            if (AddSegments(memory, segment_index) != NULL) {
+                return ERROR_POINTER;
+            }
+        } else {
+            return ERROR_POINTER;
+        }
+    }
+    
+    MemorySegment* seg = memory->segments[segment_index];
+    if (!seg || seg->firm != INIT_FIRM) {
+        return ERROR_POINTER;
+    }
+    
+    // Assicurati che il segmento sia inizializzato
+    if (!seg->data) {
+        if (InitSegment(memory, seg, true)) {
+            return ERROR_POINTER;
+        }
+    }
+    
+    // Gestione speciale per chunk multi-segmento
+    MemoryChunk* chunk = seg->first_chunk;
+    while (chunk) {
+        if (chunk->num_segments > 1) {
+            // Verifica se l'offset cade all'interno di questo chunk
+            size_t chunk_offset = 0;
+            for (size_t i = 0; i < chunk->num_segments; i++) {
+                if (segment_index == chunk->start_segment + i) {
+                    return (void*)((char*)seg->data + segment_offset);
+                }
+                chunk_offset += chunk->segment_sizes[i];
             }
         }
-        else {            
-            goto failResult;
-        }
-
-        if(WASM_DEBUG_GET_SEGMENT_POINTER) ESP_LOGI("WASM3", "get_segment_pointer: get new segment index %d (num_segments: %d)", segment_index, memory->num_segments);
-        MemorySegment* seg = memory->segments[segment_index];
-
-        if(seg == NULL || seg->firm != INIT_FIRM){
-            ESP_LOGE("WASM3", "get_segment_pointer: invalid segment %d", segment_index);
-            goto failResult;
-        }      
+        chunk = chunk->next;
     }
-
-    MemorySegment* seg = memory->segments[segment_index];
-
-    if(seg->data == NULL){
-        if(InitSegment(memory, seg, true)){
-            ESP_LOGE("WASM3", "get_segment_pointer: failed allocating segment %d", segment_index);
-            goto failResult;
-        }
-    }  
-
-    if(seg == NULL || seg->firm != INIT_FIRM){
-        ESP_LOGE("WASM3", "get_segment_pointer: segment %d has invalid firm (%d), or is NULL", segment_index, seg->firm);
-        backtrace(); LOG_FLUSH;
-        goto failResult;
-    }
-
-    uint8_t* res = (uint8_t*)(seg->data + segment_offset);
-    if(WASM_DEBUG_GET_SEGMENT_POINTER) ESP_LOGI("WASM3", "get_segment_pointer: M3Memory result: %p (from segment %d)", res, segment_index);
-    return res;
-
-    failResult:    
-    return ERROR_POINTER;
+    
+    return (void*)((char*)seg->data + segment_offset);
 }
 
 const bool WASM_DEBUG_RESOLVE_POINTER_MEMORY_BACKTRACE = false;
@@ -383,11 +449,11 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
     void* res = ptr;
 
     if(IsValidMemoryAccess(memory, ptr, 0)){
-        if(WASM_DEBUG_MEM_ACCESS) ESP_LOGW("WASM3", "resolve_pointer: ptr not IsValidMemoryAccess");
+        if(WASM_DEBUG_MEM_ACCESS) ESP_LOGW("WASM3", "resolve_pointer: ptr IsValidMemoryAccess");
         res = get_segment_pointer(memory, ptr);
     }
     else {
-        if(WASM_DEBUG_MEM_ACCESS) ESP_LOGW("WASM3", "resolve_pointer: ptr IsValidMemoryAccess");
+        if(WASM_DEBUG_MEM_ACCESS) ESP_LOGW("WASM3", "resolve_pointer: ptr NOT IsValidMemoryAccess");
         if(!is_ptr_valid(res)){
             ESP_LOGW("WASM3", "resolve_pointer: ptr is neither segment pointer neither valid ptr (ptr: %p, memory.total_size+req: %d)", 
                 res, (memory->total_size + memory->total_requested_size));
@@ -406,6 +472,56 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
     }
 
     return res;
+}
+
+// Prendi l'arte e tienila da parte
+void* resolve_pointer_impl2(IM3Memory memory, void* ptr) {
+    // Se il puntatore è già valido, ritornalo così com'è
+    if(is_ptr_valid(ptr)) {
+        if(WASM_DEBUG_MEM_ACCESS) ESP_LOGI("WASM3", "resolve_pointer: ptr %p is valid as is", ptr);
+        return ptr;
+    }
+
+    // Gestisci watchdog
+    if(resolve_pointer_cycle++ % 3 == 0) { CALL_WATCHDOG }
+
+    // Se memory non è valido, ritorna il puntatore originale
+    if(memory == NULL || memory->firm != INIT_FIRM) {
+        return ptr;
+    }
+
+    // Verifica validità della struttura memory
+    CHECK_MEMORY_PTR(memory, "resolve_pointer");
+
+    if(!is_ptr_valid(memory)) {
+        ESP_LOGW("WASM3", "resolve_pointer: invalid memory pointer %p", memory);
+        LOG_FLUSH;
+        if(WASM_DEBUG_RESOLVE_POINTER_MEMORY_BACKTRACE) backtrace(); 
+        return ptr;
+    }
+
+    if(WASM_DEBUG_MEM_ACCESS) {
+        ESP_LOGI("WASM3", "resolve_pointer: memory ptr: %p, ptr: %p", memory, ptr);
+        LOG_FLUSH;
+    }
+
+    // Considera il puntatore come un offset nella memoria WASM
+    u32 offset = (u32)ptr;
+    
+    // Se l'offset è valido nella memoria WASM
+    if(offset < memory->total_size) {
+        void* resolved = get_segment_pointer(memory, offset);
+        if(resolved != ERROR_POINTER && is_ptr_valid(resolved)) {
+            return resolved;
+        }
+    }
+
+    // Se arriviamo qui, il puntatore non è né un offset valido né un puntatore valido
+    ESP_LOGW("WASM3", "resolve_pointer: ptr is neither segment pointer neither valid ptr (ptr: %p, memory.total_size+req: %d)", 
+        ptr, (memory->total_size + memory->total_requested_size));
+    
+    // In caso di fallimento, ritorna il puntatore originale
+    return ptr;
 }
 
 const bool WASM_DEBUG_MEM_ACCESS_BACKTRACE = false;
@@ -434,20 +550,6 @@ void* m3SegmentedMemAccess__old(IM3Memory mem, void* ptr, size_t size)
     }
 
     return resolve_pointer(mem, ptr);
-}
-
-
-const bool WASM_DEBUG_IS_VALID_MEMORY_ACCESS = false;
-bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size)
-{
-    if(memory == NULL) return false;
-
-    //todo: improve precision by checking if it's inside allocated memory (?)
-    mos total_size = (memory->total_size + memory->total_requested_size);
-
-    if(WASM_DEBUG_IS_VALID_MEMORY_ACCESS) ESP_LOGI("WASM3", "IsValidMemory: ptr = %d, total_size = %d", offset, total_size);
-
-    return (offset + size) <= total_size;
 }
 
 const bool WASM_DEBUG_GET_OFFSET_POINTER = true;
@@ -505,6 +607,29 @@ mos get_offset_pointer(IM3Memory memory, void* ptr) {
 // Debug flag for m3_memcpy
 const bool WASM_DEBUG_MEMCPY = false;
 
+// Helper function to find chunk from pointer
+static MemoryChunk* find_chunk_from_ptr(M3Memory* mem, void* ptr) {
+    if (!mem || !ptr) return NULL;
+    
+    for (size_t i = 0; i < mem->num_segments; i++) {
+        MemorySegment* seg = mem->segments[i];
+        if (!seg || !seg->data) continue;
+        
+        // Check if pointer is within this segment
+        if (ptr >= seg->data && ptr < (void*)((char*)seg->data + seg->size)) {
+            MemoryChunk* chunk = seg->first_chunk;
+            while (chunk) {
+                void* chunk_data = (void*)((char*)chunk + sizeof(MemoryChunk));
+                if (ptr >= chunk_data && ptr < (void*)((char*)chunk_data + chunk->size)) {
+                    return chunk;
+                }
+                chunk = chunk->next;
+            }
+        }
+    }
+    return NULL;
+}
+
 void m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
     if (!memory || !dest || !src || !n) return;
     
@@ -519,8 +644,13 @@ void m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
     void* real_src = (void*)src;
     void* real_dest = dest;
     
+    // Flags to track if source/dest are in segmented memory
+    bool src_in_memory = false;
+    bool dest_in_memory = false;
+    
     // Check if source is a memory offset
     if (IsValidMemoryAccess(memory, (u64)src, n)) {
+        src_in_memory = true;
         real_src = get_segment_pointer(memory, (u32)src);
         if (real_src == ERROR_POINTER) {
             if (WASM_DEBUG_MEMCPY) ESP_LOGE("WASM3", "m3_memcpy: invalid source offset");
@@ -532,11 +662,14 @@ void m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
         if (real_src == ERROR_POINTER) {
             // If not in memory segments, use original pointer
             real_src = (void*)src;
+        } else {
+            src_in_memory = true;
         }
     }
     
     // Check if destination is a memory offset
     if (IsValidMemoryAccess(memory, (u64)dest, n)) {
+        dest_in_memory = true;
         real_dest = get_segment_pointer(memory, (u32)dest);
         if (real_dest == ERROR_POINTER) {
             if (WASM_DEBUG_MEMCPY) ESP_LOGE("WASM3", "m3_memcpy: invalid destination offset");
@@ -548,326 +681,271 @@ void m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
         if (real_dest == ERROR_POINTER) {
             // If not in memory segments, use original pointer
             real_dest = dest;
-        }
-    }
-
-    if (WASM_DEBUG_MEMCPY) {
-        ESP_LOGI("WASM3", "m3_memcpy: src=%p->%p, dest=%p->%p, size=%zu",
-                 src, real_src, dest, real_dest, n);
-    }
-
-    // Check if we need to handle cross-segment copying
-    bool src_in_memory = false;
-    bool dest_in_memory = false;
-    
-    for (size_t i = 0; i < memory->num_segments; i++) {
-        MemorySegment* seg = memory->segments[i];
-        if (!seg || !seg->data) continue;
-        
-        if (real_src >= seg->data && real_src < (void*)((char*)seg->data + seg->size)) {
-            src_in_memory = true;
-        }
-        if (real_dest >= seg->data && real_dest < (void*)((char*)seg->data + seg->size)) {
+        } else {
             dest_in_memory = true;
         }
     }
 
-    // If either source or destination spans multiple segments, use segment-aware copy
-    if ((src_in_memory && ((u64)real_src + n > memory->segment_size)) ||
-        (dest_in_memory && ((u64)real_dest + n > memory->segment_size))) {
-        
-        u8* d = (u8*)real_dest;
-        const u8* s = (const u8*)real_src;
-        
-        while (n > 0) {
-            size_t bytes_to_copy = n;
-            
-            // If source is in segmented memory, calculate segment boundary
-            if (src_in_memory) {
-                size_t src_segment_idx = ((u64)s - (u64)memory->segments[0]->data) / memory->segment_size;
-                size_t src_offset = ((u64)s - (u64)memory->segments[0]->data) % memory->segment_size;
-                size_t src_remaining = memory->segment_size - src_offset;
-                bytes_to_copy = MIN(bytes_to_copy, src_remaining);
+    if (WASM_DEBUG_MEMCPY) {
+        ESP_LOGI("WASM3", "m3_memcpy: src=%p->%p (in_mem=%d), dest=%p->%p (in_mem=%d), size=%zu",
+                 src, real_src, src_in_memory, dest, real_dest, dest_in_memory, n);
+    }
+
+    // Find chunks if pointers are in segmented memory
+    MemoryChunk* src_chunk = src_in_memory ? find_chunk_from_ptr(memory, real_src) : NULL;
+    MemoryChunk* dest_chunk = dest_in_memory ? find_chunk_from_ptr(memory, real_dest) : NULL;
+
+    // Handle different copy scenarios
+    if (!src_chunk && !dest_chunk) {
+        // Neither source nor destination are in multi-segment chunks
+        memcpy(real_dest, real_src, n);
+    } else {
+        // At least one is a multi-segment chunk
+        size_t remaining = n;
+        char* curr_src = (char*)real_src;
+        char* curr_dest = (char*)real_dest;
+
+        while (remaining > 0) {
+            size_t copy_size = remaining;
+
+            if (src_chunk && src_chunk->num_segments > 1) {
+                // Calculate remaining size in current source segment
+                size_t src_seg_idx = (curr_src - (char*)memory->segments[src_chunk->start_segment]->data) 
+                                   / memory->segment_size;
+                size_t src_seg_offset = (curr_src - (char*)memory->segments[src_chunk->start_segment]->data) 
+                                      % memory->segment_size;
+                copy_size = MIN(copy_size, src_chunk->segment_sizes[src_seg_idx] - src_seg_offset);
             }
-            
-            // If destination is in segmented memory, calculate segment boundary
-            if (dest_in_memory) {
-                size_t dest_segment_idx = ((u64)d - (u64)memory->segments[0]->data) / memory->segment_size;
-                size_t dest_offset = ((u64)d - (u64)memory->segments[0]->data) % memory->segment_size;
-                size_t dest_remaining = memory->segment_size - dest_offset;
-                bytes_to_copy = MIN(bytes_to_copy, dest_remaining);
+
+            if (dest_chunk && dest_chunk->num_segments > 1) {
+                // Calculate remaining size in current destination segment
+                size_t dest_seg_idx = (curr_dest - (char*)memory->segments[dest_chunk->start_segment]->data) 
+                                    / memory->segment_size;
+                size_t dest_seg_offset = (curr_dest - (char*)memory->segments[dest_chunk->start_segment]->data) 
+                                       % memory->segment_size;
+                copy_size = MIN(copy_size, dest_chunk->segment_sizes[dest_seg_idx] - dest_seg_offset);
             }
-            
+
             // Perform the copy for this segment
-            memcpy(d, s, bytes_to_copy);
+            memcpy(curr_dest, curr_src, copy_size);
             
             // Update pointers and remaining size
-            d += bytes_to_copy;
-            s += bytes_to_copy;
-            n -= bytes_to_copy;
-            
-            // Resolve new pointers if needed
-            if (src_in_memory && n > 0) {
-                s = resolve_pointer(memory, (void*)s);
-                if (s == ERROR_POINTER) return;
+            curr_src += copy_size;
+            curr_dest += copy_size;
+            remaining -= copy_size;
+
+            // If source is multi-segment, check if we need to move to next segment
+            if (src_chunk && src_chunk->num_segments > 1 && remaining > 0) {
+                size_t seg_idx = (curr_src - (char*)memory->segments[src_chunk->start_segment]->data) 
+                                / memory->segment_size;
+                if (seg_idx < src_chunk->num_segments - 1) {
+                    curr_src = (char*)memory->segments[src_chunk->start_segment + seg_idx + 1]->data;
+                }
             }
-            if (dest_in_memory && n > 0) {
-                d = resolve_pointer(memory, (void*)d);
-                if (d == ERROR_POINTER) return;
+
+            // If destination is multi-segment, check if we need to move to next segment
+            if (dest_chunk && dest_chunk->num_segments > 1 && remaining > 0) {
+                size_t seg_idx = (curr_dest - (char*)memory->segments[dest_chunk->start_segment]->data) 
+                                / memory->segment_size;
+                if (seg_idx < dest_chunk->num_segments - 1) {
+                    curr_dest = (char*)memory->segments[dest_chunk->start_segment + seg_idx + 1]->data;
+                }
             }
         }
-    } else {
-        // For non-spanning copies, use standard memcpy
-        memcpy(real_dest, real_src, n);
     }
 }
 
-const bool WASM_DEBUG_SEGMENTED_MEMORY = true;
+///
+///
+///
 
-void* m3_malloc(IM3Memory memory, size_t size) {    
-    if (!memory || size == 0) return NULL;
+const bool WASM_DEBUG_SEGMENTED_MEMORY_ALLOC = true;
 
-    if(WASM_DEBUG_SEGMENTED_MEMORY) ESP_LOGI("WASM3", "m3_malloc: %d size", size);
+// Helper functions for multi-segment chunks
+static MemoryChunk* create_multi_segment_chunk(M3Memory* memory, size_t size, size_t start_segment) {
+    size_t remaining_size = size;
+    size_t num_segments = 0;
+    size_t current_segment = start_segment;
     
-    // Include header size nella dimensione richiesta
-    size_t total_size = size + sizeof(MemoryChunk);
-    size_t aligned_size = align_size(total_size);
-    size_t bucket = log2(aligned_size);
-    
-    // Debug log
-    if (WASM_DEBUG_SEGMENTED_MEMORY) {
-        ESP_LOGI("WASM3", "m3_malloc: requesting size=%zu, aligned_size=%zu, bucket=%zu", 
-                 size, aligned_size, bucket);
+    // Calculate number of segments needed
+    while (remaining_size > 0 && current_segment < memory->num_segments) {
+        size_t available = memory->segment_size - sizeof(MemoryChunk);
+        if (num_segments == 0) {
+            // First segment needs space for the chunk header
+            available = memory->segment_size - sizeof(MemoryChunk);
+        }
+        
+        remaining_size -= MIN(remaining_size, available);
+        num_segments++;
+        current_segment++;
     }
     
-    // Cerca chunk libero nella cache
+    if (remaining_size > 0) {
+        // Need more segments than available
+        return NULL;
+    }
+    
+    // Allocate and initialize the chunk
+    MemoryChunk* chunk = (MemoryChunk*)memory->segments[start_segment]->data;
+    chunk->size = size;
+    chunk->is_free = false;
+    chunk->next = NULL;
+    chunk->prev = NULL;
+    chunk->num_segments = num_segments;
+    chunk->start_segment = start_segment;
+    
+    // Allocate and fill segment sizes array
+    chunk->segment_sizes = m3_Def_Malloc(sizeof(size_t) * num_segments);
+    if (!chunk->segment_sizes) {
+        return NULL;
+    }
+    
+    // Calculate sizes for each segment
+    remaining_size = size;
+    for (size_t i = 0; i < num_segments; i++) {
+        size_t available = memory->segment_size;
+        if (i == 0) {
+            available -= sizeof(MemoryChunk);
+        }
+        
+        chunk->segment_sizes[i] = MIN(remaining_size, available);
+        remaining_size -= chunk->segment_sizes[i];
+    }
+    
+    return chunk;
+}
+
+///
+///
+///
+
+// Modified m3_malloc to support multi-segment allocation
+void* m3_malloc(M3Memory* memory, size_t size) {
+    if (!memory || size == 0) return NULL;
+    
+    size_t total_size = size + sizeof(MemoryChunk);
+    
+    // Try to find existing free chunk first
+    size_t bucket = log2(total_size);
     MemoryChunk* found_chunk = NULL;
+    
     if (bucket < memory->num_free_buckets) {
         MemoryChunk** curr = &memory->free_chunks[bucket];
         while (*curr) {
-            if ((*curr)->size >= aligned_size) {
+            if ((*curr)->size >= total_size) {
                 found_chunk = *curr;
-                *curr = found_chunk->next;  // Rimuovi dalla lista dei liberi
+                *curr = found_chunk->next;
                 break;
             }
             curr = &(*curr)->next;
         }
     }
     
-    // Se non trovato in cache, cerca nei segmenti
     if (!found_chunk) {
-        for (size_t i = 0; i < memory->num_segments && !found_chunk; i++) {
-            MemorySegment* seg = memory->segments[i];
-            if (!seg) continue;
-
-            if(!seg->data){
-                if(InitSegment(memory, seg, true))
-                    continue;
+        // Need to create new chunk
+        size_t start_segment = 0;
+        bool found_start = false;
+        
+        // Find first segment with enough space
+        for (size_t i = 0; i < memory->num_segments; i++) {
+            if (!memory->segments[i]->first_chunk) {
+                start_segment = i;
+                found_start = true;
+                break;
             }
-            
-            MemoryChunk* chunk = seg->first_chunk;
-            while (chunk) {
-                if (chunk->is_free && chunk->size >= aligned_size) {
-                    found_chunk = chunk;
-                    // Rimuovi dalla cache se presente
-                    size_t chunk_bucket = log2(chunk->size);
-                    if (chunk_bucket < memory->num_free_buckets) {
-                        MemoryChunk** curr = &memory->free_chunks[chunk_bucket];
-                        while (*curr && *curr != chunk) curr = &(*curr)->next;
-                        if (*curr) *curr = chunk->next;
-                    }
-                    break;
-                }
-                chunk = chunk->next;
-            }
-        }
-    }
-    
-    // Se ancora non trovato, alloca nuovo segmento
-    if (!found_chunk) {
-        size_t needed_segments = (aligned_size + memory->segment_size - 1) / memory->segment_size;
-        if(needed_segments > memory->segment_size){
-            if(WASM_DEBUG_SEGMENTED_MEM_MAN)
-                ESP_LOGI("WASM3", "m3_malloc: requested segment size %d", needed_segments);
-            
-            M3Result result = AddSegments(memory, needed_segments);
-            if (result != m3Err_none) return NULL;
         }
         
-        MemorySegment* new_seg = memory->segments[memory->num_segments - 1];
-        if (!new_seg) return NULL;
-
-        if(!new_seg->data){
-            if(InitSegment(memory, new_seg, true)){
+        if (!found_start) {
+            // Need new segments
+            size_t needed_segments = (total_size + memory->segment_size - 1) / memory->segment_size;
+            M3Result result = AddSegments(memory, needed_segments);
+            if (result != m3Err_none) {
                 return NULL;
             }
+            start_segment = memory->num_segments - needed_segments;
         }
         
-        found_chunk = (MemoryChunk*)new_seg->data;
-        found_chunk->size = new_seg->size;
-        found_chunk->is_free = true;
-        found_chunk->next = NULL;
-        found_chunk->prev = NULL;
-        new_seg->first_chunk = found_chunk;
-    }
-    
-    // Split chunk se necessario
-    if (found_chunk->size > aligned_size + sizeof(MemoryChunk) + WASM_CHUNK_SIZE) {
-        size_t remaining_size = found_chunk->size - aligned_size;
-        MemoryChunk* new_chunk = (MemoryChunk*)((char*)found_chunk + aligned_size);
-        
-        new_chunk->size = remaining_size;
-        new_chunk->is_free = true;
-        new_chunk->next = found_chunk->next;
-        new_chunk->prev = found_chunk;
-        
-        found_chunk->size = aligned_size;
-        found_chunk->next = new_chunk;
-        
-        // Aggiungi nuovo chunk alla cache
-        size_t new_bucket = log2(new_chunk->size);
-        if (new_bucket < memory->num_free_buckets) {
-            new_chunk->next = memory->free_chunks[new_bucket];
-            memory->free_chunks[new_bucket] = new_chunk;
+        found_chunk = create_multi_segment_chunk(memory, total_size, start_segment);
+        if (!found_chunk) {
+            return NULL;
         }
     }
     
-    // Marca come allocato e restituisci puntatore ai dati
-    found_chunk->is_free = false;
-    
-    if (WASM_DEBUG_SEGMENTED_MEMORY) {
-        ESP_LOGI("WASM3", "m3_malloc: returning ptr=%p, chunk=%p", 
-                 get_chunk_data(found_chunk), found_chunk);
-    }
-    
-    return get_chunk_data(found_chunk);
+    // Return pointer to data area
+    return (void*)((char*)found_chunk + sizeof(MemoryChunk));
 }
 
-// Realloc ottimizzata
-void* m3_realloc(M3Memory* memory, void* ptr, size_t new_size) {
-    if (!memory) return NULL;
-    if (!ptr) return m3_malloc(memory, new_size);
-
-    if(WASM_DEBUG_SEGMENTED_MEMORY) ESP_LOGI("WASM3", "m3_realloc: ptr: %p, new size: %d ",ptr, new_size);
-
-    if (new_size == 0) {
-        m3_free(memory, ptr);
-        return NULL;
-    }
-    
-    MemoryChunk* chunk = get_chunk_header(ptr);
-    size_t aligned_new_size = align_size(new_size);
-    
-    // Se la nuova size è minore, split il chunk
-    if (aligned_new_size <= chunk->size) {
-        if (chunk->size >= aligned_new_size + WASM_CHUNK_SIZE) {
-            MemoryChunk* new_chunk = (MemoryChunk*)((char*)chunk + aligned_new_size);
-            new_chunk->size = chunk->size - aligned_new_size;
-            new_chunk->is_free = true;
-            new_chunk->next = chunk->next;
-            new_chunk->prev = chunk;
-            
-            chunk->size = aligned_new_size;
-            chunk->next = new_chunk;
-            
-            // Aggiungi alla cache
-            size_t bucket = log2(new_chunk->size);
-            if (bucket < memory->num_free_buckets) {
-                new_chunk->next = memory->free_chunks[bucket];
-                memory->free_chunks[bucket] = new_chunk;
-            }
-        }
-        return ptr;
-    }
-    
-    // Prova a unire con chunk successivo se libero
-    if (chunk->next && chunk->next->is_free && 
-        chunk->size + chunk->next->size >= aligned_new_size) {
-        // Rimuovi chunk successivo dalla cache
-        size_t bucket = log2(chunk->next->size);
-        if (bucket < memory->num_free_buckets) {
-            MemoryChunk** curr = &memory->free_chunks[bucket];
-            while (*curr && *curr != chunk->next) curr = &(*curr)->next;
-            if (*curr) *curr = chunk->next->next;
-        }
-        
-        chunk->size += chunk->next->size;
-        chunk->next = chunk->next->next;
-        if (chunk->next) chunk->next->prev = chunk;
-        
-        // Split se necessario
-        if (chunk->size >= aligned_new_size + WASM_CHUNK_SIZE) {
-            MemoryChunk* new_chunk = (MemoryChunk*)((char*)chunk + aligned_new_size);
-            new_chunk->size = chunk->size - aligned_new_size;
-            new_chunk->is_free = true;
-            new_chunk->next = chunk->next;
-            new_chunk->prev = chunk;
-            
-            chunk->size = aligned_new_size;
-            chunk->next = new_chunk;
-            
-            // Aggiungi alla cache
-            bucket = log2(new_chunk->size);
-            if (bucket < memory->num_free_buckets) {
-                new_chunk->next = memory->free_chunks[bucket];
-                memory->free_chunks[bucket] = new_chunk;
-            }
-        }
-        return ptr;
-    }
-    
-    // Alloca nuovo chunk e copia dati
-    void* new_ptr = m3_malloc(memory, new_size);
-    if (!new_ptr) return NULL;
-    
-    memcpy(new_ptr, ptr, chunk->size - sizeof(MemoryChunk));
-    m3_free(memory, ptr);
-    return new_ptr;
-}
-
-// Free con supporto alla coalescenza e cache
+// Modified m3_free to handle multi-segment chunks
 void m3_free(M3Memory* memory, void* ptr) {
     if (!memory || !ptr) return;
-
-    if(WASM_DEBUG_SEGMENTED_MEMORY) ESP_LOGI("WASM3", "m3_free: ptr: %p",ptr);
     
-    MemoryChunk* chunk = get_chunk_header(ptr);
+    MemoryChunk* chunk = (MemoryChunk*)((char*)ptr - sizeof(MemoryChunk));
+    
+    // Free segment sizes array for multi-segment chunks
+    if (chunk->num_segments > 1) {
+        m3_Def_Free(chunk->segment_sizes);
+    }
+    
     chunk->is_free = true;
     
-    // Unisci con chunk adiacenti se liberi
-    if (chunk->next && chunk->next->is_free) {
-        // Rimuovi dalla cache
-        size_t bucket = log2(chunk->next->size);
-        if (bucket < memory->num_free_buckets) {
-            MemoryChunk** curr = &memory->free_chunks[bucket];
-            while (*curr && *curr != chunk->next) curr = &(*curr)->next;
-            if (*curr) *curr = chunk->next->next;
-        }
-        
-        chunk->size += chunk->next->size;
-        chunk->next = chunk->next->next;
-        if (chunk->next) chunk->next->prev = chunk;
-    }
-    
-    if (chunk->prev && chunk->prev->is_free) {
-        // Rimuovi dalla cache
-        size_t bucket = log2(chunk->prev->size);
-        if (bucket < memory->num_free_buckets) {
-            MemoryChunk** curr = &memory->free_chunks[bucket];
-            while (*curr && *curr != chunk->prev) curr = &(*curr)->next;
-            if (*curr) *curr = chunk->prev->next;
-        }
-        
-        chunk->prev->size += chunk->size;
-        chunk->prev->next = chunk->next;
-        if (chunk->next) chunk->next->prev = chunk->prev;
-        chunk = chunk->prev;
-    }
-    
-    // Aggiungi alla cache
+    // Add to appropriate free bucket
     size_t bucket = log2(chunk->size);
     if (bucket < memory->num_free_buckets) {
         chunk->next = memory->free_chunks[bucket];
         memory->free_chunks[bucket] = chunk;
     }
+}
+
+// Helper function to copy data between segments
+static void copy_multi_segment_data(M3Memory* memory, MemoryChunk* dest_chunk, const void* src_data, size_t size) {
+    size_t copied = 0;
+    size_t src_offset = 0;
+    
+    for (size_t i = 0; i < dest_chunk->num_segments && copied < size; i++) {
+        size_t seg_idx = dest_chunk->start_segment + i;
+        size_t copy_size = MIN(dest_chunk->segment_sizes[i], size - copied);
+        
+        void* dest_ptr = (char*)memory->segments[seg_idx]->data;
+        if (i == 0) {
+            dest_ptr = (char*)dest_ptr + sizeof(MemoryChunk);
+        }
+        
+        memcpy(dest_ptr, (char*)src_data + src_offset, copy_size);
+        copied += copy_size;
+        src_offset += copy_size;
+    }
+}
+
+// Modified m3_realloc to handle multi-segment chunks
+void* m3_realloc(M3Memory* memory, void* ptr, size_t new_size) {
+    if (!memory) return NULL;
+    if (!ptr) return m3_malloc(memory, new_size);
+    if (new_size == 0) {
+        m3_free(memory, ptr);
+        return NULL;
+    }
+    
+    MemoryChunk* old_chunk = (MemoryChunk*)((char*)ptr - sizeof(MemoryChunk));
+    size_t total_new_size = new_size + sizeof(MemoryChunk);
+    
+    // If shrinking and still fits in current segments, just update size
+    if (total_new_size <= old_chunk->size) {
+        old_chunk->size = total_new_size;
+        return ptr;
+    }
+    
+    // Allocate new multi-segment chunk
+    void* new_ptr = m3_malloc(memory, new_size);
+    if (!new_ptr) {
+        return NULL;
+    }
+    
+    // Copy data from old to new chunk
+    MemoryChunk* new_chunk = (MemoryChunk*)((char*)new_ptr - sizeof(MemoryChunk));
+    copy_multi_segment_data(memory, new_chunk, ptr, MIN(old_chunk->size - sizeof(MemoryChunk), new_size));
+    
+    // Free old chunk
+    m3_free(memory, ptr);
+    
+    return new_ptr;
 }

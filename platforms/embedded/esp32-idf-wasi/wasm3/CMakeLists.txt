@@ -17,7 +17,7 @@ target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-unused-function -Wno-unused
 
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-error=return-type -Wno-error=unused-but-set-parameter 
                         -Wno-error=unused-value -Wno-error=maybe-uninitialized -Wno-error=uninitialized -Wno-error=format
-                        -Wno-error=multistatement-macros    
+                        -Wno-error=multistatement-macros -Wno-error=implicit-int  
                     )
 
 # Avoid IRAM

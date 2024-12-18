@@ -762,7 +762,7 @@ _       (ParseModuleSection (module, section, pos, sectionLength));
         if(pages < module->memoryInfo.initPages) pages = module->memoryInfo.initPages;
         u32 req_size =  pages * module->memoryInfo.pageSize;
 
-        if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: module requested size: %d", req_size);
+        if(WASM_DEBUG_PARSE_MODULE) ESP_LOGW("WASM3", "m3_ParseModule: module requested size: %d", req_size);
 
         mem->total_requested_size += req_size;
     }
