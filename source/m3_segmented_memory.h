@@ -83,7 +83,7 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size);
 static void* GetMemorySegment(IM3Memory memory, u32 offset);
 ////////////////////////////////////////////////////////////////
 
-bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size);
+bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size);
 void* get_segment_pointer(IM3Memory memory, u32 offset);
 void* resolve_pointer(M3Memory* memory, void* ptr);
 void* m3SegmentedMemAccess(IM3Memory mem, void* offset, size_t size);

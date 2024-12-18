@@ -263,12 +263,14 @@ M3Result AddSegments(M3Memory* memory, size_t set_num_segments) {
 
 const bool WASM_DEBUG_SEGMENTED_MEM_ACCESS = false;
 const bool WASM_DEBUG_MEM_ACCESS = false;
-const bool WASM_DEBUG_GET_SEGMENT_POINTER = false;
+const bool WASM_DEBUG_GET_SEGMENT_POINTER = true;
 const bool WASM_DEBUG_GET_SEGMENT_POINTER_NULLMEMORY_BACKTRACE = false;
 
 void* get_segment_pointer(IM3Memory memory, u32 offset) { 
+    if(WASM_DEBUG_GET_SEGMENT_POINTER) ESP_LOGI("WASM3", "get_segment_pointer");
 
     if(memory == NULL){
+        if(WASM_DEBUG_GET_SEGMENT_POINTER) ESP_LOGW("WASM3", "get_segment_pointer: null memory");
         return offset;
     }
 
@@ -296,10 +298,6 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
 
     if(offset == (u32)ERROR_POINTER)
         return ERROR_POINTER;
-
-    if (!memory || !memory->segments) {
-        return ERROR_POINTER;
-    }
 
     // Calculate segment index and offset
     size_t segment_index = offset / memory->segment_size;
@@ -384,10 +382,12 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
 
     void* res = ptr;
 
-    if(IsValidMemoryAccess(memory, ptr, 1)){
+    if(IsValidMemoryAccess(memory, ptr, 0)){
+        if(WASM_DEBUG_MEM_ACCESS) ESP_LOGW("WASM3", "resolve_pointer: ptr not IsValidMemoryAccess");
         res = get_segment_pointer(memory, ptr);
     }
     else {
+        if(WASM_DEBUG_MEM_ACCESS) ESP_LOGW("WASM3", "resolve_pointer: ptr IsValidMemoryAccess");
         if(!is_ptr_valid(res)){
             ESP_LOGW("WASM3", "resolve_pointer: ptr is neither segment pointer neither valid ptr (ptr: %p, memory.total_size+req: %d)", 
                 res, (memory->total_size + memory->total_requested_size));
@@ -401,8 +401,8 @@ void* resolve_pointer(IM3Memory memory, void* ptr) {
 
     if(!is_ptr_valid(res)){
         ESP_LOGE("WASM3", "resolve_pointer: invalid pointer %p (from %p)", res, ptr);
-        LOG_FLUSH; backtrace(); // break the comment in case of necessity
-        return ERROR_POINTER;
+        //LOG_FLUSH; backtrace(); // break the comment in case of necessity
+        return res;
     }
 
     return res;
@@ -436,12 +436,18 @@ void* m3SegmentedMemAccess__old(IM3Memory mem, void* ptr, size_t size)
     return resolve_pointer(mem, ptr);
 }
 
-bool IsValidMemoryAccess(IM3Memory memory, u64 offset, u32 size)
+
+const bool WASM_DEBUG_IS_VALID_MEMORY_ACCESS = false;
+bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size)
 {
     if(memory == NULL) return false;
 
     //todo: improve precision by checking if it's inside allocated memory (?)
-    return (offset + size) <= (memory->total_size + memory->total_requested_size);
+    mos total_size = (memory->total_size + memory->total_requested_size);
+
+    if(WASM_DEBUG_IS_VALID_MEMORY_ACCESS) ESP_LOGI("WASM3", "IsValidMemory: ptr = %d, total_size = %d", offset, total_size);
+
+    return (offset + size) <= total_size;
 }
 
 const bool WASM_DEBUG_GET_OFFSET_POINTER = true;
