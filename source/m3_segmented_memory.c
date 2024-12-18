@@ -146,21 +146,30 @@ void* resolve_pointer(M3Memory* memory, void* ptr) {
 }
 
 // Memory initialization and growth
+const bool WASM_DEBUG_INITSEGMENT = true;
 M3Result InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) {
-    if (!memory) return m3Err_nullMemory;
+    if (memory == NULL || memory->firm == INIT_FIRM){ 
+        ESP_LOGW("WASM", "InitSegment: memory not initialized");
+        return m3Err_nullMemory;
+    }
     
-    if (!seg) {
+    if (seg == NULL) {
         seg = m3_Def_Malloc(sizeof(MemorySegment));
-        if (!seg) return m3Err_mallocFailed;
+        if (seg == NULL) {
+            ESP_LOGW("WASM", "InitSegment: failed to allocate memory segment");
+            return m3Err_mallocFailed;
+        }
     }
     
     seg->firm = INIT_FIRM;
     
     if (initData && !seg->data) {
+        if(WASM_DEBUG_INITSEGMENT) ESP_LOGI("WASM", "InitSegment: allocating segment's data");
         seg->data = m3_Def_Malloc(memory->segment_size);
-        if (!seg->data) return m3Err_mallocFailed;
-        
-        memset(seg->data, 0, memory->segment_size);  // Zero initialize
+        if (seg->data == NULL) {
+            ESP_LOGE("WASM", "InitSegment: segmente data allocate failed");
+            return m3Err_mallocFailed;
+        }
         
         seg->is_allocated = true;
         seg->size = memory->segment_size;
@@ -171,15 +180,26 @@ M3Result InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) {
     return m3Err_none;
 }
 
+const bool WASM_DEBUG_ADDSEGMENT = true;
 const bool WASM_ADD_SEGMENTS_MALLOC_SEGMENT = false;
 M3Result AddSegments(M3Memory* memory, size_t additional_segments) {
-    if (!memory || memory->firm != INIT_FIRM) return m3Err_nullMemory;
-    
-    size_t new_num_segments = memory->num_segments + additional_segments;
+    if(WASM_DEBUG_ADDSEGMENT) ESP_LOGI("WASM3", "AddSegments: adding %zu additional segments", additional_segments);
+    if (memory == NULL || memory->firm != INIT_FIRM) return m3Err_nullMemory;    
+
+    size_t new_num_segments = additional_segments == 0 ? (memory->num_segments + 1) : additional_segments;
+
+    if(new_num_segments <= memory->num_segments) {
+        if(WASM_DEBUG_ADDSEGMENT) ESP_LOGW("WASM3", "AddSegments: no needed to add more segments (req: %d, current: %d)", new_num_segments, memory->num_segments);
+        return NULL;
+    }
+
     size_t new_size = new_num_segments * sizeof(MemorySegment*);
     
     MemorySegment** new_segments = m3_Def_Realloc(memory->segments, new_size);
-    if (!new_segments) return m3Err_mallocFailed;
+    if (!new_segments) {
+        ESP_LOGE("WASM3", "AddSegments: realloc memory->segments failed");
+        return m3Err_mallocFailed;
+    }
     
     memory->segments = new_segments;
     
@@ -214,7 +234,10 @@ M3Result AddSegments(M3Memory* memory, size_t additional_segments) {
 
 const bool WASM_DEBUG_M3_INIT_MEMORY = true;
 IM3Memory m3_InitMemory(IM3Memory memory) {
-    if (!memory) return NULL;
+    if (memory == NULL) return NULL;
+
+    if(memory->firm == INIT_FIRM)
+        return memory;
     
     memory->firm = INIT_FIRM;
     memory->segments = NULL;
@@ -629,12 +652,12 @@ void* m3_malloc(M3Memory* memory, size_t size) {
     
     // 2. Se non trova chunk liberi, cerca spazio alla fine dei segmenti esistenti
     if (!found_chunk) {
-        if (WASM_DEBUG_SEGMENTED_MEMORY_ALLOC) 
-            ESP_LOGI("WASM3", "m3_malloc: searching for space in existing segments");
+        if (WASM_DEBUG_SEGMENTED_MEMORY_ALLOC) ESP_LOGI("WASM3", "m3_malloc: searching for space in existing segments");
             
         for (size_t i = 0; i < memory->num_segments; i++) {
             MemorySegment* seg = memory->segments[i];
-            if (!seg || !seg->data) {
+            if (WASM_DEBUG_SEGMENTED_MEMORY_ALLOC) ESP_LOGI("WASM3", "m3_malloc: cycling segment %d (%p)", i, seg);            
+            if (seg == NULL || !seg->is_allocated) {
                 if (InitSegment(memory, seg, true) != NULL)
                     continue;
             }
