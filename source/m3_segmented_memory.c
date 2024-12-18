@@ -118,6 +118,11 @@ IM3Memory m3_NewMemory(){
     return memory;
 }
 
+bool IsValidMemory(IM3Memory memory) {
+    if(memory == NULL || memory->firm != INIT_FIRM) return false;
+    return memory;
+}
+
 M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
     if (!memory) return m3Err_nullMemory;
     
