@@ -857,7 +857,22 @@ static MemoryChunk* create_multi_segment_chunk(M3Memory* memory, size_t size, si
 ///
 ///
 
-// Modified m3_malloc to support multi-segment allocation
+// Helper per convertire da puntatore a offset
+static u32 ptr_to_offset(M3Memory* memory, void* ptr) {
+    if (!memory || !ptr) return 0;
+    
+    for (size_t i = 0; i < memory->num_segments; i++) {
+        MemorySegment* seg = memory->segments[i];
+        if (!seg || !seg->data) continue;
+        
+        if (ptr >= seg->data && ptr < (void*)((char*)seg->data + seg->size)) {
+            return (i * memory->segment_size) + ((char*)ptr - (char*)seg->data);
+        }
+    }
+    
+    return 0;
+}
+
 void* m3_malloc(M3Memory* memory, size_t size) {
     if (!memory || size == 0) return NULL;
     
@@ -909,15 +924,20 @@ void* m3_malloc(M3Memory* memory, size_t size) {
         }
     }
     
-    // Return pointer to data area
-    return (void*)((char*)found_chunk + sizeof(MemoryChunk));
+    // Calcola l'offset relativo invece del puntatore assoluto
+    u32 offset = ptr_to_offset(memory, found_chunk);
+    return (void*)(offset + sizeof(MemoryChunk));
 }
 
-// Modified m3_free to handle multi-segment chunks
-void m3_free(M3Memory* memory, void* ptr) {
-    if (!memory || !ptr) return;
+void m3_free(M3Memory* memory, void* offset_ptr) {
+    if (!memory || !offset_ptr) return;
     
-    MemoryChunk* chunk = (MemoryChunk*)((char*)ptr - sizeof(MemoryChunk));
+    // Converti l'offset in puntatore assoluto per le operazioni interne
+    u32 offset = (u32)offset_ptr;
+    void* real_ptr = get_segment_pointer(memory, offset - sizeof(MemoryChunk));
+    if (real_ptr == ERROR_POINTER) return;
+    
+    MemoryChunk* chunk = (MemoryChunk*)real_ptr;
     
     // Free segment sizes array for multi-segment chunks
     if (chunk->num_segments > 1) {
@@ -934,10 +954,9 @@ void m3_free(M3Memory* memory, void* ptr) {
     }
 }
 
-// Helper function to copy data between segments
-static void copy_multi_segment_data(M3Memory* memory, MemoryChunk* dest_chunk, const void* src_data, size_t size) {
+static void copy_multi_segment_data(M3Memory* memory, MemoryChunk* dest_chunk, u32 src_offset, size_t size) {
     size_t copied = 0;
-    size_t src_offset = 0;
+    size_t src_pos = 0;
     
     for (size_t i = 0; i < dest_chunk->num_segments && copied < size; i++) {
         size_t seg_idx = dest_chunk->start_segment + i;
@@ -948,42 +967,54 @@ static void copy_multi_segment_data(M3Memory* memory, MemoryChunk* dest_chunk, c
             dest_ptr = (char*)dest_ptr + sizeof(MemoryChunk);
         }
         
-        memcpy(dest_ptr, (char*)src_data + src_offset, copy_size);
+        void* src_ptr = get_segment_pointer(memory, src_offset + src_pos);
+        if (src_ptr == ERROR_POINTER) break;
+        
+        memcpy(dest_ptr, src_ptr, copy_size);
         copied += copy_size;
-        src_offset += copy_size;
+        src_pos += copy_size;
     }
 }
 
-// Modified m3_realloc to handle multi-segment chunks
-void* m3_realloc(M3Memory* memory, void* ptr, size_t new_size) {
+void* m3_realloc(M3Memory* memory, void* offset_ptr, size_t new_size) {
     if (!memory) return NULL;
-    if (!ptr) return m3_malloc(memory, new_size);
+    if (!offset_ptr) return m3_malloc(memory, new_size);
     if (new_size == 0) {
-        m3_free(memory, ptr);
+        m3_free(memory, offset_ptr);
         return NULL;
     }
     
-    MemoryChunk* old_chunk = (MemoryChunk*)((char*)ptr - sizeof(MemoryChunk));
+    u32 offset = (u32)offset_ptr;
+    void* real_ptr = get_segment_pointer(memory, offset - sizeof(MemoryChunk));
+    if (real_ptr == ERROR_POINTER) return NULL;
+    
+    MemoryChunk* old_chunk = (MemoryChunk*)real_ptr;
     size_t total_new_size = new_size + sizeof(MemoryChunk);
     
     // If shrinking and still fits in current segments, just update size
     if (total_new_size <= old_chunk->size) {
         old_chunk->size = total_new_size;
-        return ptr;
+        return offset_ptr;
     }
     
     // Allocate new multi-segment chunk
-    void* new_ptr = m3_malloc(memory, new_size);
-    if (!new_ptr) {
+    void* new_offset = m3_malloc(memory, new_size);
+    if (!new_offset) {
         return NULL;
     }
     
-    // Copy data from old to new chunk
-    MemoryChunk* new_chunk = (MemoryChunk*)((char*)new_ptr - sizeof(MemoryChunk));
-    copy_multi_segment_data(memory, new_chunk, ptr, MIN(old_chunk->size - sizeof(MemoryChunk), new_size));
+    // Copy data using offsets
+    void* new_chunk_ptr = get_segment_pointer(memory, (u32)new_offset - sizeof(MemoryChunk));
+    if (new_chunk_ptr == ERROR_POINTER) {
+        m3_free(memory, new_offset);
+        return NULL;
+    }
+    
+    MemoryChunk* new_chunk = (MemoryChunk*)new_chunk_ptr;
+    copy_multi_segment_data(memory, new_chunk, offset, MIN(old_chunk->size - sizeof(MemoryChunk), new_size));
     
     // Free old chunk
-    m3_free(memory, ptr);
+    m3_free(memory, offset_ptr);
     
-    return new_ptr;
+    return new_offset;
 }
