@@ -694,6 +694,9 @@ void m3_free(M3Memory* memory, void* offset_ptr) {
         chunk->next = memory->free_chunks[bucket];
         memory->free_chunks[bucket] = chunk;
     }
+
+    // Free empty segments
+    m3_collect_empty_segments();
 }
 
 void* m3_realloc(M3Memory* memory, void* offset_ptr, size_t new_size) {
