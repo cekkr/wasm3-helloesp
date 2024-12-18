@@ -497,7 +497,6 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
 }
 
 // Memory initialization M3Runtime - M3Module
-const bool WASM_DEBUG_INIT_MEMORY = true;
 const bool WASM_INIT_MEMORY_PREALLOC_SEGMENTS = false;
 M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .h
 {
