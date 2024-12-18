@@ -696,7 +696,7 @@ void m3_free(M3Memory* memory, void* offset_ptr) {
     }
 
     // Free empty segments
-    m3_collect_empty_segments();
+    m3_collect_empty_segments(memory);
 }
 
 void* m3_realloc(M3Memory* memory, void* offset_ptr, size_t new_size) {
