@@ -212,6 +212,7 @@ M3Result AddSegments(M3Memory* memory, size_t additional_segments) {
     return m3Err_none;
 }
 
+const bool WASM_DEBUG_INIT_MEMORY = true;
 IM3Memory m3_InitMemory(IM3Memory memory) {
     if (!memory) return NULL;
     
@@ -226,7 +227,7 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     
     // Initialize free chunks management
     memory->num_free_buckets = 32;
-    memory->free_chunks = calloc(memory->num_free_buckets, sizeof(MemoryChunk*));
+    memory->free_chunks = m3_Def_Malloc(memory->num_free_buckets * sizeof(MemoryChunk*));
     if (!memory->free_chunks) return NULL;
     
     // Add initial segments
@@ -235,6 +236,12 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
         free(memory->free_chunks);
         return NULL;
     }
+
+    if(WASM_DEBUG_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: trying to allocate memory");
+    void* ptr1 = m3_malloc(memory, 1);
+    void* ptr2 = m3_malloc(memory, 1);
+    PRINT_PTR1(ptr1);
+    PRINT_PTR2(ptr2);
     
     return memory;
 }
