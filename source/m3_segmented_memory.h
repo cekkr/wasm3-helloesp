@@ -17,6 +17,9 @@
 
 #define INIT_FIRM 19942003
 
+// Dummy M3Memory firm (to use when there is a placeholder memory)
+#define DUMMY_MEMORY_FIRM  6991
+
 typedef u32 mos; // memory offset
 
 // Strutture dati migliorate

@@ -772,15 +772,11 @@ M3Result  m3_LoadModule  (IM3Runtime io_runtime, IM3Module io_module)
     ESP_LOGI("WASM3", "Before LoadModule - Free: %d bytes, Largest block: %d bytes", 
         info.total_free_bytes, info.largest_free_block);
 
-    if(!M3_UNLIKELY(io_module->runtime)){                
-        if (M3_UNLIKELY(io_module->runtime)) { // useless due to redudancy
-            return m3Err_moduleAlreadyLinked;
-        }
-
-        io_module->runtime = io_runtime;
-        //M3Memory * memory = & io_runtime->memory;    
-
-        IM3Runtime io_runtime = io_module->runtime;
+    if(!is_ptr_valid(io_module->runtime) || io_module->runtime->memory.firm == DUMMY_MEMORY_FIRM){                        
+        io_module->runtime = io_runtime;        
+    }
+    else {
+       return m3Err_moduleAlreadyLinked;
     }
 
     ESP_LOGI("WASM3", "Starting InitMemory");
