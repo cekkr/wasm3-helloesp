@@ -778,15 +778,33 @@ const bool WASM_DEBUG_SEGMENTED_MEMORY_ALLOC = true;
 
 // Helper functions for multi-segment chunks
 static MemoryChunk* create_multi_segment_chunk(M3Memory* memory, size_t size, size_t start_segment) {
+    if(start_segment >= memory->num_segments)
+        AddSegments(memory, start_segment + size);
+
+    if (!memory || !memory->segments || start_segment >= memory->num_segments) {
+        return NULL;
+    }
+
+    // Assicuriamoci che il primo segmento sia inizializzato
+    MemorySegment* first_seg = memory->segments[start_segment];
+    if (!first_seg) {
+        return NULL;
+    }
+
+    if (!first_seg->data) {        
+        if (InitSegment(memory, first_seg, true) != NULL) {
+            return NULL;
+        }
+    }
+
+    // Il resto del codice rimane identico
     size_t remaining_size = size;
     size_t num_segments = 0;
     size_t current_segment = start_segment;
     
-    // Calculate number of segments needed
     while (remaining_size > 0 && current_segment < memory->num_segments) {
         size_t available = memory->segment_size - sizeof(MemoryChunk);
         if (num_segments == 0) {
-            // First segment needs space for the chunk header
             available = memory->segment_size - sizeof(MemoryChunk);
         }
         
@@ -796,24 +814,29 @@ static MemoryChunk* create_multi_segment_chunk(M3Memory* memory, size_t size, si
     }
     
     if (remaining_size > 0) {
-        // Need more segments than available
         return NULL;
     }
     
-    // Allocate and initialize the chunk
-    MemoryChunk* chunk = (MemoryChunk*)memory->segments[start_segment]->data;
+    MemoryChunk* chunk = (MemoryChunk*)first_seg->data;
+    if (!chunk) {
+        return NULL;
+    }
+
+    // Inizializziamo prima i campi più semplici
     chunk->size = size;
     chunk->is_free = false;
     chunk->next = NULL;
     chunk->prev = NULL;
-    chunk->num_segments = num_segments;
-    chunk->start_segment = start_segment;
     
-    // Allocate and fill segment sizes array
-    chunk->segment_sizes = m3_Def_Malloc(sizeof(size_t) * num_segments);
-    if (!chunk->segment_sizes) {
+    // Allocate and fill segment sizes array prima di settare num_segments
+    size_t* sizes = m3_Def_Malloc(sizeof(size_t) * num_segments);
+    if (!sizes) {
         return NULL;
     }
+    
+    chunk->segment_sizes = sizes;  // Settiamo prima l'array
+    chunk->start_segment = start_segment;
+    chunk->num_segments = num_segments;  // Ora possiamo settare num_segments
     
     // Calculate sizes for each segment
     remaining_size = size;
