@@ -218,7 +218,7 @@ void* default_malloc(size_t size) {
 }
 
 static const bool WASM_DEBUG_DEFAULT_FREE = false;
-static const bool WAMS_DEFAULT_FREE_CHECK_FREEEABLE = true;
+static const bool WAMS_DEFAULT_FREE_CHECK_FREEEABLE = false;
 void default_free(void* ptr) {
     if(WASM_DEBUG_ALLOCS) ESP_LOGI("WASM3", "default_free called for %p", ptr);
 
