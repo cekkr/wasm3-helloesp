@@ -311,7 +311,7 @@ M3Result  Parse_InitExpr  (M3Module * io_module, bytes_t * io_bytes, cbytes_t i_
 {
     M3Result result = m3Err_none;
 
-    CHECK_MEMORY_PTR(io_module->runtime->memory, "ParseSection_Global");
+    CHECK_MEMORY_PTR(&io_module->runtime->memory, "ParseSection_Global");
 
     // this doesn't generate code pages. just walks the wasm bytecode to find the end
 
@@ -592,7 +592,7 @@ M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_
 
     M3Result result = m3Err_none;
 
-    CHECK_MEMORY_PTR(o_module->runtime->memory, "ParseModuleSection");
+    CHECK_MEMORY_PTR(&o_module->runtime->memory, "ParseModuleSection");
 
     typedef M3Result (* M3Parser) (M3Module *, bytes_t, cbytes_t);
 
@@ -671,7 +671,7 @@ _try {
     }    
     
     CHECK_MEMORY_PTR(mem, "m3_ParseModule mem");
-    CHECK_MEMORY_PTR(module->runtime->memory, "m3_ParseModule &module->runtime->memory");
+    CHECK_MEMORY_PTR(&module->runtime->memory, "m3_ParseModule &module->runtime->memory");
 
     module->name = ".unnamed";                                                      m3log (parse, "load module: %d bytes", i_numBytes);
     module->startFunction = -1;
