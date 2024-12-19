@@ -351,8 +351,16 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
 }
 
 // Memory operations
+const bool WASM_DEBUG_IsValidMemoryAccess = true;
 bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
+    if(WASM_DEBUG_IsValidMemoryAccess) ESP_LOGI("WASM3", "IsValidMemoryAccess called with memory=%p, offset=%p, size=%d", memory, offset, size);
+
     if (!memory || !memory->segments) return false;
+
+    if(WASM_DEBUG_IsValidMemoryAccess) {
+        ESP_LOGI("WASM3", "IsValidMemoryAccess: memory->total_size=%zu, offset=%zu", memory->total_size, offset);
+    }    
+
     if (offset + size > memory->total_size) return false;
     
     size_t start_segment = offset / memory->segment_size;
@@ -1111,8 +1119,8 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
         ESP_LOGI("WASM3", "m3_memcpy called with dest=%p, src=%p, n=%zu", dest, src, n);
     }
 
-    if (!dest || !src || !n) {
-        ESP_LOGE("WASM3", "m3_memcpy: invalid arguments - dest=%p, src=%p, n=%zu", dest, src, n);
+    if (dest == NULL || src == NULL || !n) {       
+        ESP_LOGE("WASM3", "m3_memcpy: invalid arguments - dest=%p, src=%p, n=%zu", dest, src, n);        
         return m3Err_malformedData;
     }
 
