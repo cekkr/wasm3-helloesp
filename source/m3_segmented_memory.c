@@ -104,7 +104,10 @@ mos get_offset_pointer(IM3Memory memory, void* ptr) {
 }
 
 // Core pointer resolution functions
+bool WASM_DEBUG_get_offset_pointer = true;
 void* get_segment_pointer(IM3Memory memory, u32 offset) {
+    if(WASM_DEBUG_get_offset_pointer) ESP_LOGI("WASM3", "get_segment_pointer called with offset %u", offset);
+
     if (!memory || memory->firm != INIT_FIRM) {
         return ERROR_POINTER;
     }
@@ -130,6 +133,7 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
     
     // Initialize segment if needed
     if (!seg->data) {
+        if(WASM_DEBUG_get_offset_pointer) ESP_LOGI("WASM3", "get_segment_pointer: requested data allocation of segment %d", segment_index);
         seg = InitSegment(memory, seg, true);
 
         if(seg == NULL)

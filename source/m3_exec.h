@@ -693,14 +693,19 @@ d_m3Op  (MemSize)
 }
 
 
+const bool WASM_DEBUG_MemGrow = true;
 d_m3Op (MemGrow) //todo: convert it to new memory model
 {
+    if(WASM_DEBUG_MemGrow) ESP_LOGI("WASM3", "MemGrow called");
+
     IM3Runtime runtime          = m3MemRuntime(_mem);
     IM3Memory memory            = & runtime->memory;
 
     i32 numPagesToGrow = _r0;
     if (numPagesToGrow >= 0) {
         _r0 = memory->numPages;
+
+        if(WASM_DEBUG_MemGrow) ESP_LOGI("WASM3", "MemGrow: numPagesToGrow = %d", numPagesToGrow);
 
         if (M3_LIKELY(numPagesToGrow))
         {
