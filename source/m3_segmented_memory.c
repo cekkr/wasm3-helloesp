@@ -405,8 +405,7 @@ bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
     void* ptr = (void*)offset;
     if(!is_ptr_valid(ptr)){
         ESP_LOGW("WASM3", "IsValidMemoryAccess: is not segmented pointer, and both not valid pointer");
-        LOG_FLUSH; LOG_FLUSH;
-        backtrace();
+        //LOG_FLUSH; LOG_FLUSH; backtrace();
     }
 
     return false;
@@ -1148,8 +1147,7 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
             LOG_FLUSH;
         }        
 
-        memcpy(dest, src, n);
-        return NULL;
+        goto standardMemcpy;
     }
 
     // Check if dest and src are M3Memory offsets or absolute pointers
@@ -1166,8 +1164,8 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
         if(WASM_DEBUG_m3_memcpy) {
             ESP_LOGI("WASM3", "m3_memcpy: both pointers absolute, using direct memcpy");
         }
-        memcpy(dest, src, n);
-        return NULL;
+       
+       goto standardMemcpy;
     }
 
     // From here on, at least one pointer is segmented, so we need to handle segmented copy
@@ -1214,6 +1212,21 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
     if(WASM_DEBUG_m3_memcpy) {
         ESP_LOGI("WASM3", "m3_memcpy: completed successfully");
     }
+    return NULL;
+
+    standardMemcpy:
+
+    if(!is_ptr_valid(dest)){
+        ESP_LOGE("WASM3", "m3_memcpy: dest (%p) is invalid pointer", dest);
+        return m3Err_malformedData;
+    }
+
+    if(!is_ptr_valid(src)){
+        ESP_LOGE("WASM3", "m3_memcpy: src (%p) is invalid pointer", src);
+        return m3Err_malformedData;
+    }
+
+    memcpy(dest, src, n);
     return NULL;
 }
 
