@@ -99,7 +99,7 @@ void* resolve_pointer(M3Memory* memory, void* ptr);
 void* m3SegmentedMemAccess(IM3Memory mem, void* offset, size_t size);
 mos get_offset_pointer(IM3Memory memory, void* ptr);
 
-/// Regions
+/// Regions 
 void* m3_malloc(M3Memory* memory, size_t size);
 void m3_free(M3Memory* memory, void* ptr);
 void* m3_realloc(M3Memory* memory, void* ptr, size_t new_size);
