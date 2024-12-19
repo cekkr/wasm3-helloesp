@@ -85,8 +85,8 @@ d_m3BeginExternC
 
 #define d_m3RetSig                  static inline m3ret_t vectorcall
 
-//#define OPERTATIONS_ON_SEGMENTED_MEM
-#ifdef OPERTATIONS_ON_SEGMENTED_MEM
+#define OPERTATIONS_ON_SEGMENTED_MEM 1
+#if OPERTATIONS_ON_SEGMENTED_MEM
 
 #if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, cstr_t i_operationName);
@@ -102,7 +102,8 @@ d_m3BeginExternC
                                       op((PC) + 1, d_m3OpArgs, __FUNCTION__); \
                                    })
 #else
-    typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
+typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
+
 #    define d_m3Op(NAME)           M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
 
 #    define nextOpImpl()           ({ \

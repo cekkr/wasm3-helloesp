@@ -353,8 +353,8 @@ typedef m3slot_t *              m3stack_t;
 typedef
 const void * const  cvptr_t;
 
-#define M3_COMPILER_DEBUG
-#define DEBUG 1
+//#define M3_COMPILER_DEBUG
+#define DEBUG 0
 
 #define d_m3LogParse 0
 #define d_m3LogCompile 0

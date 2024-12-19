@@ -58,7 +58,6 @@ d_m3BeginExternC
 // Ottiene il puntatore allo slot dello stack usando un offset immediato
 #define slot_ptr(TYPE)             (TYPE*)m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(TYPE))
 
-
 # if d_m3EnableOpProfiling
                                     d_m3RetSig  profileOp   (d_m3OpSig, cstr_t i_operationName);
 #   define nextOp()                 M3_MUSTTAIL return profileOp (d_m3OpAllArgs, __FUNCTION__)
