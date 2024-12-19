@@ -31,25 +31,6 @@ typedef struct M3MemoryInfo //todo: study its usage
 }
 M3MemoryInfo;
 
-/* // Old M3Memory implementation
-typedef struct M3Memory
-{
-    M3MemoryHeader *        mallocated;
-
-    u32                     numPages;
-    u32                     maxPages;
-    u32                     pageSize;
-
-    // Add segmentation support
-    void**                  segments;
-    size_t                  num_segments;
-    size_t                  segment_size;
-}
-M3Memory;
-
-typedef M3Memory *          IM3Memory;
-*/
-
 //---------------------------------------------------------------------------------------------------------------------------------
 
 typedef struct M3DataSegment

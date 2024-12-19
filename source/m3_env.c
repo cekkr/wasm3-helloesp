@@ -552,20 +552,64 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
 }
 
 ///
-///
+/// M3MemoryHeader
 ///
 
 M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
+    M3Result result = m3Err_none;
+    
     if (!io_runtime) return m3Err_nullRuntime;
     
     M3Memory* memory = &io_runtime->memory;
-    if (!memory) return m3Err_mallocFailed;
+    if (!IsValidMemory(memory)) return m3Err_malformedData;
 
-    // Useless function due to segmentation memory
-    ESP_LOGI("WASM3", "ResizeMemory called (%d)", i_numPages);
+    // Verifica limiti di memoria
+    if (i_numPages > memory->maxPages) {
+        return m3Err_wasmMemoryOverflow;
+    }
 
-    return m3Err_none;
+#if d_m3MaxLinearMemoryPages > 0
+    _throwif("linear memory limitation exceeded", i_numPages > d_m3MaxLinearMemoryPages);
+#endif
+
+    // Calcola la nuova dimensione totale richiesta
+    size_t new_total_size = i_numPages * WASM_PAGE_SIZE;
+    
+    // Applica il limite di memoria se impostato
+    if (io_runtime->memoryLimit) {
+        new_total_size = M3_MIN(new_total_size, io_runtime->memoryLimit);
+    }
+
+    // Calcola quanti nuovi segmenti sono necessari
+    size_t segments_needed = (new_total_size + memory->segment_size - 1) / memory->segment_size;
+    
+    if (segments_needed > memory->num_segments) {
+        // Dobbiamo aggiungere nuovi segmenti
+        size_t additional_segments = segments_needed - memory->num_segments;
+        
+        result = AddSegments(memory, additional_segments);
+        if (result) {
+            return result;
+        }
+    }
+    
+    // Aggiorna la dimensione totale della memoria
+    memory->total_size = new_total_size;
+    
+    // Inizializza i segmenti se necessario
+    for (size_t i = 0; i < segments_needed; i++) {
+        MemorySegment* seg = memory->segments[i];
+        if (!seg || !seg->data) {
+            if (InitSegment(memory, seg, true) == NULL) {
+                continue;
+            }
+        }
+    }
+
+    _catch: return result;
 }
+
+////////////////////////////////////////////////////////////////////////
 
 // Memory initialization M3Runtime - M3Module
 const bool WASM_DEBUG_INIT_MEMORY = true;

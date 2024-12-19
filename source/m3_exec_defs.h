@@ -13,9 +13,19 @@
 d_m3BeginExternC
 
 
-//# define m3MemData(mem)                 (u8*)(((M3MemoryPoint*)(mem))->offset) //todo: get memory at offset
-# define m3MemRuntime(mem)              (((M3Memory*)(mem))->runtime)
-# define m3MemInfo(mem)                 (&(((M3Memory*)(mem))->runtime->memory))
+//# define m3MemData(mem)                 (u8*)(((M3MemoryPoint*)(mem))->offset + 1) //todo: get memory at offset
+//# define m3MemRuntime(mem)              (((M3Memory*)(mem))->runtime)
+//# define m3MemInfo(mem)                 (&(((M3Memory*)(mem))->runtime->memory))
+
+// Ottiene i dati del primo segmento (per compatibilità con codice legacy)
+//#define m3MemData(mem)                 ((u8*)(((IM3Memory)(mem))->segments[0]->data))
+#define m3MemData(mem)                 ((u8*)(0)) // just zero
+
+// Ottiene il runtime associato alla memoria
+#define m3MemRuntime(mem)              (((IM3Memory)(mem))->runtime)
+
+// Ottiene un puntatore alla struttura di memoria stessa
+#define m3MemInfo(mem)                 ((IM3Memory)(mem))
 
 ///
 /// Segmented memory management
