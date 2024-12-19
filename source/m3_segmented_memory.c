@@ -298,6 +298,7 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     memory->total_allocated_size = 0;
     memory->segment_size = WASM_SEGMENT_SIZE;
     memory->maxPages = M3Memory_MaxPages;
+    memory->pageSize = M3Memory_PageSize;
     memory->total_requested_size = 0;
     
     // Initialize free chunks management

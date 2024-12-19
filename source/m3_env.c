@@ -573,7 +573,7 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
 #endif
 
     // Calcola la nuova dimensione totale richiesta
-    size_t new_total_size = i_numPages * WASM_PAGE_SIZE;
+    size_t new_total_size = i_numPages * memory->pageSize;
     
     // Applica il limite di memoria se impostato
     if (io_runtime->memoryLimit) {

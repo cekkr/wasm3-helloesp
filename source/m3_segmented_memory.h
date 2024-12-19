@@ -13,7 +13,9 @@
 #define WASM_INIT_SEGMENTS 1
 #define WASM_SEGMENT_SIZE 4096
 #define WASM_CHUNK_SIZE 32  // Dimensione minima di un chunk di memoria
+
 #define M3Memory_MaxPages 1024
+#define M3Memory_PageSize 64*1024
 
 #define INIT_FIRM 19942003
 #define DUMMY_MEMORY_FIRM  6991 // Dummy M3Memory firm (to use when there is a placeholder memory)
@@ -52,6 +54,7 @@ typedef struct M3Memory_t {
 
     IM3Runtime runtime;
     u32 maxPages;
+    u32 pageSize;
     
     MemorySegment** segments;    
     size_t num_segments;        
