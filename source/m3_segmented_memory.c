@@ -1120,7 +1120,10 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
     if(!IsValidMemory(memory)) {
         if(WASM_DEBUG_m3_memcpy) {
             ESP_LOGI("WASM3", "m3_memcpy: using direct memcpy for invalid memory");
-        }
+            ESP_LOGW("WASM3", "m3_memcpy: dest=%p, src=%p", dest, src);
+            LOG_FLUSH;
+        }        
+
         memcpy(dest, src, n);
         return NULL;
     }
