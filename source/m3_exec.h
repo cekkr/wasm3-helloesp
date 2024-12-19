@@ -695,56 +695,28 @@ d_m3Op  (MemSize)
 
 d_m3Op (MemGrow) //todo: convert it to new memory model
 {
-    IM3Runtime runtime = m3MemRuntime(_mem);
-    IM3Memory memory = &runtime->memory;
+    IM3Runtime runtime          = m3MemRuntime(_mem);
+    IM3Memory memory            = & runtime->memory;
 
-    i32 numSegmentsToGrow = _r0;
-    if (numSegmentsToGrow >= 0) {
-        _r0 = memory->total_size;
+    i32 numPagesToGrow = _r0;
+    if (numPagesToGrow >= 0) {
+        _r0 = memory->numPages;
 
-        if (M3_LIKELY(numSegmentsToGrow))
+        if (M3_LIKELY(numPagesToGrow))
         {
-            u32 requiredPages = memory->num_segments + numSegmentsToGrow;
-            size_t newSize = (size_t)requiredPages * WASM_SEGMENT_SIZE;
-            
-            // Calcola il nuovo numero di segmenti necessari
-            size_t currentSegments = memory->num_segments;
-            size_t newNumSegments = (newSize + memory->segment_size - 1) / memory->segment_size;
-            
-            // Alloca il nuovo array di segmenti
-            MemorySegment* newSegments = current_allocator->realloc(
-                memory->segments,
-                newNumSegments * sizeof(MemorySegment*)
-            );
-            
-            if (newSegments) {
-                // Inizializza i nuovi segmenti
-                for (size_t i = currentSegments; i < newNumSegments; i++) {
-                    newSegments[i].data = NULL;
-                    newSegments[i].is_allocated = false;
-                    //newSegments[i].size = 0;
-                }
-                
-                // Aggiorna la struttura della memoria
-                memory->segments = newSegments;
-                memory->num_segments = newNumSegments;
-                //memory->numPages = requiredPages;
-                memory->total_size = newSize;
-                
-                ESP_LOGI("WASM3", "Memory grown to %lu pages (%zu bytes, %zu segments)", 
-                         requiredPages, newSize, newNumSegments);
-            }
-            else {
+            u32 requiredPages = memory->numPages + numPagesToGrow;
+
+            M3Result r = ResizeMemory (runtime, requiredPages);
+            if (r)
                 _r0 = -1;
-                ESP_LOGE("WASM3", "Failed to grow memory to %lu pages", requiredPages);
-            }
         }
     }
-    else {
+    else
+    {
         _r0 = -1;
     }
 
-    nextOp();
+    nextOp ();
 }
 
 // Memory Copy operation

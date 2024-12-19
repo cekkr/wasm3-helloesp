@@ -53,6 +53,7 @@ typedef struct M3Memory_t {
     int firm;
 
     IM3Runtime runtime;
+    u32 numPages;
     u32 maxPages;
     u32 pageSize;
     
