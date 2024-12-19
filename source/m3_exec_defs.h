@@ -85,7 +85,7 @@ d_m3BeginExternC
 
 #define d_m3RetSig                  static inline m3ret_t vectorcall
 
-#define OPERTATIONS_ON_SEGMENTED_MEM 1
+#define OPERTATIONS_ON_SEGMENTED_MEM 0
 #if OPERTATIONS_ON_SEGMENTED_MEM
 
 #if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
