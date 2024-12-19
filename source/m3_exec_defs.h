@@ -36,6 +36,9 @@ d_m3BeginExternC
 #else
 #define MEMACCESS(type, mem, pc) \
     *(type*)m3SegmentedMemAccess(mem, pc, sizeof(type))
+
+#define MEMPOINT(type, mem, pc) \
+    (pc_t)m3SegmentedMemAccess(mem, pc, sizeof(type))
 #endif
  
 
@@ -46,6 +49,7 @@ d_m3BeginExternC
 //#define OPERTATIONS_ON_SEGMENTED_MEM
 
 #ifdef OPERTATIONS_ON_SEGMENTED_MEM
+// iptr deprecated
 # define d_m3BaseOpSig                  iptr _pc, m3stack_t _sp, M3Memory * _mem, m3reg_t _r0
 #else
 # define d_m3BaseOpSig                  pc_t _pc, m3stack_t _sp, M3Memory * _mem, m3reg_t _r0
@@ -117,6 +121,17 @@ d_m3BeginExternC
 
 #else 
 
+#if M3Runtime_Stack_Segmented
+
+// Tracing defintion missing
+    typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
+#    define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
+
+#    define nextOpImpl()            ((IM3Operation)(* MEMPOINT(IM3Operation, _mem, _pc)))(_pc + 1, d_m3OpArgs)
+#    define jumpOpImpl(PC)          ((IM3Operation)(* MEMPOINT(IM3Operation, _mem,  PC)))( PC + 1, d_m3OpArgs)
+
+#else
+
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, cstr_t i_operationName);
 #    define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, cstr_t i_operationName)
@@ -130,11 +145,12 @@ d_m3BeginExternC
 #    define nextOpImpl()            ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs)
 #    define jumpOpImpl(PC)          ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs)
 # endif
+#endif
+
+#endif
 
 #define nextOpDirect()              M3_MUSTTAIL return nextOpImpl()
 #define jumpOpDirect(PC)            M3_MUSTTAIL return jumpOpImpl((pc_t)(PC))
-
-#endif
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
 d_m3RetSig  RunCode  (d_m3OpSig, cstr_t i_operationName)
