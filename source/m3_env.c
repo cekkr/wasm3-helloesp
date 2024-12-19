@@ -136,7 +136,70 @@ void  Environment_AddFuncType  (IM3Environment i_environment, IM3FuncType * io_f
     if(WASM_DEBUG_ADDFUNC) ESP_LOGI("WASM3", "End of Environment_AddFuncType call");
 }
 
+#define RemoveCodePage_Free 1
+#if RemoveCodePage_Free
 
+bool IsCodePageSafeToFree(IM3CodePage page) {
+    // Verifica che la pagina non sia in uso
+    if (page->info.usageCount > 0)
+        return false;
+        
+    return true;
+}
+
+const bool WASM_DEBUG_RemoveCodePageOfCapacity = true;
+IM3CodePage RemoveCodePageOfCapacity(M3CodePage ** io_list, u32 i_minimumLineCount)
+{
+    if(WASM_DEBUG_RemoveCodePageOfCapacity) ESP_LOGI("WASM3", "RemoveCodePageOfCapacity called (io_list=%p, i_minimumLineCount=%d)", io_list, i_minimumLineCount);
+
+    IM3CodePage prev = NULL;
+    IM3CodePage page = * io_list;
+
+    while (page)
+    {
+        if (NumFreeLines(page) >= i_minimumLineCount)
+        {
+            d_m3Assert(page->info.usageCount == 0);
+            
+            // Verifica se è sicuro deallocare
+            if (IsCodePageSafeToFree(page))
+            {
+                if(WASM_DEBUG_RemoveCodePageOfCapacity) ESP_LOGI("WASM3", "RemoveCodePageOfCapacity: Freeing CodePage safe");
+
+                IM3CodePage next = page->info.next;
+                
+                // Rimuovi dalla lista
+                if (prev)
+                    prev->info.next = next;
+                else
+                    *io_list = next;                                    
+                
+                // Dealloca la pagina
+                m3_Def_Free(page);
+                return NULL; // Indichiamo che la pagina è stata deallocata
+            }
+            else {
+                if(WASM_DEBUG_RemoveCodePageOfCapacity) ESP_LOGW("WASM3", "RemoveCodePageOfCapacity: CodePage not safe to free");
+            }
+            
+            // Se non è sicuro deallocare, comportamento originale
+            IM3CodePage next = page->info.next;
+            if (prev)
+                prev->info.next = next;
+            else
+                *io_list = next;
+                
+            break;
+        }
+
+        prev = page;
+        page = page->info.next;
+    }
+
+    return page;
+}
+
+#else
 IM3CodePage RemoveCodePageOfCapacity (M3CodePage ** io_list, u32 i_minimumLineCount)
 {
     IM3CodePage prev = NULL;
@@ -161,7 +224,7 @@ IM3CodePage RemoveCodePageOfCapacity (M3CodePage ** io_list, u32 i_minimumLineCo
 
     return page;
 }
-
+#endif
 
 IM3CodePage  Environment_AcquireCodePage (IM3Environment i_environment, u32 i_minimumLineCount)
 {

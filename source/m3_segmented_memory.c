@@ -508,7 +508,7 @@ void* m3_malloc(M3Memory* memory, size_t size) {
                 if(WASM_DEBUG_SEGMENTED_MEMORY_ALLOC) {
                     ESP_LOGI("WASM3", "m3_malloc: initializing segment %zu", i);
                 }
-                if (InitSegment(memory, seg, true) != NULL) {
+                if (InitSegment(memory, seg, true) == NULL) {
                     ESP_LOGE("WASM3", "m3_malloc: failed to initialize segment %zu", i);
                     continue;
                 }

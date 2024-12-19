@@ -14,6 +14,7 @@
 
 //typedef M3Runtime; // forced pre-declaration (m3_env.h)
 
+#define M3CodePage_Segmented true
 const bool WASM_DEBUG_NEWCODEPAGE = true;
 IM3CodePage  NewCodePage  (IM3Runtime i_runtime, u32 i_minNumLines)
 {
@@ -37,6 +38,8 @@ IM3CodePage  NewCodePage  (IM3Runtime i_runtime, u32 i_minNumLines)
     if (pageSize == 0) {
         return NULL;
     }
+
+    if(WASM_DEBUG_NEWCODEPAGE) ESP_LOGI("WASM3", "NewCodePage: allocating pageSize=%d", pageSize);
 
     page = (IM3CodePage)m3_Def_Malloc (pageSize);
 
@@ -63,6 +66,10 @@ IM3CodePage  NewCodePage  (IM3Runtime i_runtime, u32 i_minNumLines)
 #endif // d_m3RecordBacktraces
 
         m3log (runtime, "new page: %p; seq: %d; bytes: %d; lines: %d", GetPagePC (page), page->info.sequence, pageSize, page->info.numLines);
+    }
+    else {
+        ESP_LOGE("WASM3", "NewCodePage: Failed to allocate memory for new code page");
+        backtrace();
     }
 
     return page;
