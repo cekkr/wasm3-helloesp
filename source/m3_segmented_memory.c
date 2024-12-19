@@ -355,23 +355,23 @@ const bool WASM_DEBUG_IsValidMemoryAccess = true;
 bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
     if(WASM_DEBUG_IsValidMemoryAccess) ESP_LOGI("WASM3", "IsValidMemoryAccess called with memory=%p, offset=%p, size=%d", memory, offset, size);
 
-    if (!memory || !memory->segments) return false;
+    if (!memory || !memory->segments) goto isNotSegMem;
 
     if(WASM_DEBUG_IsValidMemoryAccess) {
         ESP_LOGI("WASM3", "IsValidMemoryAccess: memory->total_size=%zu, offset=%zu", memory->total_size, offset);
     }    
 
-    if (offset + size > memory->total_size) return false;
+    if (offset + size > memory->total_size) goto isNotSegMem;
     
     size_t start_segment = offset / memory->segment_size;
     size_t end_segment = (offset + size - 1) / memory->segment_size;
     
     // Verify all needed segments exist and are initialized
     for (size_t i = start_segment; i <= end_segment; i++) {
-        if (i >= memory->num_segments) return false;
+        if (i >= memory->num_segments) goto isNotSegMem;
         
         MemorySegment* seg = memory->segments[i];
-        if (!seg || !seg->data) return false;
+        if (!seg || !seg->data) goto isNotSegMem;
         
         // Check for multi-segment chunks
         if (seg->first_chunk) {
@@ -394,6 +394,17 @@ bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
     }
     
     return true;
+
+    isNotSegMem:
+
+    void* ptr = (void*)offset;
+    if(!is_ptr_valid(ptr)){
+        ESP_LOGW("WASM3", "IsValidMemoryAccess: is not segmented pointer, and both not valid pointer");
+        LOG_FLUSH; LOG_FLUSH;
+        backtrace();
+    }
+
+    return false;
 }
 
 ////////////////////////////////////////////////////////////////
