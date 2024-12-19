@@ -555,7 +555,10 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
 /// M3MemoryHeader
 ///
 
+const bool WASM_DEBUG_ResizeMemory = true;
 M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
+    if(WASM_DEBUG_ResizeMemory) ESP_LOGI("WASM3", "ResizeMemory: i_numPages = %d", i_numPages);
+
     M3Result result = m3Err_none;
     
     if (!io_runtime) return m3Err_nullRuntime;
