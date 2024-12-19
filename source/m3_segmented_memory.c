@@ -1134,9 +1134,8 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
                  dest_isSegmented, src_isSegmented);
     }
 
-    // Handle all possible combinations
+    // Only use direct memcpy if BOTH pointers are absolute
     if (!dest_isSegmented && !src_isSegmented) {
-        // Both are absolute pointers, use direct memcpy
         if(WASM_DEBUG_m3_memcpy) {
             ESP_LOGI("WASM3", "m3_memcpy: both pointers absolute, using direct memcpy");
         }
@@ -1144,66 +1143,45 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
         return NULL;
     }
 
-    // Get real pointers for segmented addresses
-    void* real_dest = dest_isSegmented ? get_segment_pointer(memory, (u32)dest) : dest;
-    void* real_src = src_isSegmented ? get_segment_pointer(memory, (u32)src) : src;
-
-    if (real_dest == ERROR_POINTER || real_src == ERROR_POINTER) {
-        ESP_LOGE("WASM3", "m3_memcpy: failed to resolve segmented pointers");
-        return m3Err_malformedData;
-    }
-
-    if (!dest_isSegmented || !src_isSegmented) {
-        // One pointer is absolute and one is segmented
-        if(WASM_DEBUG_m3_memcpy) {
-            ESP_LOGI("WASM3", "m3_memcpy: mixed pointers, using direct memcpy with resolved addresses");
-        }
-        memcpy(real_dest, real_src, n);
-        return NULL;
-    }
-
-    // Both pointers are segmented - need to handle potential cross-segment copies
+    // From here on, at least one pointer is segmented, so we need to handle segmented copy
     size_t remaining = n;
-    size_t dest_offset = (u32)dest;
-    size_t src_offset = (u32)src;
+    size_t dest_offset = dest_isSegmented ? (u32)dest : 0;
+    size_t src_offset = src_isSegmented ? (u32)src : 0;
+    void* absolute_src = src_isSegmented ? NULL : src;
+    void* absolute_dest = dest_isSegmented ? NULL : dest;
 
     while (remaining > 0) {
-        // Calculate current segments
-        size_t dest_segment = dest_offset / memory->segment_size;
-        size_t src_segment = src_offset / memory->segment_size;
-        
-        if (dest_segment >= memory->num_segments || src_segment >= memory->num_segments) {
-            ESP_LOGE("WASM3", "m3_memcpy: segment indices out of bounds");
-            return m3Err_malformedData;
-        }
+        // Handle destination
+        size_t dest_segment = dest_isSegmented ? (dest_offset / memory->segment_size) : 0;
+        size_t dest_segment_offset = dest_isSegmented ? (dest_offset % memory->segment_size) : 0;
+        void* curr_dest = dest_isSegmented ? 
+            ((char*)memory->segments[dest_segment]->data + dest_segment_offset) : 
+            ((char*)absolute_dest + (n - remaining));
 
-        // Get segments
-        MemorySegment* dest_seg = memory->segments[dest_segment];
-        MemorySegment* src_seg = memory->segments[src_segment];
+        // Handle source
+        size_t src_segment = src_isSegmented ? (src_offset / memory->segment_size) : 0;
+        size_t src_segment_offset = src_isSegmented ? (src_offset % memory->segment_size) : 0;
+        void* curr_src = src_isSegmented ? 
+            ((char*)memory->segments[src_segment]->data + src_segment_offset) : 
+            ((char*)absolute_src + (n - remaining));
 
-        if (!dest_seg || !dest_seg->data || !src_seg || !src_seg->data) {
-            ESP_LOGE("WASM3", "m3_memcpy: invalid segment data");
-            return m3Err_malformedData;
-        }
-
-        // Calculate how much we can copy in this iteration
-        size_t dest_available = memory->segment_size - (dest_offset % memory->segment_size);
-        size_t src_available = memory->segment_size - (src_offset % memory->segment_size);
+        // Calculate copy size for this iteration
+        size_t dest_available = dest_isSegmented ? 
+            (memory->segment_size - dest_segment_offset) : remaining;
+        size_t src_available = src_isSegmented ? 
+            (memory->segment_size - src_segment_offset) : remaining;
         size_t copy_size = MIN(MIN(dest_available, src_available), remaining);
 
         if(WASM_DEBUG_m3_memcpy) {
-            ESP_LOGI("WASM3", "m3_memcpy: copying %zu bytes between segments", copy_size);
+            ESP_LOGI("WASM3", "m3_memcpy: copying %zu bytes", copy_size);
         }
 
-        // Perform the copy
-        void* curr_dest = (char*)dest_seg->data + (dest_offset % memory->segment_size);
-        void* curr_src = (char*)src_seg->data + (src_offset % memory->segment_size);
         memcpy(curr_dest, curr_src, copy_size);
 
         // Update counters
         remaining -= copy_size;
-        dest_offset += copy_size;
-        src_offset += copy_size;
+        if (dest_isSegmented) dest_offset += copy_size;
+        if (src_isSegmented) src_offset += copy_size;
     }
 
     if(WASM_DEBUG_m3_memcpy) {
