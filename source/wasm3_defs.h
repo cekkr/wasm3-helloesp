@@ -360,6 +360,7 @@ const void * const  cvptr_t;
 #define d_m3LogCompile 1
 #define d_m3LogEmit 1
 #define d_m3LogCodePages 1
+#define d_m3_dump_code_pages 0
 #define d_m3LogModule 1
 #define d_m3LogRuntime 1
 
