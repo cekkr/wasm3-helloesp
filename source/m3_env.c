@@ -1557,7 +1557,9 @@ void  ReleaseCodePage  (IM3Runtime i_runtime, IM3CodePage i_codePage)
             d_m3Assert (numOpen + numFull + i_runtime->numActiveCodePages == i_runtime->numCodePages);
 
 #           if d_m3LogCodePages
-                dump_code_page (i_codePage, /* startPC: */ NULL);
+                #if d_m3_dump_code_pages
+                    dump_code_page (i_codePage, /* startPC: */ NULL);
+                #endif
 #           endif
 #       endif
     }
