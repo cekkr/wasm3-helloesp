@@ -96,13 +96,21 @@ ptr_status_t validate_ptr_for_free(const void* ptr);
 
 #endif
 
-/*
-/// Global memory
+///
+/// Pointer infos
+///
 
-static M3Memory globalMemory = {0};
-static void init_globalMemory(){
-    if(globalMemory.segment_size == 0){
-        m3_InitMemory(&globalMemory);
-    }
-}
-*/
+
+typedef struct {
+    bool is_valid;
+    bool is_in_dram;
+    bool is_in_iram;
+    bool is_in_executable_range;
+    bool is_aligned;
+    bool is_in_stack_range;
+    const char* region_name;
+    uint32_t distance_to_heap_end;
+} pointer_info_t;
+
+pointer_info_t analyze_pointer(const void* ptr);
+bool print_pointer_report(const void* ptr);

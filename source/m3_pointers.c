@@ -370,3 +370,98 @@ bool ultra_safe_free(void** ptr) {
     
     return true;
 }
+
+///
+/// Pointer info
+///
+
+
+pointer_info_t analyze_pointer(const void* ptr) {
+    pointer_info_t info = {0};
+    uint32_t ptr_addr = (uint32_t)ptr;
+    
+    // Check if pointer is NULL
+    if (ptr == NULL) {
+        ESP_LOGE("WASM3", "Pointer is NULL");
+        return info;
+    }
+
+    // Check basic alignment (assuming 4-byte alignment requirement)
+    info.is_aligned = ((ptr_addr & 0x3) == 0);
+    
+    // Check if pointer is in DRAM
+    if (ptr_addr >= 0x3FFB0000 && ptr_addr < 0x40000000) {
+        info.is_in_dram = true;
+        info.region_name = "DRAM";
+    }
+    
+    // Check if pointer is in IRAM
+    if (ptr_addr >= 0x40000000 && ptr_addr < 0x40400000) {
+        info.is_in_iram = true;
+        info.region_name = "IRAM";
+    }
+
+    // Get executable memory info
+    multi_heap_info_t heap_info;
+    heap_caps_get_info(&heap_info, MALLOC_CAP_EXEC);
+    
+    // Check if in executable range (approssimativo, basato sui range tipici di ESP32)
+    info.is_in_executable_range = (ptr_addr >= 0x400D0000 && ptr_addr < 0x40400000);
+
+    // Get the stack boundaries (approssimative)
+    uint32_t sp_start = 0x3FFB0000; // Stack start
+    uint32_t sp_end = 0x3FFE0000;   // Stack end
+    info.is_in_stack_range = (ptr_addr >= sp_start && ptr_addr < sp_end);
+
+    // Set overall validity
+    info.is_valid = (info.is_in_dram || info.is_in_iram) && info.is_aligned;
+
+    // Log detailed information
+    ESP_LOGI("WASM3", "\n=== Pointer Analysis Results ===");
+    ESP_LOGI("WASM3", "Address: 0x%08x", (uint32_t)ptr);
+    ESP_LOGI("WASM3", "Is Valid: %s", info.is_valid ? "Yes" : "No");
+    ESP_LOGI("WASM3", "Region: %s", info.region_name ? info.region_name : "Unknown");
+    ESP_LOGI("WASM3", "In DRAM: %s", info.is_in_dram ? "Yes" : "No");
+    ESP_LOGI("WASM3", "In IRAM: %s", info.is_in_iram ? "Yes" : "No");
+    ESP_LOGI("WASM3", "In Stack Range: %s", info.is_in_stack_range ? "Yes" : "No");
+    ESP_LOGI("WASM3", "Is Aligned: %s", info.is_aligned ? "Yes" : "No");
+    ESP_LOGI("WASM3", "In Executable Range: %s", info.is_in_executable_range ? "Yes" : "No");
+
+    // Additional memory info
+    ESP_LOGI("WASM3", "\n=== Memory Stats ===");
+    ESP_LOGI("WASM3", "Free heap size: %u", esp_get_free_heap_size());
+    ESP_LOGI("WASM3", "Minimum free heap size: %u", esp_get_minimum_free_heap_size());
+    
+    // Check memory integrity
+    if (heap_caps_check_integrity_all(true)) {
+        ESP_LOGI("WASM3", "Heap integrity check: PASSED");
+    } else {
+        ESP_LOGE("WASM3", "Heap integrity check: FAILED");
+    }
+
+    return info;
+}
+
+// Funzione di utilità per stampare un report completo
+bool print_pointer_report(const void* ptr) {
+    pointer_info_t info = analyze_pointer(ptr);
+    
+    if (!info.is_valid) {
+        ESP_LOGE("WASM3", "INVALID POINTER DETECTED!");
+        ESP_LOGE("WASM3", "Possible issues:");
+        
+        if (!info.is_aligned) {
+            ESP_LOGE("WASM3", "- Pointer is not aligned to 4-byte boundary");
+        }
+        if (!info.is_in_dram && !info.is_in_iram) {
+            ESP_LOGE("WASM3", "- Pointer is outside valid memory regions");
+        }
+        if (info.is_in_stack_range) {
+            ESP_LOGE("WASM3", "- Pointer points to stack memory (potential dangling pointer)");
+        }
+
+        return false;
+    }
+
+    return true;
+}

@@ -185,16 +185,26 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
 }
 
 void* resolve_pointer(M3Memory* memory, void* ptr) {
-    if (is_ptr_valid(ptr)) return ptr;
+    void* resolved = ptr;
+    if (is_ptr_valid(ptr)) {
+        goto resolve;
+    }
     
     if (!memory || memory->firm != INIT_FIRM) return ptr;
     
     u32 offset = (u32)ptr;
     if (offset >= memory->total_size) return ptr;
     
-    void* resolved = get_segment_pointer(memory, offset);
+    resolved = get_segment_pointer(memory, offset);
     if (resolved == ERROR_POINTER) return ptr;
     
+    resolve:
+
+    const void* to_check = resolved;
+    if(!print_pointer_report(to_check)){
+        backtrace();
+    }
+
     return resolved;
 }
 
