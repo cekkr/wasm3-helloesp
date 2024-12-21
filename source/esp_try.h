@@ -26,9 +26,9 @@ static esp_err_t last_error;
 } while (0)
 
 void backtrace(){
-    LOG_FLUSH;
+    LOG_FLUSH; LOG_FLUSH;
     esp_backtrace_print(100);
-    LOG_FLUSH;
+    LOG_FLUSH; LOG_FLUSH;
     vTaskDelay(pdMS_TO_TICKS(2000));
 }
 

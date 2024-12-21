@@ -405,7 +405,7 @@ bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
     void* ptr = (void*)offset;
     if(!is_ptr_valid(ptr)){
         ESP_LOGW("WASM3", "IsValidMemoryAccess: is not segmented pointer, and both not valid pointer");
-        //LOG_FLUSH; LOG_FLUSH; backtrace();
+        backtrace();
     }
 
     return false;
