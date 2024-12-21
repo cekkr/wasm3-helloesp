@@ -198,7 +198,7 @@ _try {
             if (strcmp (f->import.fieldUtf8, i_functionName) == 0 and
                (wildcardModule or strcmp (f->import.moduleUtf8, i_moduleName) == 0))
             {
-                ESP_LOGI("WASM3", "FindAndLinkFunction: Right function found!");
+                if(WASM_DEBUG_FIND_LINK_FUNC) ESP_LOGI("WASM3", "FindAndLinkFunction: Right function found!");
                 if (i_signature) {
 _                   (ValidateSignature (f, i_signature));
                 }

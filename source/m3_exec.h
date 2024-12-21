@@ -659,6 +659,8 @@ d_m3Op (CallRawFunction)
     IM3Memory memory = _mem;
     IM3Runtime runtime = m3MemRuntime(_mem);
 
+     if(WASM_DEBUG_CallRawFunction) ESP_LOGI("WASM3", "CallRawFunction: ctx.function: %p, ctx.userdata: %p, sp: %p", ctx.function, ctx.userdata, sp);
+
     // Aggiungi controlli di sicurezza
     if (runtime == NULL) {
         ESP_LOGE("WASM3", "CallRawFunction: no runtime");
@@ -675,8 +677,10 @@ d_m3Op (CallRawFunction)
     
     runtime->stack = sp;
     
-    m3ret_t possible_trap = call(runtime, &ctx, sp, memory);
+    ESP_LOGI("WASM3", "CallRawFunction: ok, i'm calling it");
+    m3ret_t possible_trap = call(runtime, &ctx, sp, memory);    
     //m3ret_t possible_trap = (m3ret_t)m3ApiOffsetToPtr(_possible_trap);
+    ESP_LOGI("WASM3", "CallRawFunction: function called.");
 
     if (stack_backup != NULL) {
         runtime->stack = stack_backup;
@@ -880,9 +884,11 @@ d_m3Op  (Entry)
     else newTrap (m3Err_trapStackOverflow);
 }
 
-
+const bool WASM_DEBUG_Loop = true;
 d_m3Op  (Loop)
 {
+    if(WASM_DEBUG_Loop) ESP_LOGI("WASM3", "Loop beginning");
+
     d_m3TracePrepare
 
     // regs are unused coming into a loop anyway
@@ -924,6 +930,8 @@ d_m3Op  (Loop)
     }
     while (r == _pc);
 
+    if(WASM_DEBUG_Loop) ESP_LOGI("WASM3", "Loop ending.");
+    
     forwardTrap (r);
 }
 
@@ -1256,16 +1264,25 @@ d_m3Op  (ContinueLoop)
 }
 
 
+const bool WASM_DEBUG_ContinueLoopIf = true;
 d_m3Op  (ContinueLoopIf)
 {
+    if(WASM_DEBUG_ContinueLoopIf) ESP_LOGI("WASM3", "ContinueLoopIf called");
+
     i32 condition = (i32) _r0;
     void * loopId = immediate (void *);
 
+    if(WASM_DEBUG_ContinueLoopIf) ESP_LOGI("WASM3", "ContinueLoopIf: condition: %d, loopId: %p", condition, loopId);
+
     if (condition)
     {
+        if(WASM_DEBUG_ContinueLoopIf) ESP_LOGI("WASM3", "ContinueLoopIf: return loopId: %p", loopId);
         return loopId;
     }
-    else nextOp ();
+    else {
+        if(WASM_DEBUG_ContinueLoopIf) ESP_LOGI("WASM3", "ContinueLoopIf: else nextOp()");
+        nextOp ();
+    }
 }
  
 #define MEMACCESS_SAFE(type, mem, offset) \
