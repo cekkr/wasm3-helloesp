@@ -75,9 +75,11 @@ IM3CodePage  NewCodePage  (IM3Runtime i_runtime, u32 i_minNumLines)
     return page;
 }
 
-
+const bool WASM_DEBUG_FreeCodePages = true;
 void  FreeCodePages  (IM3CodePage * io_list)
 {
+    if(WASM_DEBUG_FreeCodePages) ESP_LOGI("WASM3", "FreeCodePages called");
+
     IM3CodePage page = * io_list;
 
     while (page)

@@ -7,7 +7,7 @@ file(GLOB_RECURSE M3_SOURCES "wasm3/*.c")
 idf_component_register(
                     SRCS ${M3_SOURCES} #"m3_api_esp_wasi.c"
                     INCLUDE_DIRS "wasm3" "${IDF_PATH}/components/esp_system/include"
-                    REQUIRES esp_system
+                    REQUIRES esp_system esp_mm
                 )
 
 idf_build_set_property(COMPILE_OPTIONS "-Wno-error=implicit-function-declaration" APPEND)

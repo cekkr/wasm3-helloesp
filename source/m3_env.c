@@ -1517,8 +1517,11 @@ void  ReleaseCodePageNoTrack (IM3Runtime i_runtime, IM3CodePage i_codePage)
 }
 
 
+const bool WASM_DEBUG_AcquireCodePageWithCapacity = true;
 IM3CodePage  AcquireCodePageWithCapacity  (IM3Runtime i_runtime, u32 i_minLineCount)
 {
+    if(WASM_DEBUG_AcquireCodePageWithCapacity) ESP_LOGI("WASM3", "AcquireCodePageWithCapacity called");
+    
     IM3CodePage page = RemoveCodePageOfCapacity (& i_runtime->pagesOpen, i_minLineCount);
 
     if (not page)

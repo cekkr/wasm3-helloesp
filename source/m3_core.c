@@ -16,6 +16,8 @@
 #include "esp_try.h"
 #include "esp_log.h"
 
+#include "esp_cache.h"
+
 //#include "m3_compile.h"
 
 
@@ -166,10 +168,13 @@ bool check_memory_available_bySize(size_t required_size) {
     #endif
 }
 
-static u32 call_default_alloc_cycle = 0;
+static u32 call_default_alloc_cycle =  0;
 void call_default_alloc(){
-    if(call_default_alloc_cycle++ % 3 == 0) { CALL_WATCHDOG }
+    if(call_default_alloc_cycle++ % 5 == 0) { CALL_WATCHDOG }
 }
+
+//const uint32_t default_alloc_caps = MALLOC_CAP_8BIT; // MALLOC_CAP_32BIT 
+const uint32_t default_alloc_caps = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC | MALLOC_CAP_CACHE_ALIGNED;
 
 void* default_malloc(size_t size) {
     if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "default_malloc called size: %u", size);
@@ -191,9 +196,9 @@ void* default_malloc(size_t size) {
         size_t aligned_size = DEFAULT_ALLOC_ALIGNMENT ? (size + 7) & ~7 : size; 
         aligned_size += ALLOC_SHIFT_OF;
 
-        void* ptr = WASM_ENABLE_SPI_MEM ? heap_caps_malloc(aligned_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
+        void* ptr = WASM_ENABLE_SPI_MEM ? heap_caps_malloc(aligned_size, default_alloc_caps | MALLOC_CAP_SPIRAM) : NULL;
         if (ptr == NULL || ptr == ERROR_POINTER) {
-            ptr = heap_caps_malloc(aligned_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL); // | MALLOC_CAP_INTERNAL           
+            ptr = heap_caps_malloc(aligned_size, default_alloc_caps | MALLOC_CAP_INTERNAL); // | MALLOC_CAP_INTERNAL           
         }
 
         if(ptr == NULL || ptr == ERROR_POINTER){
@@ -205,7 +210,14 @@ void* default_malloc(size_t size) {
 
         if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "default_malloc resulting ptr: %p", ptr);
 
+        // Sincronizza la cache prima della scrittura        
+        esp_cache_msync(ptr, aligned_size, ESP_CACHE_MSYNC_FLAG_INVALIDATE);
+
         memset(ptr, 0, aligned_size);  // Zero-fill con padding  
+
+        // Sincronizza la cache dopo la scrittura
+        esp_cache_msync(ptr, aligned_size, ESP_CACHE_MSYNC_FLAG_INVALIDATE | ESP_CACHE_MSYNC_FLAG_TYPE_INST);
+
 
         if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "default_malloc resulting ptr after memset: %p", ptr);
 
@@ -291,17 +303,22 @@ void* default_realloc(void* ptr, size_t new_size) {
         }
 
         new_ptr = WASM_ENABLE_SPI_MEM ? 
-            heap_caps_realloc(ptr, aligned_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM) : NULL;
+            heap_caps_realloc(ptr, aligned_size, default_alloc_caps | MALLOC_CAP_SPIRAM) : NULL;
         
         if (new_ptr == NULL) {
-            new_ptr = heap_caps_realloc(ptr, aligned_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);            
+            new_ptr = heap_caps_realloc(ptr, aligned_size, default_alloc_caps | MALLOC_CAP_INTERNAL);            
         }
 
         if(new_ptr && aligned_size > old_size) {
+            // Sincronizza la cache prima della scrittura
+            esp_cache_msync(ptr, aligned_size, ESP_CACHE_MSYNC_FLAG_INVALIDATE);
+
             // Azzera solo la nuova porzione allocata
             memset((uint8_t*)new_ptr + old_size, 0, aligned_size - old_size);
-            if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "Zeroed %zu bytes from offset %zu", 
-                                          aligned_size - old_size, old_size);
+            if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "Zeroed %zu bytes from offset %zu",  aligned_size - old_size, old_size);
+
+            // Sincronizza la cache dopo la scrittura
+            esp_cache_msync(ptr, aligned_size, ESP_CACHE_MSYNC_FLAG_INVALIDATE | ESP_CACHE_MSYNC_FLAG_TYPE_INST);
         }
 
         if (new_ptr == NULL){
