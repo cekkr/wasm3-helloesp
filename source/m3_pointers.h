@@ -114,3 +114,4 @@ typedef struct {
 
 pointer_info_t analyze_pointer(const void* ptr);
 bool print_pointer_report(const void* ptr);
+void print_pointer_info(const void* ptr, pointer_info_t info);
