@@ -9,6 +9,17 @@
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y)) 
 
+
+static u32 check_wdt_trigger_every = 5;
+static u32 check_wdt_trigger_cycle = 0;
+
+void check_wdt_reset(){
+    if(check_wdt_trigger_cycle++ % check_wdt_trigger_every == 0){
+        CALL_WATCHDOG
+        ESP_LOGD("WASM3", "m3_segmented_memory.c: CALL_WATCHDOG");
+    }
+}
+
 const bool WASM_DEBUG_SEGMENTED_MEMORY_ALLOC = true;
 
 const bool DEBUG_WASM_INIT_MEMORY = true;
@@ -59,6 +70,8 @@ IM3MemoryPoint ValidateMemoryPoint(void* ptr) {
 
 const bool WASM_DEBUG_GET_OFFSET_POINTER = true;
 mos get_offset_pointer(IM3Memory memory, void* ptr) {
+    check_wdt_reset();
+
     if (!memory || memory->firm != INIT_FIRM || !memory->segments || !ptr) {
         if(WASM_DEBUG_GET_OFFSET_POINTER) ESP_LOGW("WASM3", "get_offset_pointer: null memory or invalid ptr");
         return (mos)ptr;
@@ -105,13 +118,10 @@ mos get_offset_pointer(IM3Memory memory, void* ptr) {
 
 // Core pointer resolution functions
 bool WASM_DEBUG_get_offset_pointer = true;
-u32 get_segmented_pointer_cycle = 0;
 void* get_segment_pointer(IM3Memory memory, u32 offset) {
-    if(WASM_DEBUG_get_offset_pointer) ESP_LOGI("WASM3", "get_segment_pointer called with offset %u", offset);
+    check_wdt_reset();    
 
-    if(get_segmented_pointer_cycle++ % 5 == 0){
-        CALL_WATCHDOG
-    }
+    if(WASM_DEBUG_get_offset_pointer) ESP_LOGI("WASM3", "get_segment_pointer called with offset %u", offset);    
 
     if (!memory || memory->firm != INIT_FIRM) {
         return ERROR_POINTER;
@@ -363,6 +373,8 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
 // Memory operations
 const bool WASM_DEBUG_IsValidMemoryAccess = true;
 bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
+    check_wdt_reset();
+
     if(WASM_DEBUG_IsValidMemoryAccess) ESP_LOGI("WASM3", "IsValidMemoryAccess called with memory=%p, offset=%p, size=%d", memory, offset, size);
 
     if (!memory || !memory->segments) goto isNotSegMem;

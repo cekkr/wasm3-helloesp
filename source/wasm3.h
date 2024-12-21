@@ -445,7 +445,7 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 #endif
 
 #if ENABLE_WDT
-#define CALL_WATCHDOG esp_task_wdt_reset(); 
+#define CALL_WATCHDOG esp_task_wdt_reset();
 //ESP_LOGI("WASM3", "Called task_wdt_reset");
 #else 
 #define CALL_WATCHDOG
