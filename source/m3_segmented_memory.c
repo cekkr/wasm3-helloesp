@@ -201,7 +201,7 @@ void* resolve_pointer(M3Memory* memory, void* ptr) {
     resolve:
 
     const void* to_check = resolved;
-    if(!is_ptr_valid(to_check)){ // print_pointer_report
+    if(!print_pointer_report(to_check)){ // print_pointer_report
         backtrace();
     }
 

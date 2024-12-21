@@ -427,7 +427,7 @@ pointer_info_t analyze_pointer(const void* ptr) {
 
     // Enhanced validity check
     info.is_valid = ((info.is_in_dram || info.is_in_iram) && 
-                     info.is_aligned && 
+                     //info.is_aligned && 
                      !info.is_in_stack_range &&
                      heap_caps_check_integrity_addr((intptr_t)ptr, false));
 
