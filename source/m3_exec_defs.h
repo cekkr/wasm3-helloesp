@@ -138,8 +138,49 @@ typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
 #    define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
 
+#define Stack_Segmented_Tracing 1
+#if Stack_Segmented_Tracing
+
+#define TRACE_STACK_DEPTH_MAX 128
+static int current_stack_depth = 0;
+static char* function_trace[TRACE_STACK_DEPTH_MAX];
+
+#define nextOpImplWithTrace() do { \
+    if (current_stack_depth >= TRACE_STACK_DEPTH_MAX) { \
+        printf("WARNING: Stack depth exceeded at %d\n", current_stack_depth); \
+        return m3Err_trapStackOverflow; \
+    } \
+    IM3Operation nextOp = * MEMPOINT(IM3Operation, _mem, _pc); \
+    function_trace[current_stack_depth] = (char*)nextOp; \
+    printf("ENTER [%d]: %p\n", current_stack_depth, nextOp); \
+    current_stack_depth++; \
+    M3Result result = nextOp(_pc + 1, d_m3OpArgs); \
+    current_stack_depth--; \
+    printf("EXIT  [%d]: %p\n", current_stack_depth, nextOp); \
+    return result; \
+} while(0)
+
+#define jumpOpImplWithTrace(PC) do { \
+    if (current_stack_depth >= TRACE_STACK_DEPTH_MAX) { \
+        printf("WARNING: Stack depth exceeded at %d\n", current_stack_depth); \
+        return m3Err_trapStackOverflow; \
+    } \
+    IM3Operation jumpOp = * MEMPOINT(IM3Operation, _mem, PC); \
+    function_trace[current_stack_depth] = (char*)jumpOp; \
+    printf("JUMP ENTER [%d]: %p\n", current_stack_depth, jumpOp); \
+    current_stack_depth++; \
+    M3Result result = jumpOp(PC + 1, d_m3OpArgs); \
+    current_stack_depth--; \
+    printf("JUMP EXIT  [%d]: %p\n", current_stack_depth, jumpOp); \
+    return result; \
+} while(0)
+
+#else
+
 #    define nextOpImpl()            ((IM3Operation)(* MEMPOINT(IM3Operation, _mem, _pc)))(_pc + 1, d_m3OpArgs)
 #    define jumpOpImpl(PC)          ((IM3Operation)(* MEMPOINT(IM3Operation, _mem,  PC)))( PC + 1, d_m3OpArgs)
+
+#endif 
 
 #else
 
