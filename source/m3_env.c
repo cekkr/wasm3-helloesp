@@ -630,17 +630,21 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
     if (!IsValidMemory(memory)) return m3Err_malformedData;
 
     // Verifica limiti di memoria
-    if (i_numPages > memory->maxPages) {
+    if (memory->maxPages > 0 && i_numPages > memory->maxPages) {
         return m3Err_wasmMemoryOverflow;
     }
+
+    // Calcola la nuova dimensione totale richiesta
+    size_t new_total_size = i_numPages * memory->pageSize;
+
+    return MemoryGrow(memory, new_total_size);
 
 #if d_m3MaxLinearMemoryPages > 0
     _throwif("linear memory limitation exceeded", i_numPages > d_m3MaxLinearMemoryPages);
 #endif
-
-    // Calcola la nuova dimensione totale richiesta
-    size_t new_total_size = i_numPages * memory->pageSize;
     
+    new_total_size += memory->totalSize; // add to total size
+
     // Applica il limite di memoria se impostato
     if (io_runtime->memoryLimit) {
         new_total_size = M3_MIN(new_total_size, io_runtime->memoryLimit);

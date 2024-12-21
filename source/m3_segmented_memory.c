@@ -347,11 +347,11 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
     if (!memory) return m3Err_nullMemory;
     
     size_t new_total = memory->total_size + additional_size;
-    if (new_total > memory->maxPages * WASM_SEGMENT_SIZE) {
+    if (new_total > memory->maxPages * memory->segment_size) {
         return m3Err_memoryLimit;
     }
     
-    size_t additional_segments = (additional_size + WASM_SEGMENT_SIZE - 1) / WASM_SEGMENT_SIZE;
+    size_t additional_segments = (additional_size +  memory->segment_size - 1) /  memory->segment_size;
     return AddSegments(memory, additional_segments);
 }
 
