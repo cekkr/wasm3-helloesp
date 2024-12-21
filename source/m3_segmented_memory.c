@@ -184,6 +184,8 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
     return (void*)((char*)seg->data + segment_offset);
 }
 
+
+const bool WASM_DEBUG_resolve_pointer = true;
 void* resolve_pointer(M3Memory* memory, void* ptr) {
     void* resolved = ptr;
     if (is_ptr_valid(ptr)) {
@@ -200,10 +202,12 @@ void* resolve_pointer(M3Memory* memory, void* ptr) {
     
     resolve:
 
-    const void* to_check = resolved;
-    if(!print_pointer_report(to_check)){ // print_pointer_report
+    if(WASM_DEBUG_resolve_pointer) ESP_LOGI("WASM3", "resolve_pointer: original: %p, resolved: %p", ptr, resolved);
+
+    if (!is_ptr_valid(resolved)) {
+        ESP_LOGW("WASM3", "resolve_pointer: resolved pointer is not valid");
         backtrace();
-    }
+    }    
 
     return resolved;
 }
