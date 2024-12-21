@@ -169,7 +169,11 @@ cstr_t  SPrintFuncTypeSignature  (IM3FuncType i_funcType)
 cstr_t  SPrintValue  (void * i_value, u8 i_type)
 {
     static char string [100];
-    SPrintArg (string, 100, (m3stack_t) i_value, i_type);
+    #if M3Runtime_Stack_Segmented
+    snprintf (string, 100, "i_offset: %d, i_type: %d\n", (mos)i_value, i_type);
+    #else    
+    SPrintArg (string, 100, m3stack_t i_value, i_type); // mos instead of m3stack_t    
+    #endif
     return string;
 }
 
