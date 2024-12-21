@@ -639,14 +639,20 @@ d_m3Op (CallIndirect)
     else forwardTrap(r);
 }
 
+const WASM_DEBUG_CallRawFunction = true;
 d_m3Op (CallRawFunction)
 {
     CALL_WATCHDOG
 
     d_m3TracePrepare
 
+    if(WASM_DEBUG_CallRawFunction) ESP_LOGI("WASM3", "CallRawFunction: calling raw function at address %p", _pc);
+
     M3ImportContext ctx;
+
     M3RawCall call = (M3RawCall) (MEMACCESS(M3RawCall, _mem, _pc++)); // *MEMACCESS..
+    if(WASM_DEBUG_CallRawFunction) ESP_LOGI("WASM3", "CallRawFunction: call address %p", call);
+
     ctx.function = immediate (IM3Function);
     ctx.userdata = immediate (void *);
     u64* const sp = ((u64*)_sp);

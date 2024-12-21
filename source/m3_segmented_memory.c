@@ -185,7 +185,7 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
 }
 
 
-const bool WASM_DEBUG_resolve_pointer = true;
+const bool WASM_DEBUG_resolve_pointer = false;
 void* resolve_pointer(M3Memory* memory, void* ptr) {
     void* resolved = ptr;
     if (is_ptr_valid(ptr)) {
