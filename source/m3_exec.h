@@ -1196,11 +1196,14 @@ d_m3Op  (Return){
     return m3Err_none;
 }
 
+const bool WASM_DEBUG_BanchIf = true;
 
 d_m3Op  (BranchIf_r)
 {
     i32 condition   = (i32) _r0;
     pc_t branch     = immediate (pc_t);
+
+    if(WASM_DEBUG_BanchIf) ESP_LOGI("WASM3", "BranchIf_r: condition = %d, branch = %p", condition, branch);
 
     if (condition)
     {
@@ -1215,6 +1218,8 @@ d_m3Op  (BranchIf_s)
     i32 condition   = slot (i32);
     pc_t branch     = immediate (pc_t);
 
+    if(WASM_DEBUG_BanchIf) ESP_LOGI("WASM3", "BranchIf_s: condition = %d, branch = %p", condition, branch);
+
     if (condition)
     {
         jumpOp (branch);
@@ -1227,6 +1232,8 @@ d_m3Op  (BranchIfPrologue_r)
 {
     i32 condition   = (i32) _r0;
     pc_t branch     = immediate (pc_t);
+
+    if(WASM_DEBUG_BanchIf) ESP_LOGI("WASM3", "BranchIfPrologue_r: condition = %d, branch = %p", condition, branch);
 
     if (condition)
     {
@@ -1243,6 +1250,8 @@ d_m3Op  (BranchIfPrologue_s)
     i32 condition   = slot (i32);
     pc_t branch     = immediate (pc_t);
 
+    if(WASM_DEBUG_BanchIf) ESP_LOGI("WASM3", "BranchIfPrologue_s: condition = %d, branch = %p", condition, branch);
+
     if (condition)
     {
         nextOp ();
@@ -1250,9 +1259,11 @@ d_m3Op  (BranchIfPrologue_s)
     else jumpOp (branch);
 }
 
-
+const bool WASM_DEBUG_ContinueLoop = true;
 d_m3Op  (ContinueLoop)
 {
+    if(WASM_DEBUG_ContinueLoop) ESP_LOGI("WASM3", "ContinueLoop called");
+    
     m3StackCheck();
 
     // TODO: this is where execution can "escape" the M3 code and callback to the client / fiber switch
