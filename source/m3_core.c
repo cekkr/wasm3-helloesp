@@ -173,8 +173,13 @@ void call_default_alloc(){
     if(call_default_alloc_cycle++ % 5 == 0) { CALL_WATCHDOG }
 }
 
-//const uint32_t default_alloc_caps = MALLOC_CAP_8BIT; // MALLOC_CAP_32BIT 
-const uint32_t default_alloc_caps = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC | MALLOC_CAP_CACHE_ALIGNED;
+#define ALLOC_ON_EXEC 0
+
+#if ALLOC_ON_EXEC
+const uint32_t default_alloc_caps = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC | MALLOC_CAP_CACHE_ALIGNED; // MALLOC_CAP_32BIT 
+#else 
+const uint32_t default_alloc_caps = MALLOC_CAP_8BIT;
+#endif
 
 void* default_malloc(size_t size) {
     if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "default_malloc called size: %u", size);
@@ -210,14 +215,17 @@ void* default_malloc(size_t size) {
 
         if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "default_malloc resulting ptr: %p", ptr);
 
+        #if ALLOC_ON_EXEC
         // Sincronizza la cache prima della scrittura        
         esp_cache_msync(ptr, aligned_size, ESP_CACHE_MSYNC_FLAG_INVALIDATE);
+        #endif 
 
         memset(ptr, 0, aligned_size);  // Zero-fill con padding  
 
+        #if ALLOC_ON_EXEC
         // Sincronizza la cache dopo la scrittura
         esp_cache_msync(ptr, aligned_size, ESP_CACHE_MSYNC_FLAG_INVALIDATE | ESP_CACHE_MSYNC_FLAG_TYPE_INST);
-
+        #endif
 
         if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "default_malloc resulting ptr after memset: %p", ptr);
 
@@ -310,15 +318,19 @@ void* default_realloc(void* ptr, size_t new_size) {
         }
 
         if(new_ptr && aligned_size > old_size) {
+            #if ALLOC_ON_EXEC
             // Sincronizza la cache prima della scrittura
             esp_cache_msync(ptr, aligned_size, ESP_CACHE_MSYNC_FLAG_INVALIDATE);
+            #endif
 
             // Azzera solo la nuova porzione allocata
             memset((uint8_t*)new_ptr + old_size, 0, aligned_size - old_size);
             if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "Zeroed %zu bytes from offset %zu",  aligned_size - old_size, old_size);
 
+            #if ALLOC_ON_EXEC
             // Sincronizza la cache dopo la scrittura
             esp_cache_msync(ptr, aligned_size, ESP_CACHE_MSYNC_FLAG_INVALIDATE | ESP_CACHE_MSYNC_FLAG_TYPE_INST);
+            #endif
         }
 
         if (new_ptr == NULL){
