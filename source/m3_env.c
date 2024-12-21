@@ -162,7 +162,7 @@ IM3CodePage RemoveCodePageOfCapacity(M3CodePage ** io_list, u32 i_minimumLineCou
             d_m3Assert(page->info.usageCount == 0);
             
             // Verifica se è sicuro deallocare
-            if (IsCodePageSafeToFree(page))
+            if (M3CodePage_RemoveCodePageOfCapacity_FreePage && IsCodePageSafeToFree(page))
             {
                 if(WASM_DEBUG_RemoveCodePageOfCapacity) ESP_LOGI("WASM3", "RemoveCodePageOfCapacity: Freeing CodePage safe");
 
@@ -179,17 +179,19 @@ IM3CodePage RemoveCodePageOfCapacity(M3CodePage ** io_list, u32 i_minimumLineCou
                 return NULL; // Indichiamo che la pagina è stata deallocata
             }
             else {
-                if(WASM_DEBUG_RemoveCodePageOfCapacity) ESP_LOGW("WASM3", "RemoveCodePageOfCapacity: CodePage not safe to free");
-            }
-            
-            // Se non è sicuro deallocare, comportamento originale
-            IM3CodePage next = page->info.next;
-            if (prev)
-                prev->info.next = next;
-            else
-                *io_list = next;
-                
-            break;
+                if(M3CodePage_RemoveCodePageOfCapacity_FreePage){
+                    if(WASM_DEBUG_RemoveCodePageOfCapacity) ESP_LOGW("WASM3", "RemoveCodePageOfCapacity: CodePage not safe to free");
+                }
+
+                // Se non è sicuro deallocare, comportamento originale
+                IM3CodePage next = page->info.next;
+                if (prev)
+                    prev->info.next = next;
+                else
+                    *io_list = next;
+                    
+                break;
+            }                        
         }
 
         prev = page;

@@ -466,3 +466,5 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 #endif
 
 #define M3Runtime_Stack_Segmented 1
+
+#define M3CodePage_RemoveCodePageOfCapacity_FreePage 0
