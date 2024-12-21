@@ -87,29 +87,10 @@ d_m3BeginExternC
 
 typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
 
-//#define d_m3RetSig                  static inline m3ret_t vectorcall
-#define d_m3RetSig                  static m3ret_t vectorcall
+#define d_m3RetSig                  static inline m3ret_t vectorcall
+//#define d_m3RetSig                  static NOINLINE_ATTR m3ret_t vectorcall
 
 #define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
-
-#define TRACE_STACK_DEPTH_MAX 32
-static int current_stack_depth __attribute__((section(".dram0.data"))) = 0;
-static char* function_trace[TRACE_STACK_DEPTH_MAX] __attribute__((section(".dram0.data")));
-
-// Definiamo i messaggi come costanti in RODATA
-//static const char* MSG_ENTER = "ENTER [%d]: %p";
-//static const char* MSG_EXIT = "EXIT  [%d]: %p";
-
-#define NOINLINE_ATTR __attribute__((noinline))
-#define TRACE_FUNCTION_ATTR NOINLINE_ATTR __attribute__((section(".flash.text")))
-
-TRACE_FUNCTION_ATTR static void trace_enter(const void* op, int depth) {
-    ESP_LOGD("WASM3", "ENTER [%d]: %p", depth, op);
-}
-
-TRACE_FUNCTION_ATTR static void trace_exit(const void* op, int depth) {
-    ESP_LOGD("WASM3",  "EXIT  [%d]: %p", depth, op);
-}
 
 #if M3Runtime_Stack_Segmented
     #define ENABLE_OP_TRACE

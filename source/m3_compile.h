@@ -15,10 +15,10 @@
 
 d_m3BeginExternC
 
-//#define DISABLE_WASM3_STATIC
-#ifdef DISABLE_WASM3_STATIC
-    #define WASM3_STATIC
-    #define WASM3_STATIC_INLINE
+#define DISABLE_WASM3_INLINE
+#ifdef DISABLE_WASM3_INLINE
+    #define WASM3_STATIC static
+    #define WASM3_STATIC_INLINE static
 #else
     #define WASM3_STATIC static
     #define WASM3_STATIC_INLINE static inline
