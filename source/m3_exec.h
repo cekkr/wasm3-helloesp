@@ -731,9 +731,12 @@ d_m3Op (MemGrow) //todo: convert it to new memory model
 }
 
 // Memory Copy operation
+const bool WASM_DEBUG_MemCopy = true;
 const bool WASM_MemCopy_DisableCheck = true;
 d_m3Op (MemCopy)
 {
+    if(WASM_DEBUG_MemCopy) ESP_LOGI("WASM3", "MemCopy called");
+
     u32 size = (u32) _r0;
     u32 source = slot (u32);
     u32 destination = slot (u32);
@@ -757,9 +760,12 @@ d_m3Op (MemCopy)
     nextOp();
 }
 
+const bool WASM_DEBUG_MemFill = true;
 const bool WASM_MemFill_DisableCheck = true;
 d_m3Op (MemFill)
 {
+    if(WASM_DEBUG_MemFill) ESP_LOGI("WASM3", "MemFill called");
+
     u32 size = (u32) _r0;
     u32 byte = slot (u32);
     u64 destination = slot (u32);
@@ -1272,7 +1278,11 @@ d_m3Op  (ContinueLoopIf)
         *(type*)ptr; \
     })
 
+const bool WASM_DEBUG_Const = true;
+
 d_m3Op (Const32) {
+    if(WASM_DEBUG_Const) ESP_LOGI("WASM3", "Const32 called");
+
     u32 value = MEMACCESS_SAFE(u32, _mem, (u32)_pc++);
 
     //ESP_ERROR_CHECK(heap_caps_check_integrity_all(true));
@@ -1290,8 +1300,10 @@ d_m3Op (Const32) {
 }
 
 d_m3Op (Const64) {
-   // Prima verifica la validità dell'accesso alla memoria sorgente
-   void* src_ptr = m3SegmentedMemAccess(_mem, (u32)_pc, sizeof(u64));
+    if(WASM_DEBUG_Const) ESP_LOGI("WASM3", "Const64 called");
+
+    // Prima verifica la validità dell'accesso alla memoria sorgente
+    void* src_ptr = m3SegmentedMemAccess(_mem, (u32)_pc, sizeof(u64));
 
     // Leggi il valore usando memcpy per evitare problemi di allineamento
     u64 value = 0;
