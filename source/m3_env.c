@@ -643,7 +643,7 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
     _throwif("linear memory limitation exceeded", i_numPages > d_m3MaxLinearMemoryPages);
 #endif
     
-    new_total_size += memory->totalSize; // add to total size
+    new_total_size += memory->total_size; // add to total size
 
     // Applica il limite di memoria se impostato
     if (io_runtime->memoryLimit) {
