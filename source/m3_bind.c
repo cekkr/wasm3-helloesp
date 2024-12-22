@@ -172,7 +172,7 @@ _   (SignatureToFuncType (& ftype, i_linkingSignature));
 }
 
 
-static const bool WASM_DEBUG_FIND_LINK_FUNC = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+const bool WASM_DEBUG_FIND_LINK_FUNC = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 M3Result  FindAndLinkFunction      (IM3Module       io_module,
                                     ccstr_t         i_moduleName,
                                     ccstr_t         i_functionName,

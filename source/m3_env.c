@@ -11,7 +11,7 @@
 #include "m3_env.h"
 #include "m3_segmented_memory.h"
 
-static const bool WASM_DEBUG_NEW_ENV = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+const bool WASM_DEBUG_NEW_ENV = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 
 IM3Environment  m3_NewEnvironment  ()
 {
@@ -91,7 +91,7 @@ void m3_SetCustomSectionHandler  (IM3Environment i_environment, M3SectionHandler
 }
 
 
-static const bool WASM_DEBUG_ADDFUNC = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+const bool WASM_DEBUG_ADDFUNC = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 
 // returns the same io_funcType or replaces it with an equivalent that's already in the type linked list
 void  Environment_AddFuncType  (IM3Environment i_environment, IM3FuncType * io_funcType)
@@ -260,7 +260,7 @@ void  Environment_ReleaseCodePages  (IM3Environment i_environment, IM3CodePage i
     }
 }
 
-static const bool WASM_DEBUG_STACK = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+const bool WASM_DEBUG_STACK = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 IM3Memory m3_NewStack(){
     if(WASM_DEBUG_STACK) ESP_LOGI("WASM3", "m3_NewStack called");
 
@@ -1090,7 +1090,7 @@ M3ValueType  m3_GetGlobalType  (IM3Global          i_global)
 }
 
 
-static const bool WASM_DEBUG_VERBOSE_v_FindFunction = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+const bool WASM_DEBUG_VERBOSE_v_FindFunction = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 void *  v_FindFunction  (IM3Module i_module, const char * const i_name)
 {
     // Prefer exported functions

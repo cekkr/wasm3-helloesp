@@ -639,7 +639,7 @@ d_m3Op (CallIndirect)
     else forwardTrap(r);
 }
 
-const WASM_DEBUG_CallRawFunction = true;
+const bool WASM_DEBUG_CallRawFunction = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 d_m3Op (CallRawFunction)
 {
     CALL_WATCHDOG

@@ -9,16 +9,21 @@
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y)) 
 
-
+#if ENABLE_WDT
 static u32 check_wdt_trigger_every = 5;
 static u32 check_wdt_trigger_cycle = 0;
 
+const bool WASM_DEBUG_check_wdt_reset = false;
 void check_wdt_reset(){
     if(check_wdt_trigger_cycle++ % check_wdt_trigger_every == 0){
         CALL_WATCHDOG
-        ESP_LOGD("WASM3", "m3_segmented_memory.c: CALL_WATCHDOG");
+
+        if(WASM_DEBUG_check_wdt_reset) ESP_LOGD("WASM3", "m3_segmented_memory.c: CALL_WATCHDOG");
     }
 }
+#else 
+void check_wdt_reset(){}
+#endif
 
 const bool WASM_DEBUG_SEGMENTED_MEMORY_ALLOC = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 
