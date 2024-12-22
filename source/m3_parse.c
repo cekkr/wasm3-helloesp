@@ -617,7 +617,7 @@ M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_
     if(WASM_DEBUG_PARSEMODULESECTION){
         ESP_LOGI("WASM3", "ParseModuleSection called");
         ESP_LOGI("WASM3", "ParseModuleSection: i_sectionType: %d", i_sectionType);
-        ESP_LOGI("WASM3", "ParseModuleSection: i_bytes: %d", i_bytes);
+        ESP_LOGI("WASM3", "ParseModuleSection: i_bytes: %p", i_bytes);
         ESP_LOGI("WASM3", "ParseModuleSection: i_numBytes: %d", i_numBytes);
     }
 
