@@ -7,7 +7,7 @@
 
 #define NOINLINE_ATTR __attribute__((noinline))
 
-#if ENABLE_OP_TRACE
+#if WASM_ENABLE_OP_TRACE
 
 #define TRACE_STACK_DEPTH_MAX 128
 #define TRACE_STACK_REPEAT 1
@@ -81,3 +81,15 @@ NOINLINE_ATTR static void trace_exit(const void* op, int depth, const char* func
 //#define TRACE_EXIT()  trace_exit(__func__, trace_context.current_stack_depth, __func__)
 
 #endif
+
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+#if WASM_ENABLE_CHECK_MEMORY_PTR
+//#define CHECK_MEMORY_PTR(mem) ESP_LOGI("WASM3", "Current memory ptr: %p", mem); LOG_FLUSH; esp_backtrace_print(1)
+#define CHECK_MEMORY_PTR(mem, pos) ESP_LOGW("WASM3", "Current memory ptr: %p (in %s)", mem, pos)
+#else 
+#define CHECK_MEMORY_PTR(mem, pos) nothing_todo()
+#endif
+

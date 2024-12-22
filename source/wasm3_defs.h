@@ -353,8 +353,8 @@ typedef m3slot_t *              m3stack_t;
 typedef
 const void * const  cvptr_t;
 
-//#define M3_COMPILER_DEBUG
-#define DEBUG 0
+//todo: Convert #ifdef DEBUG to #if DEBUG (?)
+//#define DEBUG
 
 #define d_m3LogParse 0
 #define d_m3LogCompile 0
@@ -364,7 +364,7 @@ const void * const  cvptr_t;
 #define d_m3LogModule 0
 #define d_m3LogRuntime 0
 
-# if DEBUG
+# ifdef DEBUG
 
 #   define d_m3Log(CATEGORY, FMT, ...)                  printf (" %8s  |  " FMT, #CATEGORY, ##__VA_ARGS__);
 

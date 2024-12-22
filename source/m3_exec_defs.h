@@ -119,7 +119,7 @@ d_m3BeginExternC
 #endif
 
 #if M3Runtime_Stack_Segmented
-    #if ENABLE_OP_TRACE
+    #if WASM_ENABLE_OP_TRACE
         #define nextOpImpl() ({ \
             M3Result result; \
             if (trace_context.current_stack_depth >= TRACE_STACK_DEPTH_MAX) { \

@@ -26,7 +26,26 @@
 #include "esp_debug_helpers.h"
 #include "esp_log.h"
 
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+#define M3Runtime_Stack_Segmented 1
+
+#define M3CodePage_RemoveCodePageOfCapacity_FreePage 0
+
+#define WASM_DEBUG 0
+#define WASM_DEBUG_ALL 0
+
+#define WASM_ENABLE_OP_TRACE 0
+#define WASM_ENABLE_CHECK_MEMORY_PTR 0
+
+#include "m3_debug.h"
 #include "wasm3_defs.h"
+
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
 
 // Constants
 #define M3_BACKTRACE_TRUNCATED      (IM3BacktraceFrame)(SIZE_MAX)
@@ -455,27 +474,3 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 //// Log macro
 ////
 #define LOG_FLUSH ESP_LOGI("WASM3", "flush..."); vTaskDelay(pdMS_TO_TICKS(50))
-
-////////////////////////////////////////////////////////////////
-
-#define ENABLE_CHECK_MEMORY_PTR 0
-
-#if ENABLE_CHECK_MEMORY_PTR
-//#define CHECK_MEMORY_PTR(mem) ESP_LOGI("WASM3", "Current memory ptr: %p", mem); LOG_FLUSH; esp_backtrace_print(1)
-#define CHECK_MEMORY_PTR(mem, pos) ESP_LOGW("WASM3", "Current memory ptr: %p (in %s)", mem, pos)
-#else 
-#define CHECK_MEMORY_PTR(mem, pos) nothing_todo()
-#endif
-
-////////////////////////////////////////////////////////////////
-
-#define M3Runtime_Stack_Segmented 1
-
-#define M3CodePage_RemoveCodePageOfCapacity_FreePage 0
-
-#define WASM_DEBUG 0
-#define WASM_DEBUG_ALL 0
-
-#define ENABLE_OP_TRACE 0
-
-#include "m3_debug.h"
