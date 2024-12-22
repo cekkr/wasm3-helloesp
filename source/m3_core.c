@@ -615,10 +615,10 @@ const bool WASM_DEBUG_READ_RESOLVE_POINTER = true;
 
 const bool WASM_READ_IGNORE_END = false;
 
-const bool WASM_DEBUG_READ_CHECKWASMUNDERRUN = false;
-void __read_checkWasmUnderrun(){
+const bool WASM_DEBUG_READ_CHECKWASMUNDERRUN = true;
+void __read_checkWasmUnderrun(mos pos, mos end){
     if(WASM_DEBUG_READ_CHECKWASMUNDERRUN){
-        ESP_LOGE("WASM3", "m3Err_wasmUnderrun");
+        ESP_LOGE("WASM3", "m3Err_wasmUnderrun (pos=%d, end=%d)", pos, end);
         LOG_FLUSH;
         backtrace();
     }
