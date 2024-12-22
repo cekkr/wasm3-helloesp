@@ -2,11 +2,10 @@
 #include "esp_log.h"
 #include "m3_pointers.h"
 
-#define WASM_DEBUG_SEGMENTED_MEM_MAN 1
-
+//#define WASM_DEBUG_SEGMENTED_MEM_MAN 1
+#define WASM_SEGMENTED_MEM_LAZY_ALLOC true
 
 #define PRINT_PTR(ptr) ESP_LOGI("WASM3", "Pointer value: (unsigned: %u, signed: %d)", (uintptr_t)ptr, (intptr_t)ptr)
-
 #define MIN(x, y) ((x) < (y) ? (x) : (y)) 
 
 #if ENABLE_WDT
@@ -184,6 +183,12 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
             }
         }
         chunk = chunk->next;
+    }
+
+    if(WASM_SEGMENTED_MEM_LAZY_ALLOC){
+        if(!seg->is_allocated){
+            InitSegment(memory, seg, true);
+        }
     }
     
     return (void*)((char*)seg->data + segment_offset);
@@ -421,7 +426,7 @@ bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
         if (i >= memory->num_segments) goto isNotSegMem;
         
         MemorySegment* seg = memory->segments[i];
-        if (!seg || !seg->data) goto isNotSegMem;
+        if (!seg) goto isNotSegMem;
         
         // Check for multi-segment chunks
         if (seg->first_chunk) {
@@ -435,6 +440,12 @@ bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
                     }
                     
                     if (offset >= chunk_start && offset + size <= chunk_end) {
+                        if(WASM_SEGMENTED_MEM_LAZY_ALLOC){
+                            if(!seg->is_allocated){
+                                InitSegment(memory, seg, true);
+                            }
+                        }
+
                         return true;  // Access is within a valid multi-segment chunk
                     }
                 }
@@ -644,7 +655,7 @@ void* m3_malloc(M3Memory* memory, size_t size) {
             if(WASM_DEBUG_SEGMENTED_MEMORY_ALLOC) {
                 ESP_LOGI("WASM3", "m3_malloc: initializing new segment %zu", new_segment_index);
             }
-            if (InitSegment(memory, new_seg, true) != NULL) {
+            if (InitSegment(memory, new_seg, !WASM_SEGMENTED_MEM_LAZY_ALLOC) != NULL) {
                 ESP_LOGE("WASM3", "m3_malloc: failed to initialize new segment %zu", new_segment_index);
                 return NULL;
             }
