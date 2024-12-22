@@ -469,27 +469,4 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 
 #define M3CodePage_RemoveCodePageOfCapacity_FreePage 0
 
-///
-/// Global functions
-///
-
-#define NOINLINE_ATTR __attribute__((noinline))
-//#define TRACE_FUNCTION_ATTR NOINLINE_ATTR __attribute__((section(".flash.text")))
-
-/// Stack tracing 
-
-#define TRACE_STACK_DEPTH_MAX 128
-static int current_stack_depth = 0;
-static char* function_trace[TRACE_STACK_DEPTH_MAX];
-
-// Definiamo i messaggi come costanti in RODATA
-//static const char* MSG_ENTER = "ENTER [%d]: %p";
-//static const char* MSG_EXIT = "EXIT  [%d]: %p";
-
-NOINLINE_ATTR static void trace_enter(const void* op, int depth) {
-    ESP_LOGD("WASM3", "ENTER [%d]: %p", depth, op);
-}
-
-NOINLINE_ATTR static void trace_exit(const void* op, int depth) {
-    ESP_LOGD("WASM3",  "EXIT  [%d]: %p", depth, op);
-}
+#include "m3_debug.h"

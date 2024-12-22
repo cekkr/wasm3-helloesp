@@ -90,69 +90,81 @@ d_m3BeginExternC
 #   define d_m3ClearRegisters       d_m3BaseClearRegisters
 # endif
 
-typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
+// Original
+//  typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
+//  #define d_m3RetSig                  static inline m3ret_t vectorcall
+//  #define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
 
-#define d_m3RetSig                  static inline m3ret_t vectorcall
-//#define d_m3RetSig                  static NOINLINE_ATTR m3ret_t vectorcall
+#define d_m3RetSig_NOINLINE 1
 
-#define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
+#if d_m3RetSig_NOINLINE
+#define d_m3RetSig_ATTR static NOINLINE_ATTR
+#else 
+#define d_m3RetSig_ATTR static inline
+#endif
+
+// Definizione unificata del tipo operazione
+#if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
+    typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, cstr_t i_operationName);
+    #define d_m3RetSig      d_m3RetSig_ATTR m3ret_t vectorcall
+    #define d_m3Op(NAME) M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, cstr_t i_operationName)
+
+    #define TRACE_FUNC_NAME(pc) , __FUNCTION__
+#else
+    typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
+    #define d_m3RetSig      d_m3RetSig_ATTR m3ret_t vectorcall
+    #define d_m3Op(NAME) M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
+
+    #define TRACE_FUNC_NAME(pc)
+#endif
+
+// Macro unificate per le operazioni
+#define ENABLE_OP_TRACE 1
 
 #if M3Runtime_Stack_Segmented
-    #define ENABLE_OP_TRACE 1
     #if ENABLE_OP_TRACE
         #define nextOpImpl() ({ \
             M3Result result; \
-            if (current_stack_depth >= TRACE_STACK_DEPTH_MAX) { \
+            if (trace_context.current_stack_depth >= TRACE_STACK_DEPTH_MAX) { \
                 result = m3Err_trapStackOverflow; \
             } else { \
-                function_trace[current_stack_depth] = (char*)(* MEMPOINT(IM3Operation, _mem, _pc)); \
-                trace_enter(function_trace[current_stack_depth], current_stack_depth); \
-                current_stack_depth++; \
-                result = ((IM3Operation)(* MEMPOINT(IM3Operation, _mem, _pc)))(_pc + 1, d_m3OpArgs); \
-                current_stack_depth--; \
-                trace_exit(function_trace[current_stack_depth], current_stack_depth); \
+                void* op = (void*)(* MEMPOINT(IM3Operation, _mem, _pc)); \
+                trace_enter(op, trace_context.current_stack_depth, __FUNCTION__); \
+                trace_context.current_stack_depth++; \
+                result = ((IM3Operation)op)(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME(_pc)); \
+                trace_context.current_stack_depth--; \
+                trace_exit(op, trace_context.current_stack_depth, __FUNCTION__); \
             } \
             result; \
         })
 
         #define jumpOpImpl(PC) ({ \
             M3Result result; \
-            if (current_stack_depth >= TRACE_STACK_DEPTH_MAX) { \
+            if (trace_context.current_stack_depth >= TRACE_STACK_DEPTH_MAX) { \
                 result = m3Err_trapStackOverflow; \
             } else { \
-                function_trace[current_stack_depth] = (char*)(* MEMPOINT(IM3Operation, _mem, PC)); \
-                trace_enter(function_trace[current_stack_depth], current_stack_depth); \
-                current_stack_depth++; \
-                result = ((IM3Operation)(* MEMPOINT(IM3Operation, _mem, PC)))(PC + 1, d_m3OpArgs); \
-                current_stack_depth--; \
-                trace_exit(function_trace[current_stack_depth], current_stack_depth); \
+                void* op = (void*)(* MEMPOINT(IM3Operation, _mem, PC)); \
+                trace_enter(op, trace_context.current_stack_depth, __FUNCTION__); \
+                trace_context.current_stack_depth++; \
+                result = ((IM3Operation)op)(PC + 1, d_m3OpArgs TRACE_FUNC_NAME(PC)); \
+                trace_context.current_stack_depth--; \
+                trace_exit(op, trace_context.current_stack_depth, __FUNCTION__); \
             } \
             result; \
         })
     #else
         #define nextOpImpl() \
-            ((IM3Operation)(* MEMPOINT(IM3Operation, _mem, _pc)))(_pc + 1, d_m3OpArgs)
+            ((IM3Operation)(* MEMPOINT(IM3Operation, _mem, _pc)))(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME(_pc))
 
         #define jumpOpImpl(PC) \
-            ((IM3Operation)(* MEMPOINT(IM3Operation, _mem, PC)))(PC + 1, d_m3OpArgs)
+            ((IM3Operation)(* MEMPOINT(IM3Operation, _mem, PC)))(PC + 1, d_m3OpArgs TRACE_FUNC_NAME(PC))
     #endif
-
 #else
-    #if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-        typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, cstr_t i_operationName);
-        #define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, cstr_t i_operationName)
-
-        #define nextOpImpl()            ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs, __FUNCTION__)
-        #define jumpOpImpl(PC)          ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs, __FUNCTION__)
-    #else
-        typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
-        #define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
-
-        #define nextOpImpl()            ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs)
-        #define jumpOpImpl(PC)          ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs)
-    #endif
+    #define nextOpImpl() ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME(_pc))
+    #define jumpOpImpl(PC) ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs TRACE_FUNC_NAME(PC))
 #endif
 
+// Original
 #define nextOpDirect()              M3_MUSTTAIL return nextOpImpl()
 #define jumpOpDirect(PC)            M3_MUSTTAIL return jumpOpImpl((pc_t)(PC))
 
