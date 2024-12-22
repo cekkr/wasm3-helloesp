@@ -117,7 +117,7 @@ void FreeImportInfo (M3ImportInfo * i_info)
     m3_Def_Free (i_info->fieldUtf8);
 }
 
-static const bool WASM_DEBUG_FUNCTION_RELEASE = WASM_DEBUG && false;
+static const bool WASM_DEBUG_FUNCTION_RELEASE = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 
 void  Function_Release  (IM3Function i_function)
 {    
@@ -307,7 +307,7 @@ u32  GetFunctionNumArgsAndLocals (IM3Function i_function)
 /// Function signature
 ///
 
-static const bool WASM_DEBUG_PARSE_FUNCTION_SIGNATURE = WASM_DEBUG && true;
+static const bool WASM_DEBUG_PARSE_FUNCTION_SIGNATURE = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 
 // (Probably) abandoned function (SignatureToFuncType from WASM3)
 M3FuncType* ParseFunctionSignature(const char* signature) {
@@ -456,7 +456,7 @@ void FreeFuncType(M3FuncType* funcType) {
 /// Register function name
 ///
 
-static const bool WASM_DEBUG_ADD_FUNCTION_NAME = WASM_DEBUG && true;
+static const bool WASM_DEBUG_ADD_FUNCTION_NAME = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 M3Result addFunctionToModule(IM3Module module, const char* functionName, const char* signature) {
     if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "addFunctionToModule called");
 

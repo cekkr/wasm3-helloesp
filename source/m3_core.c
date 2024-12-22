@@ -138,7 +138,7 @@ void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
 // Allocatore di default che usa heap_caps
 //static const int WASM_ENABLE_SPI_MEM = 0;
 static const int ALLOC_SHIFT_OF = 0; // 4
-static const bool WASM_DEBUG_DEFAULT_ALLOCS = WASM_DEBUG && false;
+static const bool WASM_DEBUG_DEFAULT_ALLOCS = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 static const bool CHECK_RAM_MEMORY_AVAILABLE = false;
 static const bool DEFAULT_ALLOC_ALIGNMENT = false;
 
@@ -238,7 +238,7 @@ void* default_malloc(size_t size) {
     END_TRY;
 }
 
-static const bool WASM_DEBUG_DEFAULT_FREE = WASM_DEBUG && false;
+static const bool WASM_DEBUG_DEFAULT_FREE = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 static const bool WAMS_DEFAULT_FREE_CHECK_FREEEABLE = true;
 void default_free(void* ptr) {
     if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "default_free called for %p", ptr);
@@ -357,7 +357,7 @@ void m3_SetMemoryAllocator(MemoryAllocator* allocator) {
     current_allocator = allocator ? allocator : &default_allocator;
 }
 
-const bool WASM_DEBUG_MALLOC_IMPL_BACKTRACE = WASM_DEBUG && false;
+const bool WASM_DEBUG_MALLOC_IMPL_BACKTRACE = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 void* m3_Malloc_Impl(size_t i_size) {
     if(WASM_DEBUG_MALLOC_IMPL_BACKTRACE) esp_backtrace_print(100);
 
@@ -585,7 +585,7 @@ bool  Is64BitType  (u8 i_m3Type)
         return (sizeof (voidptr_t) == 8); // all other cases are pointers
 }
 
-const bool WASM_DEBUG_SizeOfType = WASM_DEBUG && true;
+const bool WASM_DEBUG_SizeOfType = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 u32  SizeOfType  (u8 i_m3Type)
 {
     if(WASM_DEBUG_SizeOfType) ESP_LOGI("WASM3", "SizeOfType called with i_m3Type: %d", i_m3Type);
@@ -611,11 +611,11 @@ u32  SizeOfType  (u8 i_m3Type)
 
 //-- Binary Wasm parsing utils  ------------------------------------------------------------------------------------------
 const bool WASM_READ_BACKTRACE_WASMUNDERRUN = true;
-const bool WASM_DEBUG_READ_RESOLVE_POINTER = WASM_DEBUG && true;
+const bool WASM_DEBUG_READ_RESOLVE_POINTER = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 
 const bool WASM_READ_IGNORE_END = false;
 
-const bool WASM_DEBUG_READ_CHECKWASMUNDERRUN = WASM_DEBUG && true;
+const bool WASM_DEBUG_READ_CHECKWASMUNDERRUN = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 void __read_checkWasmUnderrun(mos pos, mos end){
     if(WASM_DEBUG_READ_CHECKWASMUNDERRUN){
         ESP_LOGE("WASM3", "m3Err_wasmUnderrun (pos=%d, end=%d)", pos, end);

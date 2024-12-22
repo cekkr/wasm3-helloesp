@@ -703,7 +703,7 @@ d_m3Op  (MemSize)
 }
 
 
-const bool WASM_DEBUG_MemGrow = WASM_DEBUG && true;
+const bool WASM_DEBUG_MemGrow = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 d_m3Op (MemGrow) //todo: convert it to new memory model
 {
     if(WASM_DEBUG_MemGrow) ESP_LOGI("WASM3", "MemGrow called");
@@ -735,7 +735,7 @@ d_m3Op (MemGrow) //todo: convert it to new memory model
 }
 
 // Memory Copy operation
-const bool WASM_DEBUG_MemCopy = WASM_DEBUG && true;
+const bool WASM_DEBUG_MemCopy = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 const bool WASM_MemCopy_DisableCheck = true;
 d_m3Op (MemCopy)
 {
@@ -764,7 +764,7 @@ d_m3Op (MemCopy)
     nextOp();
 }
 
-const bool WASM_DEBUG_MemFill = WASM_DEBUG && true;
+const bool WASM_DEBUG_MemFill = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 const bool WASM_MemFill_DisableCheck = true;
 d_m3Op (MemFill)
 {
@@ -884,7 +884,7 @@ d_m3Op  (Entry)
     else newTrap (m3Err_trapStackOverflow);
 }
 
-const bool WASM_DEBUG_Loop = WASM_DEBUG && true;
+const bool WASM_DEBUG_Loop = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 d_m3Op  (Loop)
 {
     if(WASM_DEBUG_Loop) ESP_LOGI("WASM3", "Loop beginning");
@@ -1196,7 +1196,7 @@ d_m3Op  (Return){
     return m3Err_none;
 }
 
-const bool WASM_DEBUG_BanchIf = WASM_DEBUG && true;
+const bool WASM_DEBUG_BanchIf = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 
 d_m3Op  (BranchIf_r)
 {
@@ -1259,7 +1259,7 @@ d_m3Op  (BranchIfPrologue_s)
     else jumpOp (branch);
 }
 
-const bool WASM_DEBUG_ContinueLoop = WASM_DEBUG && true;
+const bool WASM_DEBUG_ContinueLoop = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 d_m3Op  (ContinueLoop)
 {
     if(WASM_DEBUG_ContinueLoop) ESP_LOGI("WASM3", "ContinueLoop called");
@@ -1275,7 +1275,7 @@ d_m3Op  (ContinueLoop)
 }
 
 
-const bool WASM_DEBUG_ContinueLoopIf = WASM_DEBUG && true;
+const bool WASM_DEBUG_ContinueLoopIf = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 d_m3Op  (ContinueLoopIf)
 {
     if(WASM_DEBUG_ContinueLoopIf) ESP_LOGI("WASM3", "ContinueLoopIf called");
@@ -1306,7 +1306,7 @@ d_m3Op  (ContinueLoopIf)
         *(type*)ptr; \
     })
 
-const bool WASM_DEBUG_Const = WASM_DEBUG && true;
+const bool WASM_DEBUG_Const = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 
 d_m3Op (Const32) {
     if(WASM_DEBUG_Const) ESP_LOGI("WASM3", "Const32 called");

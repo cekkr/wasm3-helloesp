@@ -474,5 +474,8 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 #define M3CodePage_RemoveCodePageOfCapacity_FreePage 0
 
 #define WASM_DEBUG 0
+#define WASM_DEBUG_ALL 0
+
+#define ENABLE_OP_TRACE 0
 
 #include "m3_debug.h"

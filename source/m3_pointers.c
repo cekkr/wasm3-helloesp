@@ -9,9 +9,9 @@
 
 #include "m3_pointers.h"
 
-static const bool WASM_DEBUG_POINTERS = WASM_DEBUG && false;
-static const bool WASM_DEBUG_POINTERS_BACKTRACE = WASM_DEBUG && false;
-static const bool WASM_DEBUG_POINTERS_IGNORE_OUTSIDE_HEAP = WASM_DEBUG && false; 
+static const bool WASM_DEBUG_POINTERS = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+static const bool WASM_DEBUG_POINTERS_BACKTRACE = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+static const bool WASM_DEBUG_POINTERS_IGNORE_OUTSIDE_HEAP = WASM_DEBUG_ALL || (WASM_DEBUG && true); 
 static const bool WASM_POINTERS_CHECK_BOUNDS = false;
 
 ptr_check_result_t validate_pointer(const void* ptr, size_t expected_size) {
@@ -284,7 +284,7 @@ bool ultra_safe_ptr_valid(const void* ptr) {
 #include <stdint.h>
 
 #define SAFE_TAG "SafeFree"
-static const bool WASM_DEBUG_SAFE_TAG = WASM_DEBUG && false;
+static const bool WASM_DEBUG_SAFE_TAG = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 
 // Struttura per memorizzare informazioni sui blocchi liberati
 #define MAX_TRACKED_PTRS 64

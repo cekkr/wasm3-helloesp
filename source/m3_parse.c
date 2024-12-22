@@ -7,7 +7,7 @@
 
 #include "m3_parse.h"
 
-static const bool WASM_DEBUG_PARSE = WASM_DEBUG && false;
+static const bool WASM_DEBUG_PARSE = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 
 M3Result  ParseType_Table  (IM3Module io_module, bytes_t i_bytes, cbytes_t i_end)
 {
@@ -18,7 +18,7 @@ M3Result  ParseType_Table  (IM3Module io_module, bytes_t i_bytes, cbytes_t i_end
 
 
 const bool WASM_FORCE_MAX_PAGE_SIZE = false;
-const bool WASM_DEBUG_PARSETYPE_MEMORY = WASM_DEBUG && true;
+const bool WASM_DEBUG_PARSETYPE_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 M3Result  ParseType_Memory  (M3MemoryInfo * o_memory, bytes_t * io_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
@@ -136,7 +136,7 @@ _               (NormalizeType (& retType, wasmType));
 }
 
 
-const bool WASM_DEBUG_ParseSection_Function = WASM_DEBUG && true;
+const bool WASM_DEBUG_ParseSection_Function = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 M3Result  ParseSection_Function  (IM3Module io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
@@ -167,7 +167,7 @@ _       (Module_AddFunction (io_module, funcTypeIndex, NULL /* import info */));
 }
 
 
-static const bool WASM_DEBUG_PARSE_SECTION = WASM_DEBUG && false;
+static const bool WASM_DEBUG_PARSE_SECTION = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 M3Result  ParseSection_Import  (IM3Module io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
@@ -434,7 +434,7 @@ _                   (NormalizeType (& normalType, wasmType));
     return result;
 }
 
-const bool WASM_DEBUG_PARSESECTION_DATA = WASM_DEBUG && true;
+const bool WASM_DEBUG_PARSESECTION_DATA = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 M3Result  ParseSection_Data  (M3Module * io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
@@ -483,7 +483,7 @@ _       (ReadLEB_u32 (mem, & segment->size, & i_bytes, i_end));
 }
 
 
-const bool WASM_DEBUG_PARSESECTION_MEMORY = WASM_DEBUG && true;
+const bool WASM_DEBUG_PARSESECTION_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 M3Result  ParseSection_Memory  (M3Module * io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
@@ -609,8 +609,8 @@ _       (io_module->environment->customSectionHandler(io_module, name, i_bytes, 
 }
 
 
-const bool WASM_DEBUG_PARSEMODULESECTION = WASM_DEBUG && true;
-const bool WASM_DEBUG_PARSEMODULESECTION_FUNCTION = WASM_DEBUG && false;
+const bool WASM_DEBUG_PARSEMODULESECTION = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+const bool WASM_DEBUG_PARSEMODULESECTION_FUNCTION = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 
 M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_bytes, u32 i_numBytes)
 {
@@ -670,9 +670,9 @@ M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_
 
 #define WASM_ParseModule_EndWithExceptedSection true
 
-static const bool WASM_DEBUG_PARSE_MODULE = WASM_DEBUG && true;
+static const bool WASM_DEBUG_PARSE_MODULE = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 static const bool WASM_PARSE_MODULE_IGNORE_SECTION_ORDER = false;
-static const bool WASM_DEBUG_PARSE_MODULE_EXCEPTED_SECTION = WASM_DEBUG && false;
+static const bool WASM_DEBUG_PARSE_MODULE_EXCEPTED_SECTION = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 M3Result  m3_ParseModule  (IM3Environment i_environment, IM3Module * o_module, cbytes_t i_bytes, u32 i_numBytes, IM3Runtime o_runtime)
 {
     IM3Module module;          

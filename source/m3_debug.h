@@ -7,6 +7,8 @@
 
 #define NOINLINE_ATTR __attribute__((noinline))
 
+#if ENABLE_OP_TRACE
+
 #define TRACE_STACK_DEPTH_MAX 128
 #define TRACE_STACK_REPEAT 1
 
@@ -77,3 +79,5 @@ NOINLINE_ATTR static void trace_exit(const void* op, int depth, const char* func
 // Macro di utilità per il debug (unused)
 //#define TRACE_ENTER() trace_enter(__func__, trace_context.current_stack_depth, __func__)
 //#define TRACE_EXIT()  trace_exit(__func__, trace_context.current_stack_depth, __func__)
+
+#endif

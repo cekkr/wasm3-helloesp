@@ -118,9 +118,6 @@ d_m3BeginExternC
     #define TRACE_FUNC_NAME(pc)
 #endif
 
-// Macro unificate per le operazioni
-#define ENABLE_OP_TRACE 1
-
 #if M3Runtime_Stack_Segmented
     #if ENABLE_OP_TRACE
         #define nextOpImpl() ({ \
