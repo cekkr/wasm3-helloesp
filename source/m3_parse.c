@@ -751,14 +751,18 @@ _       (ReadLEB_u7 (mem, & section, & pos, end));
         if (section != 0 && !WASM_PARSE_MODULE_IGNORE_SECTION_ORDER) {
             // Ensure sections appear only once and in order
             while (sectionsOrder[expectedSection++] != section) {
+                ESP_LOGW("WASM3", "Expected section order: %d, found: %d", sectionsOrder[expectedSection-1], section);
+
                 if(expectedSection >= 12){
-                    ESP_LOGE("WASM3", "m3_ParseModule: WASM section not found on not in order (expected: < 12, found: %d)", expectedSection);   
+                    ESP_LOGE("WASM3", "m3_ParseModule: WASM section (%d) not found on not in order", section);   
+
                     if(WASM_DEBUG_PARSE_MODULE_EXCEPTED_SECTION){    
                         LOG_FLUSH;
                         backtrace();             
                     }
-                }
-                _throwif(m3Err_misorderedWasmSection, expectedSection >= 12);
+
+                     _throwif(m3Err_misorderedWasmSection, expectedSection >= 12);
+                }               
             }
         }
 
