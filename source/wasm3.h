@@ -40,6 +40,8 @@
 #define WASM_ENABLE_OP_TRACE 0
 #define WASM_ENABLE_CHECK_MEMORY_PTR 0
 
+#define WASM_OPS_DISABLE_IRAM 0
+
 #include "m3_debug.h"
 #include "wasm3_defs.h"
 

@@ -198,8 +198,6 @@ typedef int8_t          i8;
 
 #endif
 
-#define DISABLE_IRAM 1
-
 /*
  * Apply settings
  */
@@ -221,7 +219,7 @@ typedef int8_t          i8;
 #   if defined(M3_IN_IRAM)  // the interpreter is in IRAM, attribute not needed
 #     define vectorcall
 #   else
-    #if DISABLE_IRAM
+    #if WASM_OPS_DISABLE_IRAM
         # define vectorcall
     #else
         #     include "esp_system.h"
