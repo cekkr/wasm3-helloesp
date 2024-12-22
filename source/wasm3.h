@@ -42,6 +42,9 @@
 
 #define WASM_OPS_DISABLE_IRAM 0
 
+// it's about m3_compile
+#define DISABLE_WASM3_INLINE 0
+
 #include "m3_debug.h"
 #include "wasm3_defs.h"
 
