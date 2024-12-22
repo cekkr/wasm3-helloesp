@@ -669,7 +669,7 @@ M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_
 }
 
 static const bool WASM_DEBUG_PARSE_MODULE = true;
-static const bool WASM_PARSE_MODULE_IGNORE_SECTION_ORDER = true;
+static const bool WASM_PARSE_MODULE_IGNORE_SECTION_ORDER = false;
 static const bool WASM_DEBUG_PARSE_MODULE_EXCEPTED_SECTION = false;
 M3Result  m3_ParseModule  (IM3Environment i_environment, IM3Module * o_module, cbytes_t i_bytes, u32 i_numBytes, IM3Runtime o_runtime)
 {
@@ -714,7 +714,7 @@ _try {
     const u8 * pos = i_bytes;
     const u8 * end = pos + i_numBytes;
 
-    if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: calculated pos: %d, i_numBytes: %d, calculated end: %d\n", (mos)pos, (mos)i_numBytes, (mos)end);
+    if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: calculated pos: %p, i_numBytes: %p, calculated end: %p\n", pos, i_numBytes, end);
 
     module->wasmStart = pos;
     module->wasmEnd = end;
@@ -737,7 +737,7 @@ _   (Read_u32 (mem, & version, & pos, end));
     if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: cycling");
     while (pos < end)
     {
-        if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: while pos(%d) < end(%d)", (mos)pos, (mos)end);
+        if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: while pos(%p) < end(%p)", pos, end);
 
         if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: cycle: ReadLEB_u7");
         u8 section;
