@@ -714,6 +714,8 @@ _try {
     const u8 * pos = i_bytes;
     const u8 * end = pos + i_numBytes;
 
+    if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: calculated pos: %d, i_numBytes: %d, calculated end: %d\n", (mos)pos, (mos)i_numBytes, (mos)end);
+
     module->wasmStart = pos;
     module->wasmEnd = end;
 
@@ -732,9 +734,11 @@ _   (Read_u32 (mem, & version, & pos, end));
     static const u8 sectionsOrder[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 10, 11, 0 }; // 0 is a placeholder
     u8 expectedSection = 0;
 
-    if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: cycling...");
+    if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: cycling");
     while (pos < end)
     {
+        if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: while pos(%d) < end(%d)", (mos)pos, (mos)end);
+
         if(WASM_DEBUG_PARSE_MODULE) ESP_LOGI("WASM3", "m3_ParseModule: cycle: ReadLEB_u7");
         u8 section;
 _       (ReadLEB_u7 (mem, & section, & pos, end));
