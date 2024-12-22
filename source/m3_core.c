@@ -152,17 +152,19 @@ bool check_memory_available_bySize(size_t required_size) {
         size_t largest_internal = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
         size_t largest_spiram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
 
-        ESP_LOGD(TAG, "Free internal: %zu, largest block: %zu", free_internal, largest_internal);
-        ESP_LOGD(TAG, "Free SPIRAM: %zu, largest block: %zu", free_spiram, largest_spiram);
+        if(WASM_DEBUG_DEFAULT_ALLOCS){
+            ESP_LOGD(TAG, "Free internal: %zu, largest block: %zu", free_internal, largest_internal);
+            ESP_LOGD(TAG, "Free SPIRAM: %zu, largest block: %zu", free_spiram, largest_spiram);
+        }
 
         // Check if allocation can fit in either memory type
-        return (largest_internal >= required_size) || (largest_spiram >= required_size);
+        return (largest_spiram >= required_size); // (largest_internal >= required_size) || 
     #else
         // Only check internal memory
         size_t free_internal = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
         size_t largest_internal = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
 
-        ESP_LOGD(TAG, "Free internal: %zu, largest block: %zu", free_internal, largest_internal);
+        if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGD(TAG, "Free internal: %zu, largest block: %zu", free_internal, largest_internal);
 
         return largest_internal >= required_size;
     #endif
