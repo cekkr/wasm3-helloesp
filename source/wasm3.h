@@ -456,6 +456,8 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 ////
 #define LOG_FLUSH ESP_LOGI("WASM3", "flush..."); vTaskDelay(pdMS_TO_TICKS(50))
 
+////////////////////////////////////////////////////////////////
+
 #define ENABLE_CHECK_MEMORY_PTR 0
 
 #if ENABLE_CHECK_MEMORY_PTR
@@ -465,8 +467,12 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 #define CHECK_MEMORY_PTR(mem, pos) nothing_todo()
 #endif
 
+////////////////////////////////////////////////////////////////
+
 #define M3Runtime_Stack_Segmented 1
 
 #define M3CodePage_RemoveCodePageOfCapacity_FreePage 0
+
+#define WASM_DEBUG 0
 
 #include "m3_debug.h"

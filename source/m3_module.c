@@ -70,7 +70,7 @@ _try {
     return result;
 }
 
-static const bool WASM_DEBUG_PREALLOCFUNCTIONS = true;
+static const bool WASM_DEBUG_PREALLOCFUNCTIONS = WASM_DEBUG && true;
 static const int PreallocFunctions_PageSize = 8;
 M3Result  Module_PreallocFunctions  (IM3Module io_module, u32 i_totalFunctions)
 {
@@ -109,7 +109,7 @@ _try {
     return result;
 }
 
-const bool WASM_DEBUG_MODULE_ADDFUNCTION = true;
+const bool WASM_DEBUG_MODULE_ADDFUNCTION = WASM_DEBUG && true;
 M3Result  Module_AddFunction  (IM3Module io_module, u32 i_typeIndex, IM3ImportInfo i_importInfo)
 {
 _try {

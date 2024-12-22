@@ -20,7 +20,7 @@ void check_wdt_reset(){
     }
 }
 
-const bool WASM_DEBUG_SEGMENTED_MEMORY_ALLOC = true;
+const bool WASM_DEBUG_SEGMENTED_MEMORY_ALLOC = WASM_DEBUG && true;
 
 const bool DEBUG_WASM_INIT_MEMORY = true;
 // Utility functions
@@ -68,7 +68,7 @@ IM3MemoryPoint ValidateMemoryPoint(void* ptr) {
 
 ////////////////////////////////////////////////////////////////
 
-const bool WASM_DEBUG_GET_OFFSET_POINTER = true;
+const bool WASM_DEBUG_GET_OFFSET_POINTER = WASM_DEBUG && true;
 mos get_offset_pointer(IM3Memory memory, void* ptr) {
     check_wdt_reset();
 
@@ -117,7 +117,7 @@ mos get_offset_pointer(IM3Memory memory, void* ptr) {
 }
 
 // Core pointer resolution functions
-bool WASM_DEBUG_get_offset_pointer = true;
+bool WASM_DEBUG_get_offset_pointer = WASM_DEBUG && true;
 void* get_segment_pointer(IM3Memory memory, u32 offset) {
     check_wdt_reset();    
 
@@ -185,7 +185,7 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
 }
 
 
-const bool WASM_DEBUG_resolve_pointer = false;
+const bool WASM_DEBUG_resolve_pointer = WASM_DEBUG && false;
 void* resolve_pointer(M3Memory* memory, void* ptr) {
     void* resolved = ptr;
     if (is_ptr_valid(ptr)) {
@@ -222,7 +222,7 @@ int find_segment_index(MemorySegment** segments, int num_segments, MemorySegment
 }
 
 // Memory initialization and growth
-const bool WASM_DEBUG_INITSEGMENT = true;
+const bool WASM_DEBUG_INITSEGMENT = WASM_DEBUG && true;
 MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) {
     if (memory == NULL || memory->firm != INIT_FIRM){ 
         ESP_LOGW("WASM", "InitSegment: memory not initialized");
@@ -259,7 +259,7 @@ MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) 
     return seg;
 }
 
-const bool WASM_DEBUG_ADDSEGMENT = true;
+const bool WASM_DEBUG_ADDSEGMENT = WASM_DEBUG && true;
 M3Result AddSegments(IM3Memory memory, size_t additional_segments) {
     if(WASM_DEBUG_ADDSEGMENT) ESP_LOGI("WASM3", "AddSegments: requested %zu segments", additional_segments);
     if (memory == NULL || memory->firm != INIT_FIRM) {
@@ -316,7 +316,7 @@ M3Result AddSegments(IM3Memory memory, size_t additional_segments) {
     return m3Err_none;
 }
 
-const bool WASM_DEBUG_M3_INIT_MEMORY = true;
+const bool WASM_DEBUG_M3_INIT_MEMORY = WASM_DEBUG && true;
 const int WASM_M3_INIT_MEMORY_NUM_MALLOC_TESTS = 10;
 IM3Memory m3_InitMemory(IM3Memory memory) {
     if (memory == NULL) return NULL;
@@ -385,7 +385,7 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
 }
 
 // Memory operations
-const bool WASM_DEBUG_IsValidMemoryAccess = true;
+const bool WASM_DEBUG_IsValidMemoryAccess = WASM_DEBUG && true;
 bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
     check_wdt_reset();
 
@@ -1159,7 +1159,7 @@ void* m3_realloc(M3Memory* memory, void* offset_ptr, size_t new_size) {
 ///
 ///
 
-const bool WASM_DEBUG_m3_memcpy = true;
+const bool WASM_DEBUG_m3_memcpy = WASM_DEBUG && true;
 M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
     if(WASM_DEBUG_m3_memcpy) {
         ESP_LOGI("WASM3", "m3_memcpy called with dest=%p, src=%p, n=%zu", dest, src, n);
@@ -1264,7 +1264,7 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
 ////////////////////////////////////////////////////////////////
 
 //todo: implement overflow handling
-const bool WASM_DEBUG_m3_memset = true;
+const bool WASM_DEBUG_m3_memset = WASM_DEBUG && true;
 M3Result m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
     if(WASM_DEBUG_m3_memset) {
         ESP_LOGI("WASM3", "m3_memset called with ptr=%p, value=%d, n=%zu", ptr, value, n);
