@@ -98,7 +98,7 @@ typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
 #define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
 
 #if M3Runtime_Stack_Segmented
-    #define ENABLE_OP_TRACE 0
+    #define ENABLE_OP_TRACE 1
     #if ENABLE_OP_TRACE
         #define nextOpImpl() ({ \
             M3Result result; \

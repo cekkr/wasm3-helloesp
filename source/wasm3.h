@@ -474,11 +474,11 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 ///
 
 #define NOINLINE_ATTR __attribute__((noinline))
-#define TRACE_FUNCTION_ATTR NOINLINE_ATTR __attribute__((section(".flash.text")))
+//#define TRACE_FUNCTION_ATTR NOINLINE_ATTR __attribute__((section(".flash.text")))
 
 /// Stack tracing 
 
-#define TRACE_STACK_DEPTH_MAX 32
+#define TRACE_STACK_DEPTH_MAX 128
 static int current_stack_depth = 0;
 static char* function_trace[TRACE_STACK_DEPTH_MAX];
 
