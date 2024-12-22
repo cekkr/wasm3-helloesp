@@ -322,7 +322,7 @@ M3Result AddSegments(IM3Memory memory, size_t additional_segments) {
 }
 
 const bool WASM_DEBUG_M3_INIT_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && true);
-const int WASM_M3_INIT_MEMORY_NUM_MALLOC_TESTS = 10;
+const int WASM_M3_INIT_MEMORY_NUM_MALLOC_TESTS = 2;
 IM3Memory m3_InitMemory(IM3Memory memory) {
     if (memory == NULL) return NULL;
 
@@ -355,9 +355,18 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
 
     if(WASM_M3_INIT_MEMORY_NUM_MALLOC_TESTS > 0){
         for(int i = 0; i < WASM_M3_INIT_MEMORY_NUM_MALLOC_TESTS; i++){
-            ESP_LOGI("WASM3", "m3_InitMemory: test m3_malloc num %d", i);
+            if(WASM_DEBUG_M3_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: test m3_malloc num %d", i);
             void* testPtr = m3_malloc(memory, 1);
-            PRINT_PTR(testPtr);
+
+            if(i == 0 && testPtr != 0){
+                ESP_LOGE("WASM3", "m3_InitMemory: test 0 m3_malloc failed");
+            }
+
+            if(i != 0 && testPtr == 0){
+                ESP_LOGE("WASM3", "m3_InitMemory: test m3_malloc failed");
+            }
+
+            if(WASM_DEBUG_M3_INIT_MEMORY) PRINT_PTR(testPtr);
         }
     }
     

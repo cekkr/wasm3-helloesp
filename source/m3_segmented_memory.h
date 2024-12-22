@@ -12,7 +12,7 @@
 
 #define WASM_INIT_SEGMENTS 64/4 // 64 KB // this solves the unrecognized M3Memory pointers
 #define WASM_SEGMENT_SIZE 4096
-#define WASM_CHUNK_SIZE 32  // Dimensione minima di un chunk di memoria
+#define WASM_CHUNK_SIZE 8  // Dimensione minima di un chunk di memoria
 
 #define M3Memory_MaxPages 1024
 #define M3Memory_PageSize 64*1024
