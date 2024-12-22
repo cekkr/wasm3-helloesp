@@ -36,10 +36,15 @@ d_m3BeginExternC
 # define m3MemAccessAt(mem, off, sz)   m3SegmentedMemAccess((M3Memory*)(mem), (off), (sz))
 
 #ifdef TRACK_MEMACCESS
-#define STRINGIFY(x) #x
-#define MEMACCESS(type, mem, pc) \    
-    (printf("MEM ACCESS type: %s\n", STRINGIFY(type)), \
-    *((type*)(m3SegmentedMemAccess(mem, pc, sizeof(type)))))
+    #define STRINGIFY(x) #x
+
+    #define MEMACCESS(type, mem, pc) \    
+        (printf("MEM ACCESS type: %s\n", STRINGIFY(type)), \
+        *((type*)(m3SegmentedMemAccess(mem, pc, sizeof(type)))))
+
+    #define MEMPOINT(type, mem, pc) \
+    (pc_t)m3SegmentedMemAccess(mem, pc, sizeof(type))
+
 #else
 #define MEMACCESS(type, mem, pc) \
     *(type*)m3SegmentedMemAccess(mem, pc, sizeof(type))
@@ -93,8 +98,8 @@ typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
 #define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
 
 #if M3Runtime_Stack_Segmented
-    #define ENABLE_OP_TRACE
-    #ifdef ENABLE_OP_TRACE
+    #define ENABLE_OP_TRACE 0
+    #if ENABLE_OP_TRACE
         #define nextOpImpl() ({ \
             M3Result result; \
             if (current_stack_depth >= TRACE_STACK_DEPTH_MAX) { \
