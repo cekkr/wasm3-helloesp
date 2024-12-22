@@ -743,11 +743,16 @@ _   (Read_u32 (mem, & version, & pos, end));
         u8 section;
 _       (ReadLEB_u7 (mem, & section, & pos, end));
 
+        if(WASM_DEBUG_PARSE_MODULE){
+            ESP_LOGI("WASM3", "Reading section type: %d, current offset: %p", section, i_bytes);
+            ESP_LOGI("WASM3", "Section header bytes: %02x %02x %02x %02x", i_bytes[0], i_bytes[1], i_bytes[2], i_bytes[3]);
+        }
+
         if (section != 0 && !WASM_PARSE_MODULE_IGNORE_SECTION_ORDER) {
             // Ensure sections appear only once and in order
             while (sectionsOrder[expectedSection++] != section) {
                 if(expectedSection >= 12){
-                    ESP_LOGE("WASM3", "m3_ParseModule: WASM section not found on not in order (expected: 12, found: %d)", expectedSection);   
+                    ESP_LOGE("WASM3", "m3_ParseModule: WASM section not found on not in order (expected: < 12, found: %d)", expectedSection);   
                     if(WASM_DEBUG_PARSE_MODULE_EXCEPTED_SECTION){    
                         LOG_FLUSH;
                         backtrace();             
