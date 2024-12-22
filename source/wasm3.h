@@ -40,6 +40,7 @@
 #define WASM_ENABLE_OP_TRACE 0
 #define WASM_ENABLE_CHECK_MEMORY_PTR 0
 
+// Probably useful when you activeate WASM_ENABLE_OP_TRACE
 #define WASM_OPS_DISABLE_IRAM 0
 
 // it's about m3_compile
