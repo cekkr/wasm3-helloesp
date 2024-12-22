@@ -762,6 +762,7 @@ _       (ReadLEB_u7 (mem, & section, & pos, end));
                     if(WASM_ParseModule_EndWithExceptedSection){
                         ESP_LOGW("WASM3", "m3_ParseModule: forced end cycle");
                         forcedEnd = true;
+                        break;
                     }
                     else {
                         ESP_LOGE("WASM3", "m3_ParseModule: WASM section (%d) not found on not in order", section);   
@@ -777,6 +778,7 @@ _       (ReadLEB_u7 (mem, & section, & pos, end));
             }
 
             if(forcedEnd) {
+                end = cyclePos;
                 module->wasmEnd = cyclePos;
                 break;
             }
