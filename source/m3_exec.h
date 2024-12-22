@@ -659,7 +659,7 @@ d_m3Op (CallRawFunction)
     IM3Memory memory = _mem;
     IM3Runtime runtime = m3MemRuntime(_mem);
 
-     if(WASM_DEBUG_CallRawFunction) ESP_LOGI("WASM3", "CallRawFunction: ctx.function: %p, ctx.userdata: %p, sp: %p", ctx.function, ctx.userdata, sp);
+    if(WASM_DEBUG_CallRawFunction) ESP_LOGI("WASM3", "CallRawFunction: ctx.function: %p, ctx.userdata: %p, sp: %p", ctx.function, ctx.userdata, sp);
 
     // Aggiungi controlli di sicurezza
     if (runtime == NULL) {
@@ -677,10 +677,10 @@ d_m3Op (CallRawFunction)
     
     runtime->stack = sp;
     
-    ESP_LOGI("WASM3", "CallRawFunction: ok, i'm calling it");
+    if(WASM_DEBUG_CallRawFunction) ESP_LOGI("WASM3", "CallRawFunction: ok, i'm calling it");
     m3ret_t possible_trap = call(runtime, &ctx, sp, memory);    
     //m3ret_t possible_trap = (m3ret_t)m3ApiOffsetToPtr(_possible_trap);
-    ESP_LOGI("WASM3", "CallRawFunction: function called.");
+    if(WASM_DEBUG_CallRawFunction) ESP_LOGI("WASM3", "CallRawFunction: function called.");
 
     if (stack_backup != NULL) {
         runtime->stack = stack_backup;
