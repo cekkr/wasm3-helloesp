@@ -242,7 +242,8 @@ void* default_malloc(size_t size) {
 }
 
 const bool WASM_DEBUG_DEFAULT_FREE = WASM_DEBUG_ALL || (WASM_DEBUG && true);
-static const bool WAMS_DEFAULT_FREE_CHECK_FREEEABLE = true;
+const bool WAMS_DEFAULT_FREE_CHECK_FREEEABLE = true;
+const bool WASM_default_free_WARNS_NOT_FREEABLE = false;
 void default_free(void* ptr) {
     if(WASM_DEBUG_DEFAULT_ALLOCS) ESP_LOGI("WASM3", "default_free called for %p", ptr);
 
@@ -256,7 +257,7 @@ void default_free(void* ptr) {
         
         bool notFreeToFree = false;
         if (WAMS_DEFAULT_FREE_CHECK_FREEEABLE && !is_ptr_freeable(ptr)) {            
-            ESP_LOGW("WASM3", "default_free: is_ptr_freeable check failed for pointer");
+            if(WASM_default_free_WARNS_NOT_FREEABLE) ESP_LOGW("WASM3", "default_free: is_ptr_freeable check failed for pointer");
             //backtrace();
             //notFreeToFree = true;
             return;
@@ -265,7 +266,7 @@ void default_free(void* ptr) {
         if(notFreeToFree) ESP_LOGW("WASM3", "default_free: theoretically, is_ptr_freeable check failed for pointer");
 
         if (!ultra_safe_free((void**)&ptr)) {
-            ESP_LOGW("WASM3", "Skipped unsafe free operation");
+            if(WASM_default_free_WARNS_NOT_FREEABLE) ESP_LOGW("WASM3", "Skipped unsafe free operation");
             return;
         }
     } CATCH {

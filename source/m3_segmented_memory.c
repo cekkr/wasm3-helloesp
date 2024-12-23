@@ -725,6 +725,14 @@ void m3_free(M3Memory* memory, void* offset_ptr) {
         ESP_LOGE("WASM3", "m3_free: invalid arguments - memory=%p, ptr=%p", memory, offset_ptr);
         return;
     }
+
+    if(!IsValidMemoryAccess(memory, offset_ptr)) {
+        if(is_ptr_valid(offset_ptr)){
+            m3_Def_Free(offset_ptr);
+            return;
+        }
+        return;
+    }
     
     // Converti l'offset in puntatore al chunk
     u32 offset = (u32)offset_ptr;
