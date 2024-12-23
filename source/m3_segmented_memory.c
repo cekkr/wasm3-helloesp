@@ -370,6 +370,11 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
             if(WASM_DEBUG_M3_INIT_MEMORY) PRINT_PTR(testPtr);
         }
     }
+
+    #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
+    segment_handlers_t handlers = {0};
+    paging_init(memory->paging, &handlers, memory->segment_size);
+    #endif
     
     return memory;
 }
@@ -380,6 +385,90 @@ IM3Memory m3_NewMemory(){
     m3_InitMemory(memory);
 
     return memory;
+}
+
+const bool WASM_DEBUG_TOP_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+void FreeMemory(IM3Memory memory) {
+    if (!memory) return;
+    if (WASM_DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory called");
+
+    // Verifica integrità della memoria
+    if (!IsValidMemory(memory) || memory->segment_size != WASM_SEGMENT_SIZE) {
+        if (WASM_DEBUG_TOP_MEMORY) ESP_LOGW("WASM3", "FreeMemory: invalid memory structure");
+        return;
+    }
+
+    // Prima libera le free lists
+    if (memory->free_chunks) {
+        for (size_t i = 0; i < memory->num_free_buckets; i++) {
+            MemoryChunk* chunk = memory->free_chunks[i];
+            while (chunk) {
+                MemoryChunk* next = chunk->next;
+                if (chunk->segment_sizes) {
+                    m3_Def_Free(chunk->segment_sizes);
+                }
+                chunk = next;
+            }
+        }
+        m3_Def_Free(memory->free_chunks);
+        memory->free_chunks = NULL;
+    }
+
+    if (is_ptr_valid(memory->segments)) {
+        // Libera tutti i segmenti e le loro strutture
+        for (size_t i = 0; i < memory->num_segments; i++) {
+            if (WASM_DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory: processing segment %zu", i);
+            
+            MemorySegment* segment = memory->segments[i];
+            if (!is_ptr_valid(segment)) {
+                if (WASM_DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory: segment %zu not valid", i);
+                continue;
+            }
+
+            if (segment->data) {
+                // Libera segment_sizes di ogni chunk nel segmento
+                // ma solo per i chunk che iniziano in questo segmento
+                MemoryChunk* chunk = segment->first_chunk;
+                while (chunk) {
+                    if (chunk->start_segment == i && chunk->segment_sizes) {
+                        if (WASM_DEBUG_TOP_MEMORY) {
+                            ESP_LOGI("WASM3", "FreeMemory: freeing chunk segment_sizes at segment %zu", i);
+                        }
+                        m3_Def_Free(chunk->segment_sizes);
+                        chunk->segment_sizes = NULL;
+                    }
+                    chunk = chunk->next;
+                }
+
+                if (segment->is_allocated) {
+                    if (WASM_DEBUG_TOP_MEMORY) {
+                        ESP_LOGI("WASM3", "FreeMemory: freeing segment %zu data", i);
+                    }
+                    m3_Def_Free(segment->data);
+                    segment->data = NULL;
+                }
+            }
+
+            m3_Def_Free(segment);
+            memory->segments[i] = NULL;
+        }
+
+        // Libera l'array dei segmenti
+        if (WASM_DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory: freeing segments array");
+        m3_Def_Free(memory->segments);
+        memory->segments = NULL;
+    }
+
+    // Resetta tutti i contatori e gli stati
+    memory->num_segments = 0;
+    memory->total_size = 0;
+    memory->total_allocated_size = 0;
+    memory->total_requested_size = 0;
+    memory->maxPages = 0;
+    memory->num_free_buckets = 0;
+    memory->firm = 0;  // Invalida la struttura della memoria
+
+    if (WASM_DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory completed");
 }
 
 bool IsValidMemory(IM3Memory memory) {

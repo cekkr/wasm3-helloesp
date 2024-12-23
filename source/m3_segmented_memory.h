@@ -11,7 +11,7 @@
 #define WASM_SEGMENTED_MEM_ENABLE_HE_PAGES 1
 
 #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
-#include "he_memory.h" // implicit
+#include "he_memory.h" 
 #endif
 
 #define WASM_ENABLE_SPI_MEM 0
@@ -53,6 +53,10 @@ typedef struct MemorySegment {
     size_t size;       
     u32 index;  
     MemoryChunk* first_chunk;  // Primo chunk nel segmento
+
+    #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
+    segment_info_t segment_page;
+    #endif
 } MemorySegment;
 
 typedef struct M3Memory_t {  
@@ -94,6 +98,7 @@ typedef M3MemoryPoint *          IM3MemoryPoint;
 ////////////////////////////////
 IM3Memory m3_NewMemory();
 IM3Memory m3_InitMemory(IM3Memory memory);
+void FreeMemory(IM3Memory memory);
 bool IsValidMemory(IM3Memory memory);
 
 ////////////////////////////////////////////////////////////////

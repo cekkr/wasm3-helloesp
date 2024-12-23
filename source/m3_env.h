@@ -210,7 +210,5 @@ void                        InitRuntime                 (IM3Runtime io_runtime, 
 void                        Runtime_Release             (IM3Runtime io_runtime);
 M3Result                    ResizeMemory                (IM3Runtime io_runtime, u32 i_numPages);
 
-void FreeMemory(IM3Memory memory);
-
 d_m3EndExternC
 
