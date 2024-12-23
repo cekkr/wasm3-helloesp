@@ -39,8 +39,6 @@
 
 // Segmented memory blocks management: https://claude.site/artifacts/1bd111d2-d502-422d-ba33-073490d042e6
 
-#define DEBUG_MEMORY 1
-
 d_m3BeginExternC
 
 // Riscrive l'operazione precedente con un nuovo operatore
@@ -925,7 +923,7 @@ d_m3Op  (Loop)
         
         // Opzionale: logging periodico per debug
         if (DEBUG_MEMORY && (iteration_count % 1000 == 0)) {
-            ESP_LOGI("WASM3", "Loop iteration %lu", iteration_count);
+            ESP_LOGD("WASM3", "Loop iteration %lu", iteration_count);
         }
     }
     while (r == _pc);

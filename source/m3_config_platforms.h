@@ -21,7 +21,7 @@
 #define M3_FREE(ptr)        heap_caps_free(ptr)
 
 // Opzionale: Wrapper per tracciamento allocazioni
-#ifdef DEBUG_MEMORY
+#if DEBUG_MEMORY
 static void* debug_malloc(size_t size) {
     void* ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
     ESP_LOGI("WASM3_MEM", "Malloc: %d bytes at %p", size, ptr);

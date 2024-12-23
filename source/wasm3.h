@@ -37,6 +37,8 @@
 #define WASM_DEBUG 0
 #define WASM_DEBUG_ALL 0
 
+#define DEBUG_MEMORY 0
+
 #define WASM_ENABLE_OP_TRACE 0
 #define WASM_ENABLE_CHECK_MEMORY_PTR 0
 

@@ -961,6 +961,7 @@ _           (CompileFunction (function));
     _catch: return result;
 }
 
+const bool WASM_DEBUG_m3_LoadModule =  WASM_DEBUG_ALL || (WASM_DEBUG && true);
 // TODO: deal with main + side-modules loading efforcement
 M3Result  m3_LoadModule  (IM3Runtime io_runtime, IM3Module io_module)
 {
@@ -969,9 +970,11 @@ M3Result  m3_LoadModule  (IM3Runtime io_runtime, IM3Module io_module)
 
     // Debug memory allocation
     multi_heap_info_t info;
-    heap_caps_get_info(&info, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
-    ESP_LOGI("WASM3", "Before LoadModule - Free: %d bytes, Largest block: %d bytes", 
-        info.total_free_bytes, info.largest_free_block);
+    if(WASM_DEBUG_m3_LoadModule){        
+        heap_caps_get_info(&info, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+        ESP_LOGI("WASM3", "Before LoadModule - Free: %d bytes, Largest block: %d bytes", 
+            info.total_free_bytes, info.largest_free_block);
+    }
 
     if(!is_ptr_valid(io_module->runtime) || io_module->runtime->memory.firm != INIT_FIRM){                        
         io_module->runtime = io_runtime;        
@@ -983,21 +986,21 @@ M3Result  m3_LoadModule  (IM3Runtime io_runtime, IM3Module io_module)
         }
     }
 
-    ESP_LOGI("WASM3", "Starting InitMemory");
+    if(WASM_DEBUG_m3_LoadModule) ESP_LOGI("WASM3", "Starting InitMemory");
 _   (InitMemory (io_runtime, io_module));
-    ESP_LOGI("WASM3", "InitMemory completed");
+    if(WASM_DEBUG_m3_LoadModule) ESP_LOGI("WASM3", "InitMemory completed");
 
-    ESP_LOGI("WASM3", "Starting InitGlobals");
+    if(WASM_DEBUG_m3_LoadModule) ESP_LOGI("WASM3", "Starting InitGlobals");
 _   (InitGlobals (io_module));
-    ESP_LOGI("WASM3", "InitGlobals completed");
+    if(WASM_DEBUG_m3_LoadModule) ESP_LOGI("WASM3", "InitGlobals completed");
 
-    ESP_LOGI("WASM3", "Starting InitDataSegments");
+    if(WASM_DEBUG_m3_LoadModule) ESP_LOGI("WASM3", "Starting InitDataSegments");
 _   (InitDataSegments (&io_runtime->memory, io_module));
-    ESP_LOGI("WASM3", "InitDataSegments completed");
+    if(WASM_DEBUG_m3_LoadModule) ESP_LOGI("WASM3", "InitDataSegments completed");
 
-    ESP_LOGI("WASM3", "Starting InitElements");
+    if(WASM_DEBUG_m3_LoadModule) ESP_LOGI("WASM3", "Starting InitElements");
 _   (InitElements (io_module));
-    ESP_LOGI("WASM3", "InitElements completed");
+    if(WASM_DEBUG_m3_LoadModule) ESP_LOGI("WASM3", "InitElements completed");
 
 #ifdef DEBUG
     Module_GenerateNames(io_module);
@@ -1008,9 +1011,12 @@ _   (InitElements (io_module));
     return result; // ok
 
 _catch:
-    // Log di debug per capire dove è fallito
-    heap_caps_get_info(&info, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
-    ESP_LOGE("WASM3", "LoadModule failed - Free: %d bytes, Largest block: %d bytes", info.total_free_bytes, info.largest_free_block);
+    if(WASM_DEBUG_m3_LoadModule){        
+        // Log di debug per capire dove è fallito
+        heap_caps_get_info(&info, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+        ESP_LOGE("WASM3", "LoadModule failed - Free: %d bytes, Largest block: %d bytes", info.total_free_bytes, info.largest_free_block);
+    }
+    
     ESP_LOGE("WASM3", "LoadModule failed with result: %d", result);
     
     io_module->runtime = NULL;

@@ -114,25 +114,26 @@ void print_memory_info(){
 }
 
 
-const bool DEBUG_MEMORY = true;
-const bool INT_MEM_SEGMENTED = false;
-
+const bool WASM_DEBUG_MEMORY = DEBUG_MEMORY || WASM_DEBUG_ALL || (WASM_DEBUG && true);;
+const bool WASM_INT_MEM_SEGMENTED = false; 
+// Just used in function costants
 void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
 {
-    if(DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_CopyMem");
+    if(WASM_DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_CopyMem");
     
-    if(INT_MEM_SEGMENTED){
-        /*void* ptr_dest;
-        m3_memcpy(globalMemory, i_from, ptr_dest, i_size);
-        return ptr_dest;*/
+    if(WASM_INT_MEM_SEGMENTED && false){
+        void* ptr_dest;
+        //m3_memcpy(globalMemory, i_from, ptr_dest, i_size); // it couldn't work due to the lack of memory reference
+        return ptr_dest;
     }
-
-    /// Old implementation
-    void * ptr = m3_Def_Malloc(i_size);
-    if (ptr) {
-        memcpy (ptr, i_from, i_size);
+    else {
+        /// Old implementation
+        void * ptr = m3_Def_Malloc(i_size);
+        if (ptr) {
+            memcpy (ptr, i_from, i_size);
+        }    
+        return ptr;
     }
-    return ptr;
 }
 
 // Allocatore di default che usa heap_caps
@@ -363,7 +364,7 @@ const bool WASM_DEBUG_MALLOC_IMPL_BACKTRACE = WASM_DEBUG_ALL || (WASM_DEBUG && t
 void* m3_Malloc_Impl(size_t i_size) {
     if(WASM_DEBUG_MALLOC_IMPL_BACKTRACE) esp_backtrace_print(100);
 
-    if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Malloc_Impl of size %zu", i_size);
+    if (WASM_DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Malloc_Impl of size %zu", i_size);
 
     M3Memory* memory = (M3Memory*)current_allocator->malloc(sizeof(M3Memory));
     if (!memory) {
@@ -395,14 +396,14 @@ void* m3_Malloc_Impl(size_t i_size) {
         //memory->segment_size = 0; //???
     }
 
-    if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Returning memory pointer");
+    if (WASM_DEBUG_MEMORY) ESP_LOGI("WASM3", "Returning memory pointer");
     //esp_backtrace_print(100); 
 
     return memory;
 }
 
 void m3_Free_Impl(void* io_ptr, bool isMemory) {
-    if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Free_Impl");
+    if (WASM_DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_Free_Impl");
 
     if (!is_ptr_freeable(&io_ptr) || io_ptr == NULL) return;
 
@@ -483,7 +484,7 @@ void* m3_Realloc_Impl(void* i_ptr, size_t i_newSize, size_t i_oldSize) {
 
 void* m3_CopyMem(const void* i_from, size_t i_size) {
     //todo: check if segmented offset
-    if (DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_CopyMem");
+    if (WASM_DEBUG_MEMORY) ESP_LOGI("WASM3", "Calling m3_CopyMem");
     if (!i_from) return NULL;
 
     M3Memory* src_memory = (M3Memory*)i_from;
