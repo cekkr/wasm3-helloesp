@@ -87,7 +87,10 @@ _try {
         }
 
         //io_module->functions = m3_Dyn_ReallocArray (&io_module->runtime->memory, io_module->functions, M3Function, i_totalFunctions);
-        ESP_LOGI("WASM", "PreallocFunctions: reallocating to module->functions %d bytes", i_totalFunctions*sizeof(M3Function));
+        if(WASM_DEBUG_PREALLOCFUNCTIONS){
+            ESP_LOGI("WASM", "PreallocFunctions: reallocating to module->functions %d bytes", i_totalFunctions*sizeof(M3Function));
+        }
+
         io_module->functions = m3_Def_ReallocArray (M3Function, io_module->functions, i_totalFunctions);
         io_module->allFunctions = i_totalFunctions;
 
