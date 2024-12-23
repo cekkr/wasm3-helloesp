@@ -8,6 +8,12 @@
 
 #include "esp_heap_caps.h"
 
+#define WASM_SEGMENTED_MEM_ENABLE_HE_PAGES 1
+
+#if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
+#include "he_memory.h" // implicit
+#endif
+
 #define WASM_ENABLE_SPI_MEM 0
 
 #define WASM_INIT_SEGMENTS 64/4 // 64 KB // this solves the unrecognized M3Memory pointers
@@ -68,6 +74,10 @@ typedef struct M3Memory_t {
     // Cache per ottimizzare la ricerca di chunk liberi
     MemoryChunk** free_chunks;  // Array di puntatori a chunk liberi per size
     size_t num_free_buckets;    
+
+    #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
+    paging_stats_t* paging;
+    #endif
 } M3Memory;
 
 typedef M3Memory *          IM3Memory;
