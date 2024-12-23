@@ -726,7 +726,7 @@ void m3_free(M3Memory* memory, void* offset_ptr) {
         return;
     }
 
-    if(!IsValidMemoryAccess(memory, offset_ptr)) {
+    if(!IsValidMemoryAccess(memory, offset_ptr, 0)) {
         if(is_ptr_valid(offset_ptr)){
             m3_Def_Free(offset_ptr);
             return;
