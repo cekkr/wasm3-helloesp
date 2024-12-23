@@ -364,11 +364,11 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
             void* testPtr = m3_malloc(memory, 1);
 
             if(i == 0 && testPtr != 0){
-                ESP_LOGE("WASM3", "m3_InitMemory: test 0 m3_malloc failed");
+                ESP_LOGE("WASM3", "m3_InitMemory: test 0 m3_malloc failed (given %d)", testPtr);
             }
 
             if(i != 0 && testPtr == 0){
-                ESP_LOGE("WASM3", "m3_InitMemory: test m3_malloc failed");
+                ESP_LOGE("WASM3", "m3_InitMemory: test m3_malloc failed (given %d)", testPtr);
             }
 
             if(WASM_DEBUG_M3_INIT_MEMORY) PRINT_PTR(testPtr);
