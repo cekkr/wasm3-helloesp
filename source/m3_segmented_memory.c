@@ -1295,8 +1295,13 @@ M3Result m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
         ESP_LOGI("WASM3", "m3_memset called with ptr=%p, value=%d, n=%zu", ptr, value, n);
     }
 
+    if(!n){ // just ignore it (?)
+        return NULL;
+    }
+
     if (!ptr || !n) {
         ESP_LOGE("WASM3", "m3_memset: invalid arguments - ptr=%p, n=%zu", ptr, n);
+        backtrace();
         return m3Err_malformedData;
     }
 
