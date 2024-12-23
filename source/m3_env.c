@@ -383,14 +383,14 @@ void *  _FreeModule  (IM3Module i_module, void * i_info)
 }
 
 
-static const int DEBUG_TOP_MEMORY = 1;
+const bool WASM_DEBUG_TOP_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 void FreeMemory(IM3Memory memory) {
     if (!memory) return;
-    if (DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory called");
+    if (WASM_DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory called");
 
     // Verifica integrità della memoria
     if (!IsValidMemory(memory) || memory->segment_size != WASM_SEGMENT_SIZE) {
-        if (DEBUG_TOP_MEMORY) ESP_LOGW("WASM3", "FreeMemory: invalid memory structure");
+        if (WASM_DEBUG_TOP_MEMORY) ESP_LOGW("WASM3", "FreeMemory: invalid memory structure");
         return;
     }
 
@@ -413,11 +413,11 @@ void FreeMemory(IM3Memory memory) {
     if (is_ptr_valid(memory->segments)) {
         // Libera tutti i segmenti e le loro strutture
         for (size_t i = 0; i < memory->num_segments; i++) {
-            if (DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory: processing segment %zu", i);
+            if (WASM_DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory: processing segment %zu", i);
             
             MemorySegment* segment = memory->segments[i];
             if (!is_ptr_valid(segment)) {
-                if (DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory: segment %zu not valid", i);
+                if (WASM_DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory: segment %zu not valid", i);
                 continue;
             }
 
@@ -427,7 +427,7 @@ void FreeMemory(IM3Memory memory) {
                 MemoryChunk* chunk = segment->first_chunk;
                 while (chunk) {
                     if (chunk->start_segment == i && chunk->segment_sizes) {
-                        if (DEBUG_TOP_MEMORY) {
+                        if (WASM_DEBUG_TOP_MEMORY) {
                             ESP_LOGI("WASM3", "FreeMemory: freeing chunk segment_sizes at segment %zu", i);
                         }
                         m3_Def_Free(chunk->segment_sizes);
@@ -437,7 +437,7 @@ void FreeMemory(IM3Memory memory) {
                 }
 
                 if (segment->is_allocated) {
-                    if (DEBUG_TOP_MEMORY) {
+                    if (WASM_DEBUG_TOP_MEMORY) {
                         ESP_LOGI("WASM3", "FreeMemory: freeing segment %zu data", i);
                     }
                     m3_Def_Free(segment->data);
@@ -450,7 +450,7 @@ void FreeMemory(IM3Memory memory) {
         }
 
         // Libera l'array dei segmenti
-        if (DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory: freeing segments array");
+        if (WASM_DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory: freeing segments array");
         m3_Def_Free(memory->segments);
         memory->segments = NULL;
     }
@@ -464,7 +464,7 @@ void FreeMemory(IM3Memory memory) {
     memory->num_free_buckets = 0;
     memory->firm = 0;  // Invalida la struttura della memoria
 
-    if (DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory completed");
+    if (WASM_DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory completed");
 }
 
 
@@ -475,12 +475,17 @@ void  Runtime_Release  (IM3Runtime i_runtime)
     Environment_ReleaseCodePages (i_runtime->environment, i_runtime->pagesOpen);
     Environment_ReleaseCodePages (i_runtime->environment, i_runtime->pagesFull);
 
-    //m3_Free (&i_runtime->memory, i_runtime->originStack); // todo: check the stack management (and use macros)
-    if(i_runtime->originStack != NULL)
+    M3Memory* memory = &i_runtime->memory;
+   
+    if(i_runtime->originStack != NULL){
+        #if M3Runtime_Stack_Segmented
+        m3_free(memory, i_runtime->originStack); 
+        #else        
         m3_Def_Free(i_runtime->originStack);
-
-    void* memory_ptr = &i_runtime->memory;
-    FreeMemory (memory_ptr);
+        #endif
+    }
+    
+    FreeMemory (memory);
 }
 
 void  m3_FreeRuntime  (IM3Runtime i_runtime)
@@ -489,8 +494,7 @@ void  m3_FreeRuntime  (IM3Runtime i_runtime)
     {
         m3_PrintProfilerInfo ();
 
-        Runtime_Release (i_runtime);
-        FreeMemory (i_runtime);
+        Runtime_Release (i_runtime);        
     }
 }
 

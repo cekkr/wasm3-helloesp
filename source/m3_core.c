@@ -114,7 +114,7 @@ void print_memory_info(){
 }
 
 
-const bool WASM_DEBUG_MEMORY = DEBUG_MEMORY || WASM_DEBUG_ALL || (WASM_DEBUG && true);;
+const bool WASM_DEBUG_MEMORY = DEBUG_MEMORY || WASM_DEBUG_ALL || (WASM_DEBUG && true);
 const bool WASM_INT_MEM_SEGMENTED = false; 
 // Just used in function costants
 void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
