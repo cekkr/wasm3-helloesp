@@ -376,10 +376,6 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 
 # define m3ApiOffsetToPtr(offset)   resolve_pointer(_mem, (void*)(uintptr_t)(offset)) //(void*)((uint8_t*)_mem + (uint32_t)(offset))
 //# define m3ApiPtrToOffset(ptr)      (uint32_t)((uint8_t*)ptr - (uint8_t*)_mem)
-#define m3ApiPtrToOffset(ptr)      ({ \
-    ESP_LOGI("WASM3", "# define m3ApiPtrToOffset(ptr): not implemented"); \
-    (uint32_t)0; \
-})
 
 /*
 # define m3ApiReturnType(TYPE)                 TYPE* raw_return = ((TYPE*) (_sp++));
@@ -394,13 +390,11 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 #define m3ApiGetArg(TYPE, NAME)               TYPE NAME = * ((TYPE *) (_sp++));
 
 #define m3ApiOffsetToPtr(offset)              resolve_pointer(_mem, (void*)(uintptr_t)(offset))
+#define m3ApiPtrToOffset(ptr)                 get_offset_pointer(_mem, ptr)
 
-#define m3ApiPtrToOffset(ptr)                 ({ \
-    ESP_LOGI("WASM3", "# define m3ApiPtrToOffset(ptr): not implemented"); \
-    (uint32_t)0; \
-})
-
-#define m3ApiGetArgMem(TYPE, NAME)            TYPE NAME = (TYPE)m3ApiOffsetToPtr((uintptr_t)(* ((uint32_t *) (_sp++)))); 
+//#define m3ApiGetArgMem(TYPE, NAME)            TYPE NAME = (TYPE)m3ApiOffsetToPtr((uintptr_t)(* ((uint32_t *) (_sp++)))); 
+#define m3ApiGetArgMem(TYPE, NAME)            TYPE NAME = ((TYPE) m3ApiOffsetToPtr(_sp++));
+#define m3ApiGetArgArgs(TYPE, NAME, PTR)            TYPE NAME = ((TYPE) m3ApiOffsetToPtr(PTR++));
 
 #define m3ApiTrap(VALUE)                      return VALUE
 
