@@ -534,12 +534,13 @@ M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry) 
 }
 
 // Funzione per registrare multiple funzioni da un array
+const bool WASM_DEBUG_RegisterWasmFunctions = false;
 M3Result RegisterWasmFunctions(IM3Module module, const WasmFunctionEntry* entries, size_t count) {
     M3Result result = m3Err_none;
     
     for (size_t i = 0; i < count; i++) {
         result = RegisterWasmFunction(module, &entries[i]);
-        ESP_LOGI("WASM3", "Registered native function: %s\n", entries[i].name);
+        if(WASM_DEBUG_RegisterWasmFunctions) ESP_LOGI("WASM3", "Registered native function: %s\n", entries[i].name);
         if (result) {
             return result; // Ritorna al primo errore
         }

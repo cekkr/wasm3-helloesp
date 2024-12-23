@@ -649,7 +649,7 @@ M3Result m3_LinkEspWASI_Hello(IM3Module module)
         //ESP_LOGI("WASM3", "m3_LinkEspWASI: done link args_");
     }
     else {
-        ESP_LOGI("WASM3", "m3_LinkEspWASI: link basic functions with RegisterWasmFunctions");
+        //ESP_LOGI("WASM3", "m3_LinkEspWASI: link basic functions with RegisterWasmFunctions");
 
         // Definizione della lookup table entry
         const WasmFunctionEntry functionTable[] = {

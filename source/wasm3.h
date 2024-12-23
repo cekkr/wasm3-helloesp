@@ -382,12 +382,12 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 # define m3ApiCheckMem(addr, len)   { if (M3_UNLIKELY(((void*)(addr) < _mem) || ((uint64_t)(uintptr_t)(addr) + (len)) > ((uint64_t)(uintptr_t)(_mem)+m3_GetMemorySize(runtime)))) m3ApiTrap(m3Err_trapOutOfBoundsMemoryAccess); }
 */
 
-#define m3ApiReturnType(TYPE)                 TYPE* raw_return = ((TYPE*) (_sp++));
-#define m3ApiMultiValueReturnType(TYPE, NAME) TYPE* NAME = ((TYPE*) (_sp++));
-#define m3ApiGetArg(TYPE, NAME)               TYPE NAME = * ((TYPE *) (_sp++));
-
-#define m3ApiOffsetToPtr(offset)              resolve_pointer(_mem, (void*)(uintptr_t)(offset))
+#define m3ApiOffsetToPtr(offset)              resolve_pointer(_mem, offset)
 #define m3ApiPtrToOffset(ptr)                 get_offset_pointer(_mem, ptr)
+
+#define m3ApiReturnType(TYPE)                 TYPE* raw_return = ((TYPE*) (m3ApiOffsetToPtr(_sp++)));
+#define m3ApiMultiValueReturnType(TYPE, NAME) TYPE* NAME = ((TYPE*) (m3ApiOffsetToPtr(_sp++)));
+#define m3ApiGetArg(TYPE, NAME)               TYPE NAME = * ((TYPE *) (m3ApiOffsetToPtr(_sp++)));
 
 //#define m3ApiGetArgMem(TYPE, NAME)            TYPE NAME = (TYPE)m3ApiOffsetToPtr((uintptr_t)(* ((uint32_t *) (_sp++)))); 
 #define m3ApiGetArgMem(TYPE, NAME)            TYPE NAME = ((TYPE) m3ApiOffsetToPtr(_sp++));
