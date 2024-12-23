@@ -264,6 +264,10 @@ MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) 
         seg->size = memory->segment_size;
         seg->first_chunk = NULL;
         memory->total_allocated_size += memory->segment_size;
+
+        #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
+        paging_notify_segment_allocation(memory->paging, seg->segment_page->segment_id, 0);
+        #endif
     }
     
     return seg;
@@ -467,6 +471,10 @@ void FreeMemory(IM3Memory memory) {
     memory->maxPages = 0;
     memory->num_free_buckets = 0;
     memory->firm = 0;  // Invalida la struttura della memoria
+
+    #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
+    paging_deinit(memory->paging);
+    #endif
 
     if (WASM_DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory completed");
 }
@@ -1522,7 +1530,7 @@ void m3_collect_empty_segments(M3Memory* memory) {
             continue;
         }
 
-        if (is_segment_empty(memory, segment)) {
+        if (is_segment_empty(memory, segment) && segment->data) {
             if (WASM_DEBUG_SEGMENTED_MEMORY_ALLOC) {
                 ESP_LOGI("WASM3", "Freeing empty segment %zu", i);
             }
@@ -1623,6 +1631,10 @@ static void deallocate_segment_data(IM3Memory memory, MemorySegment* segment) {
     segment->size = 0;
     segment->is_allocated = false;
     segment->first_chunk = NULL;
+
+    #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
+    paging_notify_segment_deallocation(memory->paging, segment->segment_page->segment_id);
+    #endif
 
     if (WASM_DEBUG_SEGMENTED_MEMORY_ALLOC) {
         ESP_LOGI("WASM3", "Deallocated segment data at index %zu", segment->index);

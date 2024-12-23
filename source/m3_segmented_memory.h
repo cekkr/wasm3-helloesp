@@ -55,7 +55,7 @@ typedef struct MemorySegment {
     MemoryChunk* first_chunk;  // Primo chunk nel segmento
 
     #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
-    segment_info_t segment_page;
+    segment_info_t* segment_page;
     #endif
 } MemorySegment;
 
