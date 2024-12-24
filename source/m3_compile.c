@@ -2849,7 +2849,7 @@ M3Result  ReserveConstants  (IM3Compilation o)
 }
 
 
-const double WASM_DEBUG_CompileFunction = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+const double WASM_DEBUG_CompileFunction = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result  CompileFunction  (IM3Function io_function)
 {
     if(WASM_DEBUG_CompileFunction) ESP_LOGI("WASM3", "CompileFunction: called");
