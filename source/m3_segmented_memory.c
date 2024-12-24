@@ -271,7 +271,7 @@ MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) 
     seg->firm = INIT_FIRM;
 
     #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
-    if(seg->segment_page == NULL) {
+    if(seg->segment_page == NULL) {        
         paging_notify_segment_creation(memory->paging, &seg->segment_page);
     }
     #endif 
@@ -401,7 +401,7 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
 
     #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
     segment_handlers_t handlers = {0};
-    paging_init(memory->paging, &handlers, memory->segment_size);
+    paging_init(&memory->paging, &handlers, memory->segment_size);
     #endif
     
     return memory;
