@@ -121,7 +121,9 @@ mos get_offset_pointer(IM3Memory memory, void* ptr) {
 }
 
 void notify_memory_segment_access(IM3Memory memory, MemorySegment* segment){
-    //todo
+    #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
+    paging_notify_segment_access(memory->paging, segment->segment_page->segment_id);
+    #endif
 }
 
 // Core pointer resolution functions
@@ -453,10 +455,6 @@ void FreeMemory(IM3Memory memory) {
                     }
                     chunk = chunk->next;
                 }
-
-                #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
-                paging_notify_segment_deallocation(memory->paging, segment->segment_page->segment_id);
-                #endif
 
                 if (segment->is_allocated) {
                     if (WASM_DEBUG_TOP_MEMORY) {
