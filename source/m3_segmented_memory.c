@@ -272,7 +272,7 @@ MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) 
 
     #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
     if(seg->segment_page == NULL) {
-        paging_notify_segment_creation(memory->paging, seg->segment_page);
+        paging_notify_segment_creation(memory->paging, &seg->segment_page);
     }
     #endif 
     
