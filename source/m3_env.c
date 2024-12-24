@@ -11,6 +11,11 @@
 #include "m3_env.h"
 #include "m3_segmented_memory.h"
 
+
+#if PASSTHROUGH_HELLOESP
+#include "esp_task_wdt.h"
+#endif
+
 const bool WASM_DEBUG_NEW_ENV = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 
 IM3Environment  m3_NewEnvironment  ()

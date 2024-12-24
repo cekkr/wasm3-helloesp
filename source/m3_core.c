@@ -11,14 +11,11 @@
 #include "m3_env.h"
 #include "m3_config.h"
 
-#include "esp_debug_helpers.h"
-#include "esp_heap_caps.h"
-#include "esp_log.h"
-
-#include "esp_cache.h"
+#if PASSTHROUGH_HELLOESP
+#include "wasm3.h"
+#endif
 
 //#include "m3_compile.h"
-
 
 void m3_Abort(const char* message) {
 #ifdef DEBUG

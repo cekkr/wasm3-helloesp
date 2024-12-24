@@ -22,9 +22,16 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "esp_task_wdt.h" // for watchdog reset
+#define PASSTHROUGH_HELLOESP 1
+#if PASSTHROUGH_HELLOESP
+#include "he_defines.h"
+
 #include "esp_debug_helpers.h"
+#include "esp_heap_caps.h"
 #include "esp_log.h"
+#include "esp_cache.h"
+#include "esp_task_wdt.h" // for watchdog reset
+#endif
 
 ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
@@ -458,7 +465,7 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 
 #define ENABLE_WDT 0
 
-#ifdef ENABLE_WATCHDOG_WASM3 // should read it from the main project
+#if ENABLE_WATCHDOG_WASM3 // should read it from the main project
 #define ENABLE_WDT 1
 #endif
 
