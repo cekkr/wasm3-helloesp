@@ -275,6 +275,7 @@ MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) 
         esp_err_t res = paging_notify_segment_creation(memory->paging, &seg->segment_page);
         if(res != ESP_OK) {
             ESP_LOGE("WASM3", "Failed paging_notify_segment_creation: %d", res);
+            return NULL;
         }
 
         if(WASM_DEBUG_INITSEGMENT){
