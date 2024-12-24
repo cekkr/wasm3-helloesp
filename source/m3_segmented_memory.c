@@ -271,7 +271,7 @@ MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) 
     seg->firm = INIT_FIRM;
 
     #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
-    if(seg->segment_page == NULL) {        
+    if(seg->segment_page == NULL) {
         paging_notify_segment_creation(memory->paging, &seg->segment_page);
     }
     #endif 
@@ -376,7 +376,13 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     memory->num_free_buckets = 32;
     memory->free_chunks = m3_Def_Malloc(memory->num_free_buckets * sizeof(MemoryChunk*));
     if (!memory->free_chunks) return NULL;
-    
+        
+    #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
+    segment_handlers_t handlers = {0};
+    paging_init(&memory->paging, &handlers, memory->segment_size);
+    //ESP_LOGI("WASM3", "m3_InitMemory: memory->paging: %p", memory->paging);
+    #endif
+
     // Add initial segments
     M3Result result = AddSegments(memory, WASM_INIT_SEGMENTS);
     if (result != m3Err_none) {
@@ -384,7 +390,6 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
         free(memory->free_chunks);
         return NULL;
     }
-
 
     if(WASM_M3_INIT_MEMORY_NUM_MALLOC_TESTS > 0){
         for(int i = 0; i < WASM_M3_INIT_MEMORY_NUM_MALLOC_TESTS; i++){
@@ -398,11 +403,6 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
             if(WASM_DEBUG_M3_INIT_MEMORY) PRINT_PTR(testPtr);
         }
     }
-
-    #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
-    segment_handlers_t handlers = {0};
-    paging_init(&memory->paging, &handlers, memory->segment_size);
-    #endif
     
     return memory;
 }
