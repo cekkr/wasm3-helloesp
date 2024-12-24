@@ -1,6 +1,5 @@
 #include "m3_segmented_memory.h"
 #include "esp_log.h"
-#include "esp_try.h"
 #include "m3_pointers.h"
 
 //#define WASM_DEBUG_SEGMENTED_MEM_MAN 1

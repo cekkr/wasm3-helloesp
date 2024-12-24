@@ -13,7 +13,6 @@
 
 #include "esp_debug_helpers.h"
 #include "esp_heap_caps.h"
-#include "esp_try.h"
 #include "esp_log.h"
 
 #include "esp_cache.h"

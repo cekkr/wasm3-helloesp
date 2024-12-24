@@ -473,3 +473,5 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 //// Log macro
 ////
 #define LOG_FLUSH ESP_LOGI("WASM3", "flush..."); vTaskDelay(pdMS_TO_TICKS(50))
+
+#include "m3_esp_try.h"
