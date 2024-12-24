@@ -262,7 +262,7 @@ MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) 
         seg->index = find_segment_index(memory->segments, memory->num_segments, seg);
 
         #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
-        paging_notify_segment_allocation(memory->paging, seg->segment_page->segment_id, 0);
+        paging_notify_segment_allocation(memory->paging, seg->segment_page);
         #endif
     }
     
