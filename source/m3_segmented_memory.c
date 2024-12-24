@@ -120,15 +120,23 @@ mos get_offset_pointer(IM3Memory memory, void* ptr) {
     return (mos)ptr;
 }
 
+void notify_memory_segment_access(IM3Memory memory, MemorySegment* segment){
+    //todo
+}
+
 // Core pointer resolution functions
 bool WASM_DEBUG_get_offset_pointer = WASM_DEBUG_ALL || (WASM_DEBUG && true);
-void* get_segment_pointer(IM3Memory memory, u32 offset) {
+void* get_segment_pointer(IM3Memory memory, mos offset) {
     check_wdt_reset();    
 
-    if(WASM_DEBUG_get_offset_pointer) ESP_LOGI("WASM3", "get_segment_pointer called with offset %u", offset);    
+    if(WASM_DEBUG_get_offset_pointer) ESP_LOGI("WASM3", "get_segment_pointer called with offset %llu", offset);    
 
     if (!memory || memory->firm != INIT_FIRM) {
         return ERROR_POINTER;
+    }
+
+    if(false && !IsValidMemoryAccess(memory, offset, 0)){ // this is pretty redundant
+        return (void*)offset;
     }
     
     // Calculate segment indices
@@ -152,7 +160,7 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
     
     // Initialize segment if needed
     if (!seg->data) {
-        if(WASM_DEBUG_get_offset_pointer) ESP_LOGI("WASM3", "get_segment_pointer: requested data allocation of segment %d", segment_index);
+        if(WASM_DEBUG_get_offset_pointer) ESP_LOGI("WASM3", "get_segment_pointer: requested data allocation of segment %lu", segment_index);
         seg = InitSegment(memory, seg, true);
 
         if(seg == NULL)
@@ -191,6 +199,8 @@ void* get_segment_pointer(IM3Memory memory, u32 offset) {
         }
     }
     
+    notify_memory_segment_access(memory, seg);
+
     return (void*)((char*)seg->data + segment_offset);
 }
 
@@ -248,6 +258,10 @@ MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) 
         }
 
         seg->index = find_segment_index(memory->segments, memory->num_segments, seg);
+
+        #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
+        paging_notify_segment_allocation(memory->paging, seg->segment_page->segment_id, 0);
+        #endif
     }
     
     seg->firm = INIT_FIRM;
@@ -264,10 +278,6 @@ MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) 
         seg->size = memory->segment_size;
         seg->first_chunk = NULL;
         memory->total_allocated_size += memory->segment_size;
-
-        #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
-        paging_notify_segment_allocation(memory->paging, seg->segment_page->segment_id, 0);
-        #endif
     }
     
     return seg;
@@ -444,6 +454,10 @@ void FreeMemory(IM3Memory memory) {
                     chunk = chunk->next;
                 }
 
+                #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
+                paging_notify_segment_deallocation(memory->paging, segment->segment_page->segment_id);
+                #endif
+
                 if (segment->is_allocated) {
                     if (WASM_DEBUG_TOP_MEMORY) {
                         ESP_LOGI("WASM3", "FreeMemory: freeing segment %zu data", i);
@@ -524,6 +538,7 @@ bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
         // Check for multi-segment chunks
         if (seg->first_chunk) {
             MemoryChunk* chunk = seg->first_chunk;
+            size_t chunk_segment_id = i;
             while (chunk) {
                 if (chunk->num_segments > 1) {
                     size_t chunk_start = chunk->start_segment * memory->segment_size;
@@ -533,20 +548,25 @@ bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
                     }
                     
                     if (offset >= chunk_start && offset + size <= chunk_end) {
+                        MemorySegment* chunk_segment = memory->segments[chunk_segment_id];
+
                         if(WASM_SEGMENTED_MEM_LAZY_ALLOC){
                             if(!seg->is_allocated){
-                                InitSegment(memory, seg, true);
+                                InitSegment(memory, chunk_segment, true);
                             }
                         }
 
+                        notify_memory_segment_access(memory, chunk_segment);
                         return true;  // Access is within a valid multi-segment chunk
                     }
                 }
                 chunk = chunk->next;
+                chunk_segment_id++;
             }
         }
     }
     
+    notify_memory_segment_access(memory, memory->segments[start_segment]);
     return true;
 
     isNotSegMem:

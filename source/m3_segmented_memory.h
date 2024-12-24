@@ -27,7 +27,7 @@
 #define DUMMY_MEMORY_FIRM  6991 // Dummy M3Memory firm (to use when there is a placeholder memory)
 #define M3PTR_FIRM 20190394
 
-typedef u32 mos; // memory offset
+typedef uint64_t mos; // memory offset
 
 typedef struct MemoryChunk {
     size_t size;           // Total size including header
@@ -113,7 +113,7 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size);
 ////////////////////////////////////////////////////////////////
 
 bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size);
-void* get_segment_pointer(IM3Memory memory, u32 offset);
+void* get_segment_pointer(IM3Memory memory, mos offset);
 void* resolve_pointer(M3Memory* memory, void* ptr);
 void* m3SegmentedMemAccess(IM3Memory mem, void* offset, size_t size);
 mos get_offset_pointer(IM3Memory memory, void* ptr);
