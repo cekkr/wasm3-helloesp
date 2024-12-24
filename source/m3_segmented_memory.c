@@ -369,7 +369,7 @@ M3Result AddSegments(IM3Memory memory, size_t additional_segments) {
     return m3Err_none;
 }
 
-const bool WASM_DEBUG_M3_INIT_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+const bool WASM_DEBUG_M3_INIT_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && false) || true;
 const int WASM_M3_INIT_MEMORY_NUM_MALLOC_TESTS = 2;
 IM3Memory m3_InitMemory(IM3Memory memory) {
     if (memory == NULL) return NULL;
@@ -1329,21 +1329,120 @@ void* m3_realloc(M3Memory* memory, void* offset_ptr, size_t new_size) {
     return new_ptr;
 }
 
+ChunkInfo get_chunk_info(M3Memory* memory, void* ptr) {
+    ChunkInfo result = { NULL, 0 };
+    if (!memory || !ptr) return result;
+    
+    // Prima verifica se il puntatore è un offset
+    bool is_offset = ((uintptr_t)ptr < memory->total_size);
+    size_t segment_index;
+    size_t intra_offset;
+    
+    if (is_offset) {
+        // Calcola segmento e offset dall'offset fornito
+        segment_index = (uintptr_t)ptr / memory->segment_size;
+        intra_offset = (uintptr_t)ptr % memory->segment_size;
+    } else {
+        // Cerca in quale segmento si trova il puntatore diretto
+        bool found = false;
+        for (size_t i = 0; i < memory->num_segments; i++) {
+            MemorySegment* seg = memory->segments[i];
+            if (!seg || !seg->data) continue;
+            
+            if (ptr >= seg->data && ptr < (char*)seg->data + seg->size) {
+                segment_index = i;
+                intra_offset = (char*)ptr - (char*)seg->data;
+                found = true;
+                break;
+            }
+        }
+        if (!found) return result;
+    }
+    
+    // Verifica validità del segmento
+    if (segment_index >= memory->num_segments) return result;
+    MemorySegment* seg = memory->segments[segment_index];
+    if (!seg || !seg->data) return result;
+    
+    // Cerca il chunk che contiene questo puntatore
+    MemoryChunk* current = seg->first_chunk;
+    while (current) {
+        // Calcola l'area di memoria occupata da questo chunk
+        void* chunk_start = (void*)current;
+        void* chunk_end = (void*)((char*)chunk_start + current->size);
+        
+        // Per chunk multi-segmento
+        if (current->num_segments > 1) {
+            size_t total_size = 0;
+            for (size_t i = 0; i < current->num_segments; i++) {
+                total_size += current->segment_sizes[i];
+            }
+            chunk_end = (void*)((char*)chunk_start + total_size);
+        }
+        
+        // Verifica se il puntatore cade in questo chunk
+        if ((is_offset && intra_offset >= (uintptr_t)chunk_start - (uintptr_t)seg->data && 
+             intra_offset < (uintptr_t)chunk_end - (uintptr_t)seg->data) ||
+            (!is_offset && ptr >= chunk_start && ptr < chunk_end)) {
+            
+            result.chunk = current;
+            // Calcola l'offset base del chunk
+            result.base_offset = (current->start_segment * memory->segment_size) + 
+                               ((char*)current - (char*)memory->segments[current->start_segment]->data) +
+                               sizeof(MemoryChunk);
+            break;
+        }
+        
+        current = current->next;
+    }
+    
+    if (WASM_DEBUG_SEGMENTED_MEMORY_ALLOC && result.chunk) {
+        ESP_LOGI("WASM3", "Found chunk: segment=%d, size=%zu, base_offset=%u", 
+                 result.chunk->start_segment, result.chunk->size, result.base_offset);
+    }
+    
+    return result;
+}
+
 #else
+
+// Funzione helper per calcolare l'offset virtuale per un nuovo chunk
+static u32 calculate_virtual_offset(M3Memory* memory, MemoryChunk* chunk) {
+    // Base offset del segmento
+    u32 segment_base = chunk->start_segment * memory->segment_size;
+    
+    // Offset all'interno del segmento, tenendo conto dei chunk precedenti
+    u32 intra_segment_offset = sizeof(MemoryChunk);  // Spazio minimo per l'header
+    
+    MemorySegment* seg = memory->segments[chunk->start_segment];
+    MemoryChunk* curr = seg->first_chunk;
+    
+    // Somma gli offset dei chunk precedenti nel segmento
+    while (curr && curr != chunk) {
+        intra_segment_offset += curr->size;
+        curr = curr->next;
+    }
+    
+    // Allinea l'offset a WASM_CHUNK_SIZE
+    intra_segment_offset = (intra_segment_offset + (WASM_CHUNK_SIZE-1)) & ~(WASM_CHUNK_SIZE-1);
+    
+    return segment_base + intra_segment_offset;
+}
 
 void* m3_malloc(M3Memory* memory, size_t size) {
     if (!memory || memory->firm != INIT_FIRM || size == 0) {
         return NULL;
     }
     
-    size_t total_size = size + sizeof(MemoryChunk);
-    // Align total size to WASM_CHUNK_SIZE
+    // Quantizza la dimensione richiesta a WASM_CHUNK_SIZE
+    size_t aligned_size = (size + (WASM_CHUNK_SIZE-1)) & ~(WASM_CHUNK_SIZE-1);
+    size_t total_size = aligned_size + sizeof(MemoryChunk);
     total_size = (total_size + (WASM_CHUNK_SIZE-1)) & ~(WASM_CHUNK_SIZE-1);
     
     size_t bucket = log2(total_size);
     MemoryChunk* found_chunk = NULL;
     
-    // 1. First search in free chunks
+    // 1. Prima cerca nei chunk liberi
     if (bucket < memory->num_free_buckets) {
         MemoryChunk** curr = &memory->free_chunks[bucket];
         while (*curr) {
@@ -1356,61 +1455,72 @@ void* m3_malloc(M3Memory* memory, size_t size) {
         }
     }
     
-    // 2. If no free chunk found, allocate new chunk
+    // 2. Se non trova chunk liberi, alloca un nuovo chunk
     if (!found_chunk) {
-        found_chunk = m3_Def_Malloc(sizeof(MemoryChunk));
+        // Alloca il nuovo chunk
+        found_chunk = (MemoryChunk*)m3_Def_Malloc(sizeof(MemoryChunk));
         if (!found_chunk) {
             return NULL;
         }
         
-        // Calculate number of segments needed
-        size_t segments_needed = (total_size + memory->segment_size - 1) / memory->segment_size;
+        // Inizializza il chunk
+        memset(found_chunk, 0, sizeof(MemoryChunk));
+        found_chunk->size = total_size;
+        found_chunk->is_free = false;
+        
+        // Calcola il numero di segmenti necessari
+        size_t segments_needed = (aligned_size + memory->segment_size - 1) / memory->segment_size;
         if (segments_needed == 0) segments_needed = 1;
         
-        // Add segments if needed
+        // Verifica se è necessario aggiungere nuovi segmenti
         if (memory->num_segments + segments_needed > memory->max_size / memory->segment_size) {
             m3_Def_Free(found_chunk);
             return NULL;
         }
         
+        // Aggiungi i segmenti necessari
         M3Result result = AddSegments(memory, segments_needed);
         if (result != NULL) {
             m3_Def_Free(found_chunk);
             return NULL;
         }
         
-        found_chunk->size = total_size;
-        found_chunk->is_free = false;
-        found_chunk->next = NULL;
-        found_chunk->prev = NULL;
         found_chunk->num_segments = segments_needed;
         found_chunk->start_segment = memory->num_segments - segments_needed;
         
-        // Allocate and initialize segment_sizes array
+        // Alloca l'array delle dimensioni dei segmenti
         found_chunk->segment_sizes = m3_Def_Malloc(segments_needed * sizeof(size_t));
         if (!found_chunk->segment_sizes) {
             m3_Def_Free(found_chunk);
             return NULL;
         }
         
-        // Distribute size across segments
-        size_t remaining_size = total_size;
+        // Distribuisci la dimensione tra i segmenti
+        size_t remaining_size = aligned_size;
         for (size_t i = 0; i < segments_needed; i++) {
-            size_t segment_size = MIN(remaining_size, memory->segment_size);
-            found_chunk->segment_sizes[i] = segment_size;
-            remaining_size -= segment_size;
+            size_t available = memory->segment_size;
+            if (i == 0) available -= sizeof(MemoryChunk);
+            found_chunk->segment_sizes[i] = MIN(remaining_size, available);
+            remaining_size -= found_chunk->segment_sizes[i];
+        }
+        
+        // Inserisci il chunk nella lista del primo segmento
+        MemorySegment* first_seg = memory->segments[found_chunk->start_segment];
+        if (first_seg->first_chunk) {
+            MemoryChunk* curr = first_seg->first_chunk;
+            while (curr->next) curr = curr->next;
+            curr->next = found_chunk;
+            found_chunk->prev = curr;
+        } else {
+            first_seg->first_chunk = found_chunk;
         }
     }
     
-    // Calculate final offset
-    u32 base_offset = found_chunk->start_segment * memory->segment_size;
-    u32 offset = base_offset + sizeof(MemoryChunk);
-    
-    // Ensure alignment
-    offset = (offset + (WASM_CHUNK_SIZE-1)) & ~(WASM_CHUNK_SIZE-1);
+    // Calcola l'offset virtuale per il chunk
+    u32 virtual_offset = calculate_virtual_offset(memory, found_chunk);
     
     memory->total_requested_size += size;
-    return (void*)offset;
+    return (void*)(uintptr_t)virtual_offset;
 }
 
 void m3_free(M3Memory* memory, void* offset_ptr) {
@@ -1425,8 +1535,9 @@ void m3_free(M3Memory* memory, void* offset_ptr) {
         return;
     }
     
-    u32 offset = (u32)offset_ptr;
-    size_t segment_index = (offset - sizeof(MemoryChunk)) / memory->segment_size;
+    // Converti l'offset virtuale in informazioni sul chunk
+    u32 offset = (u32)(uintptr_t)offset_ptr;
+    size_t segment_index = offset / memory->segment_size;
     if (segment_index >= memory->num_segments) {
         return;
     }
@@ -1436,31 +1547,87 @@ void m3_free(M3Memory* memory, void* offset_ptr) {
         return;
     }
     
-    // Calculate chunk based on offset
-    MemoryChunk* chunk = (MemoryChunk*)(offset - sizeof(MemoryChunk));
+    // Cerca il chunk corrispondente all'offset
+    MemoryChunk* chunk = seg->first_chunk;
+    u32 current_offset = segment_index * memory->segment_size;
     
-    // Verify chunk validity
-    if (chunk->start_segment != segment_index || !chunk->segment_sizes) {
+    while (chunk) {
+        u32 next_offset = current_offset + chunk->size;
+        if (offset >= current_offset && offset < next_offset) {
+            break;
+        }
+        current_offset = next_offset;
+        chunk = chunk->next;
+    }
+    
+    if (!chunk || chunk->start_segment != segment_index) {
         return;
     }
     
-    // Update segment links
+    // Rimuovi il chunk dalle liste dei segmenti
     if (chunk->prev) {
         chunk->prev->next = chunk->next;
+    } else {
+        for (size_t i = 0; i < chunk->num_segments; i++) {
+            size_t curr_segment = chunk->start_segment + i;
+            if (curr_segment < memory->num_segments && 
+                memory->segments[curr_segment] && 
+                memory->segments[curr_segment]->first_chunk == chunk) {
+                memory->segments[curr_segment]->first_chunk = chunk->next;
+            }
+        }
     }
     if (chunk->next) {
         chunk->next->prev = chunk->prev;
     }
     
-    // Add to free list
+    // Gestisci la fusione con chunk adiacenti liberi
+    if (chunk->prev && chunk->prev->is_free &&
+        chunk->prev->start_segment + chunk->prev->num_segments == chunk->start_segment) {
+        MemoryChunk* prev = chunk->prev;
+        
+        // Rimuovi prev dalla free list
+        size_t prev_bucket = log2(prev->size);
+        if (prev_bucket < memory->num_free_buckets) {
+            MemoryChunk** curr = &memory->free_chunks[prev_bucket];
+            while (*curr && *curr != prev) curr = &(*curr)->next;
+            if (*curr) *curr = (*curr)->next;
+        }
+        
+        // Unisci i chunk
+        prev->size += chunk->size;
+        prev->num_segments += chunk->num_segments;
+        
+        // Ridimensiona array segment_sizes
+        size_t* new_sizes = m3_Def_Realloc(prev->segment_sizes,
+                                          prev->num_segments * sizeof(size_t));
+        if (new_sizes) {
+            memcpy(new_sizes + prev->num_segments - chunk->num_segments,
+                  chunk->segment_sizes,
+                  chunk->num_segments * sizeof(size_t));
+            prev->segment_sizes = new_sizes;
+        }
+        
+        prev->next = chunk->next;
+        if (chunk->next) chunk->next->prev = prev;
+        
+        chunk = prev;  // Usa prev come chunk principale
+    }
+    
+    // Aggiungi alla free list
     size_t bucket = log2(chunk->size);
     if (bucket < memory->num_free_buckets) {
         chunk->is_free = true;
         chunk->next = memory->free_chunks[bucket];
+        if (memory->free_chunks[bucket]) {
+            memory->free_chunks[bucket]->prev = chunk;
+        }
         memory->free_chunks[bucket] = chunk;
     } else {
-        // Chunk too large for buckets, free it completely
-        m3_Def_Free(chunk->segment_sizes);
+        // Chunk troppo grande, liberalo
+        if (chunk->segment_sizes) {
+            m3_Def_Free(chunk->segment_sizes);
+        }
         m3_Def_Free(chunk);
     }
 }
@@ -1479,42 +1646,110 @@ void* m3_realloc(M3Memory* memory, void* offset_ptr, size_t new_size) {
         return NULL;
     }
     
-    // Get current chunk
-    u32 offset = (u32)offset_ptr;
-    size_t segment_index = (offset - sizeof(MemoryChunk)) / memory->segment_size;
+    // Trova il chunk corrente
+    u32 offset = (u32)(uintptr_t)offset_ptr;
+    size_t segment_index = offset / memory->segment_size;
     if (segment_index >= memory->num_segments) {
         return NULL;
     }
     
-    MemoryChunk* old_chunk = (MemoryChunk*)(offset - sizeof(MemoryChunk));
-    if (old_chunk->start_segment != segment_index || !old_chunk->segment_sizes) {
+    MemorySegment* seg = memory->segments[segment_index];
+    if (!seg) {
         return NULL;
     }
     
-    // Calculate new aligned size
-    size_t total_new_size = (new_size + sizeof(MemoryChunk) + (WASM_CHUNK_SIZE-1)) & ~(WASM_CHUNK_SIZE-1);
+    // Cerca il chunk usando l'offset
+    MemoryChunk* old_chunk = seg->first_chunk;
+    u32 current_offset = segment_index * memory->segment_size;
     
-    // If shrinking, just update the size
+    while (old_chunk) {
+        u32 next_offset = current_offset + old_chunk->size;
+        if (offset >= current_offset && offset < next_offset) {
+            break;
+        }
+        current_offset = next_offset;
+        old_chunk = old_chunk->next;
+    }
+    
+    if (!old_chunk || old_chunk->start_segment != segment_index) {
+        return NULL;
+    }
+    
+    // Calcola la nuova dimensione totale allineata
+    size_t aligned_new_size = (new_size + (WASM_CHUNK_SIZE-1)) & ~(WASM_CHUNK_SIZE-1);
+    size_t total_new_size = aligned_new_size + sizeof(MemoryChunk);
+    total_new_size = (total_new_size + (WASM_CHUNK_SIZE-1)) & ~(WASM_CHUNK_SIZE-1);
+    
+    // Se la nuova dimensione è minore o uguale, aggiorna solo la dimensione
     if (total_new_size <= old_chunk->size) {
         old_chunk->size = total_new_size;
         return offset_ptr;
     }
     
-    // Allocate new chunk and copy data
+    // Altrimenti, alloca un nuovo chunk e copia i dati
     void* new_ptr = m3_malloc(memory, new_size);
     if (!new_ptr) {
         return NULL;
     }
     
-    // Copy old data
+    // Copia i dati vecchi
     size_t old_data_size = old_chunk->size - sizeof(MemoryChunk);
     size_t copy_size = MIN(old_data_size, new_size);
     m3_memcpy(memory, new_ptr, offset_ptr, copy_size);
     
-    // Free old chunk
+    // Libera il vecchio chunk
     m3_free(memory, offset_ptr);
     
     return new_ptr;
+}
+
+// Funzioni ausiliarie per ChunkInfo
+
+ChunkInfo get_chunk_info(M3Memory* memory, void* ptr) {
+    ChunkInfo result = {NULL, 0};
+    if (!memory || !ptr) return result;
+    
+    // Converti il puntatore in offset se necessario
+    u32 offset;
+    if ((uintptr_t)ptr < memory->total_size) {
+        offset = (u32)(uintptr_t)ptr;
+    } else {
+        // Per puntatori diretti, trova il segmento corrispondente
+        for (size_t i = 0; i < memory->num_segments; i++) {
+            MemorySegment* seg = memory->segments[i];
+            if (!seg || !seg->data) continue;
+            
+            if (ptr >= seg->data && ptr < (char*)seg->data + seg->size) {
+                offset = i * memory->segment_size + ((char*)ptr - (char*)seg->data);
+                break;
+            }
+        }
+        return result;  // Puntatore non trovato nei segmenti
+    }
+    
+    // Trova il segmento e il chunk
+    size_t segment_index = offset / memory->segment_size;
+    if (segment_index >= memory->num_segments) return result;
+    
+    MemorySegment* seg = memory->segments[segment_index];
+    if (!seg) return result;
+    
+    // Cerca il chunk corrispondente all'offset
+    MemoryChunk* chunk = seg->first_chunk;
+    u32 current_offset = segment_index * memory->segment_size;
+    
+    while (chunk) {
+        u32 next_offset = current_offset + chunk->size;
+        if (offset >= current_offset && offset < next_offset) {
+            result.chunk = chunk;
+            result.base_offset = current_offset + sizeof(MemoryChunk);
+            break;
+        }
+        current_offset = next_offset;
+        chunk = chunk->next;
+    }
+    
+    return result;
 }
 
 #endif
@@ -1904,81 +2139,6 @@ static bool is_part_of_active_multisegment(M3Memory* memory, size_t segment_inde
 ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 ///// Memory chunks
-
-ChunkInfo get_chunk_info(M3Memory* memory, void* ptr) {
-    ChunkInfo result = { NULL, 0 };
-    if (!memory || !ptr) return result;
-    
-    // Prima verifica se il puntatore è un offset
-    bool is_offset = ((uintptr_t)ptr < memory->total_size);
-    size_t segment_index;
-    size_t intra_offset;
-    
-    if (is_offset) {
-        // Calcola segmento e offset dall'offset fornito
-        segment_index = (uintptr_t)ptr / memory->segment_size;
-        intra_offset = (uintptr_t)ptr % memory->segment_size;
-    } else {
-        // Cerca in quale segmento si trova il puntatore diretto
-        bool found = false;
-        for (size_t i = 0; i < memory->num_segments; i++) {
-            MemorySegment* seg = memory->segments[i];
-            if (!seg || !seg->data) continue;
-            
-            if (ptr >= seg->data && ptr < (char*)seg->data + seg->size) {
-                segment_index = i;
-                intra_offset = (char*)ptr - (char*)seg->data;
-                found = true;
-                break;
-            }
-        }
-        if (!found) return result;
-    }
-    
-    // Verifica validità del segmento
-    if (segment_index >= memory->num_segments) return result;
-    MemorySegment* seg = memory->segments[segment_index];
-    if (!seg || !seg->data) return result;
-    
-    // Cerca il chunk che contiene questo puntatore
-    MemoryChunk* current = seg->first_chunk;
-    while (current) {
-        // Calcola l'area di memoria occupata da questo chunk
-        void* chunk_start = (void*)current;
-        void* chunk_end = (void*)((char*)chunk_start + current->size);
-        
-        // Per chunk multi-segmento
-        if (current->num_segments > 1) {
-            size_t total_size = 0;
-            for (size_t i = 0; i < current->num_segments; i++) {
-                total_size += current->segment_sizes[i];
-            }
-            chunk_end = (void*)((char*)chunk_start + total_size);
-        }
-        
-        // Verifica se il puntatore cade in questo chunk
-        if ((is_offset && intra_offset >= (uintptr_t)chunk_start - (uintptr_t)seg->data && 
-             intra_offset < (uintptr_t)chunk_end - (uintptr_t)seg->data) ||
-            (!is_offset && ptr >= chunk_start && ptr < chunk_end)) {
-            
-            result.chunk = current;
-            // Calcola l'offset base del chunk
-            result.base_offset = (current->start_segment * memory->segment_size) + 
-                               ((char*)current - (char*)memory->segments[current->start_segment]->data) +
-                               sizeof(MemoryChunk);
-            break;
-        }
-        
-        current = current->next;
-    }
-    
-    if (WASM_DEBUG_SEGMENTED_MEMORY_ALLOC && result.chunk) {
-        ESP_LOGI("WASM3", "Found chunk: segment=%d, size=%zu, base_offset=%u", 
-                 result.chunk->start_segment, result.chunk->size, result.base_offset);
-    }
-    
-    return result;
-}
 
 // Funzione helper per ottenere solo il chunk
 MemoryChunk* get_chunk(M3Memory* memory, void* ptr) {
