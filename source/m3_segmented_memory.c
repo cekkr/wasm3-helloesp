@@ -380,7 +380,7 @@ IM3Memory m3_InitMemory(IM3Memory memory) {
     #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
     segment_handlers_t handlers = {0};
     paging_init(&memory->paging, &handlers, memory->segment_size);
-    //ESP_LOGI("WASM3", "m3_InitMemory: memory->paging: %p", memory->paging);
+    if(WASM_DEBUG_M3_INIT_MEMORY) ESP_LOGI("WASM3", "m3_InitMemory: memory->paging: %p", memory->paging);
     #endif
 
     // Add initial segments
