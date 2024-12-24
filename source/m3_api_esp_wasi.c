@@ -615,12 +615,13 @@ _catch:
 
 //#endif // ESP32
 
+const bool WASM_DEBUG_m3_LinkEspWASI_Hello = false;
 M3Result m3_LinkEspWASI_Hello(IM3Module module)
 {
     M3Result result = m3Err_none;
 
     if (!wasi_context) {
-        ESP_LOGI("WASM3", "m3_LinkEspWASI: !wasi_context");
+        if(WASM_DEBUG_m3_LinkEspWASI_Hello) ESP_LOGI("WASM3", "m3_LinkEspWASI: !wasi_context");
         wasi_context = (m3_wasi_context_t*)malloc(sizeof(m3_wasi_context_t));
         if (!wasi_context) return m3Err_mallocFailed;
         wasi_context->exit_code = 0;
@@ -668,7 +669,7 @@ M3Result m3_LinkEspWASI_Hello(IM3Module module)
         M3Result result = RegisterWasmFunctions(module, functionTable, sizeof(functionTable)/sizeof(functionTable[0]));
     }
 
-    ESP_LOGI("WASM3", "m3_LinkEspWASI: basic functions linked");
+    if(WASM_DEBUG_m3_LinkEspWASI_Hello) ESP_LOGI("WASM3", "m3_LinkEspWASI: basic functions linked");
 
 
 _catch:

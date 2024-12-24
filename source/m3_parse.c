@@ -756,7 +756,7 @@ _       (ReadLEB_u7 (mem, & section, & pos, end));
             // Ensure sections appear only once and in order
             bool forcedEnd = false;
             while (sectionsOrder[expectedSection++] != section) {
-                ESP_LOGD("WASM3", "Expected section order: %d, found: %d", sectionsOrder[expectedSection-1], section);
+                if(WASM_DEBUG_PARSE_MODULE) ESP_LOGD("WASM3", "Expected section order: %d, found: %d", sectionsOrder[expectedSection-1], section);
 
                 if(expectedSection >= 12){
                     if(WASM_ParseModule_EndWithExceptedSection){
