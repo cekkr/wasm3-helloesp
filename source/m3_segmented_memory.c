@@ -124,7 +124,7 @@ void notify_memory_segment_access(IM3Memory memory, MemorySegment* segment){
     #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
     if(segment->segment_page == NULL){
         ESP_LOGW("WASM3", "notify_memory_segment_access: memory segment page is NULL");
-        backtrace();
+        //backtrace();
         return;
     }
 
@@ -266,13 +266,15 @@ MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) 
         }
 
         seg->index = find_segment_index(memory->segments, memory->num_segments, seg);
-
-        #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
-        paging_notify_segment_allocation(memory->paging, seg->segment_page);
-        #endif
     }
-    
+
     seg->firm = INIT_FIRM;
+
+    #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
+    if(seg->segment_page == NULL) {
+        paging_notify_segment_creation(memory->paging, seg->segment_page);
+    }
+    #endif 
     
     if (initData && !seg->data) {
         if(WASM_DEBUG_INITSEGMENT) ESP_LOGI("WASM", "InitSegment: allocating segment's data");
@@ -286,6 +288,10 @@ MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) 
         seg->size = memory->segment_size;
         seg->first_chunk = NULL;
         memory->total_allocated_size += memory->segment_size;
+
+        #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
+        paging_notify_segment_allocation(memory->paging, seg->segment_page, seg->data);
+        #endif
     }
     
     return seg;
