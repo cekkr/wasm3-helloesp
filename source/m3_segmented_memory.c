@@ -640,6 +640,8 @@ static u32 ptr_to_offset(M3Memory* memory, void* ptr) {
 ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
+#define m3_alloc_on_segment_data 0
+#if m3_alloc_on_segment_data
 void* m3_malloc(M3Memory* memory, size_t size) {
     if(WASM_DEBUG_SEGMENTED_MEMORY_ALLOC) {
         ESP_LOGI("WASM3", "m3_malloc: entering with size=%zu", size);
@@ -1401,6 +1403,228 @@ ChunkInfo get_chunk_info(M3Memory* memory, void* ptr) {
     
     return result;
 }
+
+#else
+
+
+// Helper function to create a new chunk metadata structure
+static MemoryChunk* create_chunk(size_t size, uint16_t start_segment, uint16_t num_segments) {
+    MemoryChunk* chunk = m3_Def_Malloc(sizeof(MemoryChunk));
+    if (!chunk) return NULL;
+    
+    chunk->size = size;
+    chunk->is_free = false;
+    chunk->next = NULL;
+    chunk->prev = NULL;
+    chunk->num_segments = num_segments;
+    chunk->start_segment = start_segment;
+    
+    // Allocate segment sizes array
+    chunk->segment_sizes = m3_Def_Malloc(num_segments * sizeof(size_t));
+    if (!chunk->segment_sizes) {
+        m3_Def_Free(chunk);
+        return NULL;
+    }
+    
+    return chunk;
+}
+
+// Helper function to free a chunk and its associated metadata
+static void free_chunk(MemoryChunk* chunk) {
+    if (!chunk) return;
+    if (chunk->segment_sizes) {
+        m3_Def_Free(chunk->segment_sizes);
+    }
+    m3_Def_Free(chunk);
+}
+
+void* m3_malloc(M3Memory* memory, size_t size) {
+    if (!memory || memory->firm != INIT_FIRM || size == 0) {
+        return NULL;
+    }
+
+    // Calculate total size needed with alignment
+    size_t total_size = (size + (WASM_CHUNK_SIZE-1)) & ~(WASM_CHUNK_SIZE-1);
+    size_t bucket = log2(total_size);
+    
+    // First try to find a suitable free chunk
+    MemoryChunk* found_chunk = NULL;
+    if (bucket < memory->num_free_buckets) {
+        MemoryChunk** curr = &memory->free_chunks[bucket];
+        while (*curr) {
+            if ((*curr)->size >= total_size) {
+                found_chunk = *curr;
+                *curr = found_chunk->next;
+                found_chunk->is_free = false;
+                break;
+            }
+            curr = &(*curr)->next;
+        }
+    }
+    
+    // If no free chunk found, create a new one
+    if (!found_chunk) {
+        // Calculate number of segments needed
+        size_t segments_needed = (total_size + memory->segment_size - 1) / memory->segment_size;
+        if (segments_needed == 0) segments_needed = 1;
+        
+        // Find or allocate required segments
+        size_t start_segment = memory->num_segments;
+        for (size_t i = 0; i < memory->num_segments; i++) {
+            if (!memory->segments[i]->data) {
+                start_segment = i;
+                break;
+            }
+        }
+        
+        // Add new segments if needed
+        if (start_segment + segments_needed > memory->num_segments) {
+            if (AddSegments(memory, start_segment + segments_needed) != m3Err_none) {
+                return NULL;
+            }
+        }
+        
+        // Create new chunk metadata
+        found_chunk = create_chunk(total_size, start_segment, segments_needed);
+        if (!found_chunk) return NULL;
+        
+        // Initialize segments and set up chunk sizes
+        size_t remaining_size = total_size;
+        for (size_t i = 0; i < segments_needed; i++) {
+            MemorySegment* seg = memory->segments[start_segment + i];
+            
+            // Initialize segment if needed
+            if (!seg->data) {
+                if (InitSegment(memory, seg, true) == NULL) {
+                    free_chunk(found_chunk);
+                    return NULL;
+                }
+            }
+            
+            // Calculate size for this segment
+            size_t segment_size = MIN(remaining_size, memory->segment_size);
+            found_chunk->segment_sizes[i] = segment_size;
+            remaining_size -= segment_size;
+            
+            // Link chunk to segment
+            if (i == 0) {
+                found_chunk->next = seg->first_chunk;
+                if (seg->first_chunk) {
+                    seg->first_chunk->prev = found_chunk;
+                }
+                seg->first_chunk = found_chunk;
+            }
+        }
+    }
+    
+    // Calculate return offset
+    u32 base_offset = found_chunk->start_segment * memory->segment_size;
+    memory->total_requested_size += size;
+    
+    return (void*)base_offset;
+}
+
+void m3_free(M3Memory* memory, void* ptr) {
+    if (!memory || !ptr) return;
+    
+    // Get chunk info
+    ChunkInfo info = get_chunk_info(memory, ptr);
+    MemoryChunk* chunk = info.chunk;
+    if (!chunk) return;
+    
+    // Remove chunk from segment lists
+    MemorySegment* start_seg = memory->segments[chunk->start_segment];
+    if (start_seg->first_chunk == chunk) {
+        start_seg->first_chunk = chunk->next;
+    }
+    
+    if (chunk->prev) chunk->prev->next = chunk->next;
+    if (chunk->next) chunk->next->prev = chunk->prev;
+    
+    // Add to appropriate free list
+    size_t bucket = log2(chunk->size);
+    if (bucket < memory->num_free_buckets) {
+        chunk->is_free = true;
+        chunk->next = memory->free_chunks[bucket];
+        memory->free_chunks[bucket] = chunk;
+    } else {
+        // Chunk too large for free lists, just delete it
+        free_chunk(chunk);
+    }
+    
+    // Try to collect empty segments
+    m3_collect_empty_segments(memory);
+}
+
+void* m3_realloc(M3Memory* memory, void* ptr, size_t new_size) {
+    if (!memory) return NULL;
+    if (!ptr) return m3_malloc(memory, new_size);
+    if (new_size == 0) {
+        m3_free(memory, ptr);
+        return NULL;
+    }
+    
+    // Get current chunk info
+    ChunkInfo info = get_chunk_info(memory, ptr);
+    MemoryChunk* old_chunk = info.chunk;
+    if (!old_chunk) return NULL;
+    
+    // Calculate new total size needed
+    size_t total_new_size = (new_size + (WASM_CHUNK_SIZE-1)) & ~(WASM_CHUNK_SIZE-1);
+    
+    // If shrinking, just update the size
+    if (total_new_size <= old_chunk->size) {
+        old_chunk->size = total_new_size;
+        return ptr;
+    }
+    
+    // Otherwise allocate new chunk and copy data
+    void* new_ptr = m3_malloc(memory, new_size);
+    if (!new_ptr) return NULL;
+    
+    m3_memcpy(memory, new_ptr, ptr, MIN(old_chunk->size, new_size));
+    m3_free(memory, ptr);
+    
+    return new_ptr;
+}
+
+// Helper function to validate and get chunk information
+ChunkInfo get_chunk_info(M3Memory* memory, void* ptr) {
+    ChunkInfo result = { NULL, 0 };
+    if (!memory || !ptr) return result;
+    
+    // Calculate segment index
+    u32 offset = (u32)ptr;
+    size_t segment_index = offset / memory->segment_size;
+    if (segment_index >= memory->num_segments) return result;
+    
+    MemorySegment* seg = memory->segments[segment_index];
+    if (!seg) return result;
+    
+    // Search for chunk that contains this address
+    MemoryChunk* current = seg->first_chunk;
+    while (current) {
+        u32 chunk_start = current->start_segment * memory->segment_size;
+        u32 chunk_end = chunk_start;
+        
+        // Calculate total size across segments
+        for (size_t i = 0; i < current->num_segments; i++) {
+            chunk_end += current->segment_sizes[i];
+        }
+        
+        if (offset >= chunk_start && offset < chunk_end) {
+            result.chunk = current;
+            result.base_offset = chunk_start;
+            break;
+        }
+        
+        current = current->next;
+    }
+    
+    return result;
+}
+
+#endif
 
 ///
 ///
