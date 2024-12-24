@@ -1,5 +1,6 @@
 #include "m3_segmented_memory.h"
 #include "esp_log.h"
+#include "esp_try.h"
 #include "m3_pointers.h"
 
 //#define WASM_DEBUG_SEGMENTED_MEM_MAN 1
@@ -122,6 +123,12 @@ mos get_offset_pointer(IM3Memory memory, void* ptr) {
 
 void notify_memory_segment_access(IM3Memory memory, MemorySegment* segment){
     #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
+    if(segment->segment_page == NULL){
+        ESP_LOGW("WASM3", "notify_memory_segment_access: memory segment page is NULL");
+        backtrace();
+        return;
+    }
+
     paging_notify_segment_access(memory->paging, segment->segment_page->segment_id);
     #endif
 }
