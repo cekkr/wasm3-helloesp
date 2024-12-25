@@ -499,13 +499,13 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName, const c
     M3Result signatureResult = SignatureToFuncType(& function->funcType, signature);
     if(signatureResult){
         ESP_LOGE("WASM3", "addFunctionToModule: SignatureToFuncType failed: %s", signatureResult);
-    }
+    }    
 
     return m3Err_none;
 }
 
 // Funzione helper per registrare una funzione nel modulo
-M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry) {
+M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry, m3_wasi_context_t* ctx) {
     M3Result result = m3Err_none;
     
     if (!module || !entry || !entry->name || !entry->func) {
@@ -522,12 +522,13 @@ M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry) 
     addFunctionToModule(module, entry->name, entry->signature);
 
     // Linkare la funzione nel modulo
-    result = m3_LinkRawFunction( 
+    result = m3_LinkRawFunctionEx( 
         module,              // Modulo WASM
         "*",                 // Namespace (wildcard)
         entry->name,         // Nome della funzione
         entry->signature,    // Firma della funzione
-        entry->func         // Puntatore alla funzione
+        entry->func,         // Puntatore alla funzione
+        ctx
     );
     
     return result;
@@ -535,11 +536,11 @@ M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry) 
 
 // Funzione per registrare multiple funzioni da un array
 const bool WASM_DEBUG_RegisterWasmFunctions = false;
-M3Result RegisterWasmFunctions(IM3Module module, const WasmFunctionEntry* entries, size_t count) {
+M3Result RegisterWasmFunctions(IM3Module module, const WasmFunctionEntry* entries, size_t count, m3_wasi_context_t* ctx) {
     M3Result result = m3Err_none;
     
     for (size_t i = 0; i < count; i++) {
-        result = RegisterWasmFunction(module, &entries[i]);
+        result = RegisterWasmFunction(module, &entries[i], ctx);
         if(WASM_DEBUG_RegisterWasmFunctions) ESP_LOGI("WASM3", "Registered native function: %s\n", entries[i].name);
         if (result) {
             return result; // Ritorna al primo errore

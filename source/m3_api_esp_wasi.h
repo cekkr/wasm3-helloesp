@@ -8,7 +8,6 @@
 #pragma once
 
 #include "wasm3.h"
-#include "m3_function.h"
 #include "m3_exception.h"
 
 #if PASSTHROUGH_HELLOESP
@@ -27,6 +26,13 @@ typedef struct m3_wasi_context_t
     shell_t * shell;
     #endif
 } m3_wasi_context_t;
+
+// Struttura per memorizzare le informazioni della funzione
+typedef struct {
+    const char* name;       // Nome della funzione
+    void* func;     // Puntatore alla funzione
+    const char* signature;  // Firma della funzione in formato WASM
+} WasmFunctionEntry;
 
 M3Result    m3_LinkEspWASI     (IM3Module io_module);
 
