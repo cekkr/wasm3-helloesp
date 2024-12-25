@@ -618,7 +618,7 @@ _catch:
 #if PASSTHROUGH_HELLOESP
 
 const bool WASM_DEBUG_m3_LinkEspWASI_Hello = false;
-M3Result m3_LinkEspWASI_Hello(IM3Module module, shell_t *shell)
+M3Result m3_LinkEspWASI_Hello(IM3Module module, shell_t *shell, m3_wasi_context_t** ctx)
 {
     M3Result result = m3Err_none;
 
@@ -633,6 +633,8 @@ M3Result m3_LinkEspWASI_Hello(IM3Module module, shell_t *shell)
         #if PASSTHROUGH_HELLOESP
         wasi_context->shell = shell;
         #endif
+
+        *ctx = wasi_context;
     }
  
     // Linko solo le funzioni essenziali che ci servono

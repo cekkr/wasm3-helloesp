@@ -31,7 +31,8 @@ typedef struct m3_wasi_context_t
 M3Result    m3_LinkEspWASI     (IM3Module io_module);
 
 #if PASSTHROUGH_HELLOESP
-M3Result m3_LinkEspWASI_Hello(IM3Module module, shell_t * shell);
+
+M3Result m3_LinkEspWASI_Hello(IM3Module module, shell_t *shell, m3_wasi_context_t** ctx);
 #endif
 
 m3_wasi_context_t* m3_GetWasiContext();
