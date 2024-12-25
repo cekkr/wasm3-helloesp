@@ -136,8 +136,8 @@ void *  m3_Int_CopyMem  (const void * i_from, size_t i_size)
 //static const int WASM_ENABLE_SPI_MEM = 0;
 static const int ALLOC_SHIFT_OF = 0; // 4
 const bool WASM_DEBUG_DEFAULT_ALLOCS = WASM_DEBUG_ALL || (WASM_DEBUG && false);
-static const bool CHECK_RAM_MEMORY_AVAILABLE = false;
-static const bool DEFAULT_ALLOC_ALIGNMENT = false;
+static const bool PRINT_CHECK_RAM_MEMORY_AVAILABLE = false;
+static const bool DEFAULT_ALLOC_ALIGNMENT = true;
 
 bool check_memory_available_bySize(size_t required_size) {
     const char * TAG = "WASM3";
@@ -186,13 +186,14 @@ void* default_malloc(size_t size) {
     call_default_alloc();
 
     TRY {
-        if(CHECK_RAM_MEMORY_AVAILABLE){
+        if(PRINT_CHECK_RAM_MEMORY_AVAILABLE){
             print_memory_info();
         }
 
         if(!check_memory_available_bySize(size)){
-            ESP_LOGE("WASM3", "No memory available (size: %u)", size);
-            ESP_LOGE("WASM3", "No memory available (size: %u)", size);
+            ESP_LOGE("WASM3", "No memory available (size: %zu)", size);
+            ESP_LOGE("WASM3", "No memory available (size: %zu)", size);
+            LOG_FLUSH;
             backtrace();
             return ERROR_POINTER;
         }
@@ -206,7 +207,7 @@ void* default_malloc(size_t size) {
         }
 
         if(ptr == NULL || ptr == ERROR_POINTER){
-            ESP_LOGE("WASM3", "Failed to allocate memory of size %d", aligned_size);
+            ESP_LOGE("WASM3", "Failed to allocate memory of size %zu", aligned_size);
             print_memory_info();
             //esp_backtrace_print(100);
             return NULL;
