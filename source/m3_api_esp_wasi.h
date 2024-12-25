@@ -27,11 +27,11 @@ typedef struct m3_wasi_context_t
     #endif
 } m3_wasi_context_t;
 
-// Struttura per memorizzare le informazioni della funzione
+// Structure describing the native function to register
 typedef struct {
-    const char* name;       // Nome della funzione
-    void* func;     // Puntatore alla funzione
-    const char* signature;  // Firma della funzione in formato WASM
+    const char* name;       // Function's name
+    void* func;     // Function's pointer
+    const char* signature;  // Function's signature
 } WasmFunctionEntry;
 
 M3Result    m3_LinkEspWASI     (IM3Module io_module);
