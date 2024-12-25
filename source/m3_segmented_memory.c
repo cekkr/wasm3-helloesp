@@ -1,6 +1,7 @@
 #include "m3_segmented_memory.h"
 #include "esp_log.h"
 #include "m3_pointers.h"
+#include <stdint.h>
 
 #define WASM_SEGMENTED_MEM_LAZY_ALLOC true
 
@@ -594,11 +595,13 @@ bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
     return true;
 
     isNotSegMem:
+    nothing(); // just to shut up syntax error
 
-    void* ptr = (void*)offset;
+    mos* ptr = (mos*)offset;
     if(!is_ptr_valid(ptr)){
-        ESP_LOGW("WASM3", "IsValidMemoryAccess: is not segmented pointer, and both not valid pointer");
-        backtrace();
+        //ESP_LOGW("WASM3", "IsValidMemoryAccess: is not segmented pointer, and both not valid pointer");
+        //backtrace();
+        return true;
     }
 
     return false;
@@ -628,6 +631,9 @@ static u32 ptr_to_offset(M3Memory* memory, void* ptr) {
                 return segment_base_offset + data_offset;
             }
             
+            //todo: force segment load
+            notify_memory_segment_access(memory, memory->segments[segment_base_offset]);
+
             return segment_base_offset + intra_segment_offset;
         }
     }
