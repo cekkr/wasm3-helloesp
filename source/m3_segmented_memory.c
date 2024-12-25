@@ -2,8 +2,10 @@
 #include "esp_log.h"
 #include "m3_pointers.h"
 
-//#define WASM_DEBUG_SEGMENTED_MEM_MAN 1
 #define WASM_SEGMENTED_MEM_LAZY_ALLOC true
+
+const bool WASM_DEBUG_GET_OFFSET_POINTER = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+const bool WASM_DEBUG_M3_INIT_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 
 #define PRINT_PTR(ptr) ESP_LOGI("WASM3", "Pointer value: (unsigned: %u, signed: %d)", (uintptr_t)ptr, (intptr_t)ptr)
 #define MIN(x, y) ((x) < (y) ? (x) : (y)) 
@@ -72,7 +74,6 @@ IM3MemoryPoint ValidateMemoryPoint(void* ptr) {
 
 ////////////////////////////////////////////////////////////////
 
-const bool WASM_DEBUG_GET_OFFSET_POINTER = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 mos get_offset_pointer(IM3Memory memory, void* ptr) {
     check_wdt_reset();
 
@@ -282,7 +283,6 @@ MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) 
             ESP_LOGI("WASM3", "InitSegment: created new seg->segment_page: %p", seg->segment_page);
             ESP_LOGI("WASM3", "InitSegment: data: %p", &seg->data);
             ESP_LOGI("WASM3", "InitSegment: seg->segment_page->data: %p", &seg->segment_page->data);
-            ESP_LOGI("WASM3", "flush");
         }
 
         seg->segment_page->data = &seg->data;
@@ -369,7 +369,6 @@ M3Result AddSegments(IM3Memory memory, size_t additional_segments) {
     return m3Err_none;
 }
 
-const bool WASM_DEBUG_M3_INIT_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && false) || true;
 const int WASM_M3_INIT_MEMORY_NUM_MALLOC_TESTS = 2;
 IM3Memory m3_InitMemory(IM3Memory memory) {
     if (memory == NULL) return NULL;
