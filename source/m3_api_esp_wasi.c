@@ -615,8 +615,10 @@ _catch:
 
 //#endif // ESP32
 
+#if PASSTHROUGH_HELLOESP
+
 const bool WASM_DEBUG_m3_LinkEspWASI_Hello = false;
-M3Result m3_LinkEspWASI_Hello(IM3Module module)
+M3Result m3_LinkEspWASI_Hello(IM3Module module, shell_t *shell)
 {
     M3Result result = m3Err_none;
 
@@ -627,6 +629,10 @@ M3Result m3_LinkEspWASI_Hello(IM3Module module)
         wasi_context->exit_code = 0;
         wasi_context->argc = 0;
         wasi_context->argv = 0;
+
+        #if PASSTHROUGH_HELLOESP
+        wasi_context->shell = shell;
+        #endif
     }
  
     // Linko solo le funzioni essenziali che ci servono
@@ -679,3 +685,5 @@ _catch:
 
     return result;
 }
+
+#endif
