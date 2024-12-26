@@ -257,13 +257,13 @@ void* get_segment_pointer(IM3Memory memory, mos offset) {
 }
 
 
-const bool WASM_DEBUG_resolve_pointer = WASM_DEBUG_ALL || (WASM_DEBUG && false);
-void* resolve_pointer(M3Memory* memory, void* ptr) {
-    if(WASM_DEBUG_resolve_pointer) ESP_LOGI("WASM3", "resolve_pointer (mem: %p) called for ptr: %p", memory, ptr);
+const bool WASM_DEBUG_m3_ResolvePointer = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+void* m3_ResolvePointer(M3Memory* memory, void* ptr) {
+    if(WASM_DEBUG_m3_ResolvePointer) ESP_LOGI("WASM3", "m3_ResolvePointer (mem: %p) called for ptr: %p", memory, ptr);
 
     void* resolved = ptr;
     if (is_ptr_valid(ptr)) {
-        if(WASM_DEBUG_resolve_pointer) ESP_LOGI("WASM3", "resolve_pointer %p considered valid", ptr);
+        if(WASM_DEBUG_m3_ResolvePointer) ESP_LOGI("WASM3", "m3_ResolvePointer %p considered valid", ptr);
         goto resolve;
     }
     
@@ -276,10 +276,10 @@ void* resolve_pointer(M3Memory* memory, void* ptr) {
     if (resolved == ERROR_POINTER) return ptr;
     
     resolve: {
-        if(WASM_DEBUG_resolve_pointer) ESP_LOGI("WASM3", "resolve_pointer: original: %p, resolved: %p", ptr, resolved);
+        if(WASM_DEBUG_m3_ResolvePointer) ESP_LOGI("WASM3", "m3_ResolvePointer: original: %p, resolved: %p", ptr, resolved);
 
         if (!is_ptr_valid(resolved)) {
-            ESP_LOGW("WASM3", "resolve_pointer: resolved pointer is not valid %p %p", ptr, resolved);
+            ESP_LOGW("WASM3", "m3_ResolvePointer: resolved pointer is not valid %p %p", ptr, resolved);
             //backtrace();
             return ptr;
         }    
@@ -1596,8 +1596,8 @@ M3Result m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
         ESP_LOGI("WASM3", "m3_memset: ptr is %s", is_segmented ? "segmented" : "absolute");
     }
 
-    // Get real pointer using resolve_pointer
-    void* real_ptr = resolve_pointer(memory, ptr);
+    // Get real pointer using m3_ResolvePointer
+    void* real_ptr = m3_ResolvePointer(memory, ptr);
     
     if (real_ptr == ERROR_POINTER) {
         ESP_LOGE("WASM3", "m3_memset: failed to resolve pointer");
@@ -1925,8 +1925,8 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
 
     while (bytes_remaining > 0) {
         // Resolve pointers if they're segmented
-        void* real_dest = dest_is_segmented ? resolve_pointer(memory, curr_dest) : curr_dest;
-        void* real_src = src_is_segmented ? resolve_pointer(memory, (void*)curr_src) : curr_src;
+        void* real_dest = dest_is_segmented ? m3_ResolvePointer(memory, curr_dest) : curr_dest;
+        void* real_src = src_is_segmented ? m3_ResolvePointer(memory, (void*)curr_src) : curr_src;
 
         if ((dest_is_segmented && real_dest == ERROR_POINTER) || 
             (src_is_segmented && real_src == ERROR_POINTER)) {
@@ -1984,7 +1984,7 @@ M3Result m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
 
     while (bytes_remaining > 0) {
         // Resolve current pointer
-        void* real_ptr = resolve_pointer(memory, curr_ptr);
+        void* real_ptr = m3_ResolvePointer(memory, curr_ptr);
         if (real_ptr == ERROR_POINTER) {
             ESP_LOGE("WASM3", "m3_memset: Failed to resolve pointer: %p", curr_ptr);
             return m3Err_malformedData;
@@ -2011,7 +2011,7 @@ M3Result m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
 ////////////////////////////////////////////////////////////////////////
 
 void* m3SegmentedMemAccess(IM3Memory memory, void* offset, size_t size) {
-    return resolve_pointer(memory, (void*)offset);
+    return m3_ResolvePointer(memory, (void*)offset);
 }
 
 

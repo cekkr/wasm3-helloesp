@@ -633,8 +633,8 @@ M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_
     u8* dest_ptr;
     
     if (memory) {
-        source_ptr = (const u8*)resolve_pointer(memory, *io_bytes);
-        dest_ptr = (u8*)resolve_pointer(memory, o_value);
+        source_ptr = (const u8*)m3_ResolvePointer(memory, *io_bytes);
+        dest_ptr = (u8*)m3_ResolvePointer(memory, o_value);
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
             return m3Err_malformedData;
     } else {
@@ -665,8 +665,8 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
     u8* dest_ptr;
     
     if (memory) {
-        source_ptr = (const u8*)resolve_pointer(memory, *io_bytes);
-        dest_ptr = (u8*)resolve_pointer(memory, o_value);
+        source_ptr = (const u8*)m3_ResolvePointer(memory, *io_bytes);
+        dest_ptr = (u8*)m3_ResolvePointer(memory, o_value);
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
             return m3Err_malformedData;
     } else {
@@ -698,8 +698,8 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
     u8* dest_ptr;
     
     if (memory) {
-        source_ptr = (const u8*)resolve_pointer(memory, *io_bytes);
-        dest_ptr = (u8*)resolve_pointer(memory, o_value);
+        source_ptr = (const u8*)m3_ResolvePointer(memory, *io_bytes);
+        dest_ptr = (u8*)m3_ResolvePointer(memory, o_value);
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
             return m3Err_malformedData;
     } else {
@@ -730,8 +730,8 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
     u8* dest_ptr;
     
     if (memory) {
-        source_ptr = (const u8*)resolve_pointer(memory, *io_bytes);
-        dest_ptr = (u8*)resolve_pointer(memory, o_value);
+        source_ptr = (const u8*)m3_ResolvePointer(memory, *io_bytes);
+        dest_ptr = (u8*)m3_ResolvePointer(memory, o_value);
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
             return m3Err_malformedData;
     } else {
@@ -763,8 +763,8 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
     u8* dest_ptr;
     
     if (memory) {
-        source_ptr = (const u8*)resolve_pointer(memory, *io_bytes);
-        dest_ptr = (u8*)resolve_pointer(memory, o_value);
+        source_ptr = (const u8*)m3_ResolvePointer(memory, *io_bytes);
+        dest_ptr = (u8*)m3_ResolvePointer(memory, o_value);
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
             return m3Err_malformedData;
     } else {
@@ -794,8 +794,8 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
     m3opcode_t* dest_ptr;
     
     if (memory) {
-        source_ptr = (const u8*)resolve_pointer(memory, *io_bytes);
-        dest_ptr = (m3opcode_t*)resolve_pointer(memory, o_value);
+        source_ptr = (const u8*)m3_ResolvePointer(memory, *io_bytes);
+        dest_ptr = (m3opcode_t*)m3_ResolvePointer(memory, o_value);
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
             return m3Err_malformedData;
     } else {
@@ -837,8 +837,8 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
     u64* dest_ptr;
     
     if (memory) {
-        source_ptr = (const u8*)resolve_pointer(memory, *io_bytes);
-        dest_ptr = (u64*)resolve_pointer(memory, o_value);
+        source_ptr = (const u8*)m3_ResolvePointer(memory, *io_bytes);
+        dest_ptr = (u64*)m3_ResolvePointer(memory, o_value);
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
             return m3Err_malformedData;
     } else {
@@ -887,8 +887,8 @@ M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t
     i64* dest_ptr;
     
     if (memory) {
-        source_ptr = (const u8*)resolve_pointer(memory, *io_bytes);
-        dest_ptr = (i64*)resolve_pointer(memory, o_value);
+        source_ptr = (const u8*)m3_ResolvePointer(memory, *io_bytes);
+        dest_ptr = (i64*)m3_ResolvePointer(memory, o_value);
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
             return m3Err_malformedData;
     } else {
@@ -940,7 +940,7 @@ M3Result ReadLEB_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t
     M3Result result = ReadLebUnsigned(memory, &value, 32, io_bytes, i_end);
     if (result == m3Err_none) {
         if (memory) {
-            u32* dest_ptr = (u32*)resolve_pointer(memory, o_value);
+            u32* dest_ptr = (u32*)m3_ResolvePointer(memory, o_value);
             if (!dest_ptr) return m3Err_malformedData;
             *dest_ptr = (u32)value;
         } else {
@@ -957,7 +957,7 @@ M3Result ReadLEB_u7(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i
     M3Result result = ReadLebUnsigned(memory, &value, 7, io_bytes, i_end);
     if (result == m3Err_none) {
         if (memory) {
-            u8* dest_ptr = (u8*)resolve_pointer(memory, o_value);
+            u8* dest_ptr = (u8*)m3_ResolvePointer(memory, o_value);
             if (!dest_ptr) return m3Err_malformedData;
             *dest_ptr = (u8)value;
         } else {
@@ -974,7 +974,7 @@ M3Result ReadLEB_i7(IM3Memory memory, i8* o_value, bytes_t* io_bytes, cbytes_t i
     M3Result result = ReadLebSigned(memory, &value, 7, io_bytes, i_end);
     if (result == m3Err_none) {
         if (memory) {
-            i8* dest_ptr = (i8*)resolve_pointer(memory, o_value);
+            i8* dest_ptr = (i8*)m3_ResolvePointer(memory, o_value);
             if (!dest_ptr) return m3Err_malformedData;
             *dest_ptr = (i8)value;
         } else {
@@ -991,7 +991,7 @@ M3Result ReadLEB_i32(IM3Memory memory, i32* o_value, bytes_t* io_bytes, cbytes_t
     M3Result result = ReadLebSigned(memory, &value, 32, io_bytes, i_end);
     if (result == m3Err_none) {
         if (memory) {
-            i32* dest_ptr = (i32*)resolve_pointer(memory, o_value);
+            i32* dest_ptr = (i32*)m3_ResolvePointer(memory, o_value);
             if (!dest_ptr) return m3Err_malformedData;
             *dest_ptr = (i32)value;
         } else {
@@ -1008,7 +1008,7 @@ M3Result ReadLEB_i64(IM3Memory memory, i64* o_value, bytes_t* io_bytes, cbytes_t
     M3Result result = ReadLebSigned(memory, &value, 64, io_bytes, i_end);
     if (result == m3Err_none) {
         if (memory) {
-            i64* dest_ptr = (i64*)resolve_pointer(memory, o_value);
+            i64* dest_ptr = (i64*)m3_ResolvePointer(memory, o_value);
             if (!dest_ptr) return m3Err_malformedData;
             *dest_ptr = value;
         } else {
@@ -1035,7 +1035,7 @@ M3Result Read_utf8(IM3Memory memory, cstr_t* o_utf8, bytes_t* io_bytes, cbytes_t
     const u8* source_ptr;
     
     if (memory) {
-        source_ptr = (const u8*)resolve_pointer(memory, *io_bytes);
+        source_ptr = (const u8*)m3_ResolvePointer(memory, *io_bytes);
         if (!source_ptr || source_ptr == ERROR_POINTER) 
             return m3Err_malformedData;
             

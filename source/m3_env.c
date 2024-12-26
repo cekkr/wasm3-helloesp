@@ -495,8 +495,8 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
                     if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: going to: * (u32 *) o_expressed = * ((u32 *) stack);");
 
                     #if M3Runtime_Stack_Segmented
-                    //* (u32 *) o_expressed = * ((u32 *) resolve_pointer(&i_module->runtime->memory, stack));
-                    * (u32 *) resolve_pointer(&i_module->runtime->memory, o_expressed) = * ((u32 *) resolve_pointer(&i_module->runtime->memory, stack));
+                    //* (u32 *) o_expressed = * ((u32 *) m3_ResolvePointer(&i_module->runtime->memory, stack));
+                    * (u32 *) m3_ResolvePointer(&i_module->runtime->memory, o_expressed) = * ((u32 *) m3_ResolvePointer(&i_module->runtime->memory, stack));
                     #else 
                      * (u32 *) o_expressed = * ((u32 *) stack);
                     #endif
@@ -506,8 +506,8 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
                     if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: going to: * (u64 *) o_expressed = * ((u64 *) stack);");
 
                     #if M3Runtime_Stack_Segmented
-                    //* (u64 *) o_expressed = * ((u64 *) resolve_pointer(&i_module->runtime->memory, stack));
-                    * (u64 *) resolve_pointer(&i_module->runtime->memory, o_expressed) = * ((u64 *) resolve_pointer(&i_module->runtime->memory, stack));
+                    //* (u64 *) o_expressed = * ((u64 *) m3_ResolvePointer(&i_module->runtime->memory, stack));
+                    * (u64 *) m3_ResolvePointer(&i_module->runtime->memory, o_expressed) = * ((u64 *) m3_ResolvePointer(&i_module->runtime->memory, stack));
                     #else 
                     * (u64 *) o_expressed = * ((u64 *) stack);
                     #endif
