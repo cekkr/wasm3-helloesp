@@ -209,7 +209,9 @@ void* get_segment_pointer(IM3Memory memory, mos offset) {
                 for (size_t i = 0; i < chunk->num_segments; i++) {
                     if (relative_offset < current_size + chunk->segment_sizes[i]) {
                         seg = memory->segments[chunk->start_segment + i];
+                        #if m3_alloc_on_segment_data
                         notify_memory_segment_access(memory, seg);
+                        #endif
                         return (void*)((char*)seg->data + 
                                      (relative_offset - current_size));
                     }
@@ -603,7 +605,7 @@ bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
                             }
                         }
 
-                        notify_memory_segment_access(memory, chunk_segment);
+                        //notify_memory_segment_access(memory, chunk_segment);
                         return true;  // Access is within a valid multi-segment chunk
                     }
                 }
@@ -613,7 +615,7 @@ bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
         }
     }
     
-    notify_memory_segment_access(memory, memory->segments[start_segment]);
+    //notify_memory_segment_access(memory, memory->segments[start_segment]);
     return true;
 
     isNotSegMem: {    
