@@ -170,11 +170,16 @@ void* get_segment_pointer(IM3Memory memory, mos offset) {
     
     // Initialize segment if needed
     if (!seg->data) {
-        if(WASM_DEBUG_get_offset_pointer) ESP_LOGI("WASM3", "get_segment_pointer: requested data allocation of segment %lu", segment_index);
-        seg = InitSegment(memory, seg, true);
+        if(seg->is_allocated){
+            //notify_memory_segment_access(memory, seg);
+        }
+        else {
+            if(WASM_DEBUG_get_offset_pointer) ESP_LOGI("WASM3", "get_segment_pointer: requested data allocation of segment %lu", segment_index);
+            seg = InitSegment(memory, seg, true);
 
-        if(seg == NULL)
-            return ERROR_POINTER;
+            if(seg == NULL)
+                return ERROR_POINTER;
+        }
     }
     
     // Handle multi-segment chunks
@@ -193,7 +198,9 @@ void* get_segment_pointer(IM3Memory memory, mos offset) {
                 size_t current_size = 0;
                 for (size_t i = 0; i < chunk->num_segments; i++) {
                     if (relative_offset < current_size + chunk->segment_sizes[i]) {
-                        return (void*)((char*)memory->segments[chunk->start_segment + i]->data + 
+                        seg = memory->segments[chunk->start_segment + i];
+                        notify_memory_segment_access(memory, seg);
+                        return (void*)((char*)seg->data + 
                                      (relative_offset - current_size));
                     }
                     current_size += chunk->segment_sizes[i];
