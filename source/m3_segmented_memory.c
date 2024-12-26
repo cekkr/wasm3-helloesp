@@ -552,6 +552,10 @@ bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
     
     size_t start_segment = offset / memory->segment_size;
     size_t end_segment = (offset + size - 1) / memory->segment_size;
+
+    if(start_segment > memory->num_segments || end_segment > memory->num_segments){
+        return false;
+    }
     
     // Verify all needed segments exist and are initialized
     for (size_t i = start_segment; i <= end_segment; i++) {
@@ -1408,6 +1412,217 @@ ChunkInfo get_chunk_info(M3Memory* memory, void* ptr) {
     return result;
 }
 
+
+///
+///
+///
+
+const bool WASM_DEBUG_m3_memcpy = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
+    if(WASM_DEBUG_m3_memcpy) {
+        ESP_LOGI("WASM3", "m3_memcpy called with dest=%p, src=%p, n=%zu", dest, src, n);
+    }
+
+    if (dest == NULL || src == NULL || !n) {       
+        ESP_LOGE("WASM3", "m3_memcpy: invalid arguments - dest=%p, src=%p, n=%zu", dest, src, n);        
+        return m3Err_malformedData;
+    }
+
+    // If memory is invalid, fall back to regular memcpy
+    if(!IsValidMemory(memory)) {
+        if(WASM_DEBUG_m3_memcpy) {
+            ESP_LOGI("WASM3", "m3_memcpy: using direct memcpy for invalid memory");
+            ESP_LOGW("WASM3", "m3_memcpy: dest=%p, src=%p", dest, src);
+        }        
+
+        goto standardMemcpy;
+    }
+
+    // Check if dest and src are M3Memory offsets or absolute pointers
+    bool dest_isSegmented = IsValidMemoryAccess(memory, (mos)dest, 0);
+    bool src_isSegmented = IsValidMemoryAccess(memory, (mos)src, 0);
+
+    if(WASM_DEBUG_m3_memcpy) {
+        ESP_LOGI("WASM3", "m3_memcpy: dest_isSegmented=%d, src_isSegmented=%d", 
+                 dest_isSegmented, src_isSegmented);
+    }
+
+    // Only use direct memcpy if BOTH pointers are absolute
+    if (!dest_isSegmented && !src_isSegmented) {
+        if(WASM_DEBUG_m3_memcpy) {
+            ESP_LOGI("WASM3", "m3_memcpy: both pointers absolute, using direct memcpy");
+        }
+       
+       goto standardMemcpy;
+    }
+
+    // From here on, at least one pointer is segmented, so we need to handle segmented copy
+    size_t remaining = n;
+    size_t dest_offset = dest_isSegmented ? (u32)dest : 0;
+    size_t src_offset = src_isSegmented ? (u32)src : 0;
+    void* absolute_src = src_isSegmented ? NULL : src;
+    void* absolute_dest = dest_isSegmented ? NULL : dest;
+
+    while (remaining > 0) {
+        // Handle destination
+        size_t dest_segment = dest_isSegmented ? (dest_offset / memory->segment_size) : 0;
+        size_t dest_segment_offset = dest_isSegmented ? (dest_offset % memory->segment_size) : 0;
+        void* curr_dest = dest_isSegmented ? 
+            ((char*)memory->segments[dest_segment]->data + dest_segment_offset) : 
+            ((char*)absolute_dest + (n - remaining));
+
+        // Handle source
+        size_t src_segment = src_isSegmented ? (src_offset / memory->segment_size) : 0;
+        size_t src_segment_offset = src_isSegmented ? (src_offset % memory->segment_size) : 0;
+        void* curr_src = src_isSegmented ? 
+            ((char*)memory->segments[src_segment]->data + src_segment_offset) : 
+            ((char*)absolute_src + (n - remaining));
+
+        // Calculate copy size for this iteration
+        size_t dest_available = dest_isSegmented ? 
+            (memory->segment_size - dest_segment_offset) : remaining;
+        size_t src_available = src_isSegmented ? 
+            (memory->segment_size - src_segment_offset) : remaining;
+        size_t copy_size = MIN(MIN(dest_available, src_available), remaining);
+
+        if(WASM_DEBUG_m3_memcpy) {
+            ESP_LOGI("WASM3", "m3_memcpy: copying %zu bytes", copy_size);
+        }
+
+        memcpy(curr_dest, curr_src, copy_size);
+
+        // Update counters
+        remaining -= copy_size;
+        if (dest_isSegmented) dest_offset += copy_size;
+        if (src_isSegmented) src_offset += copy_size;
+    }
+
+    if(WASM_DEBUG_m3_memcpy) {
+        ESP_LOGI("WASM3", "m3_memcpy: completed successfully");
+    }
+    return NULL;
+
+    standardMemcpy: {
+        if(!is_ptr_valid(dest)){
+            ESP_LOGE("WASM3", "m3_memcpy: dest (%p) is invalid pointer", dest);
+            return m3Err_malformedData;
+        }
+
+        if(!is_ptr_valid(src)){
+            ESP_LOGE("WASM3", "m3_memcpy: src (%p) is invalid pointer", src);
+            return m3Err_malformedData;
+        }
+
+        memcpy(dest, src, n);
+        return NULL;
+    }
+}
+
+////////////////////////////////////////////////////////////////
+
+//todo: implement overflow handling
+const bool WASM_DEBUG_m3_memset = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+M3Result m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
+    if(WASM_DEBUG_m3_memset) {
+        ESP_LOGI("WASM3", "m3_memset called with ptr=%p, value=%d, n=%zu", ptr, value, n);
+    }
+
+    if(!n){ // just ignore it (?)
+        return NULL;
+    }
+
+    if (!ptr || !n) {
+        ESP_LOGE("WASM3", "m3_memset: invalid arguments - ptr=%p, n=%zu", ptr, n);
+        backtrace();
+        return m3Err_malformedData;
+    }
+
+    // If memory is invalid, fall back to regular memset
+    if(!IsValidMemory(memory)) {
+        if(WASM_DEBUG_m3_memset) {
+            ESP_LOGI("WASM3", "m3_memset: using direct memset for invalid memory");
+        }
+        memset(ptr, value, n);
+        return NULL;
+    }
+
+    // Check if ptr is a M3Memory offset
+    bool is_segmented = IsValidMemoryAccess(memory, (mos)ptr, 0);
+    
+    if(WASM_DEBUG_m3_memset) {
+        ESP_LOGI("WASM3", "m3_memset: ptr is %s", is_segmented ? "segmented" : "absolute");
+    }
+
+    // Get real pointer using resolve_pointer
+    void* real_ptr = resolve_pointer(memory, ptr);
+    
+    if (real_ptr == ERROR_POINTER) {
+        ESP_LOGE("WASM3", "m3_memset: failed to resolve pointer");
+        return m3Err_malformedData;
+    }
+
+    if (!is_segmented) {
+        // For absolute pointers, use direct memset
+        if(WASM_DEBUG_m3_memset) {
+            ESP_LOGI("WASM3", "m3_memset: using direct memset for absolute pointer");
+        }
+        memset(real_ptr, value, n);
+        return NULL;
+    }
+
+    // Handle segmented memory
+    size_t remaining = n;
+    size_t current_offset = (u32)ptr;
+
+    while (remaining > 0) {
+        // Calculate current segment
+        size_t segment_index = current_offset / memory->segment_size;
+        
+        if (segment_index >= memory->num_segments) {
+            ESP_LOGE("WASM3", "m3_memset: segment index %zu out of bounds", segment_index);
+            return m3Err_malformedData;
+        }
+
+        MemorySegment* segment = memory->segments[segment_index];
+        if (!segment || !segment->data) {
+            if(WASM_DEBUG_m3_memset) {
+                ESP_LOGI("WASM3", "m3_memset: initializing segment %zu", segment_index);
+            }
+            if (InitSegment(memory, segment, true) != NULL) {
+                ESP_LOGE("WASM3", "m3_memset: failed to initialize segment %zu", segment_index);
+                return m3Err_malformedData;
+            }
+        }
+
+        // Calculate how much we can set in this segment
+        size_t segment_offset = current_offset % memory->segment_size;
+        size_t available = memory->segment_size - segment_offset;
+        size_t to_set = MIN(remaining, available);
+
+        if(WASM_DEBUG_m3_memset) {
+            ESP_LOGI("WASM3", "m3_memset: setting %zu bytes in segment %zu", 
+                     to_set, segment_index);
+        }
+
+        // Perform the memset for this segment
+        void* segment_ptr = (char*)segment->data + segment_offset;
+        memset(segment_ptr, value, to_set);
+
+        // Update counters
+        remaining -= to_set;
+        current_offset += to_set;
+
+        if(WASM_DEBUG_m3_memset) {
+            ESP_LOGI("WASM3", "m3_memset: remaining=%zu bytes", remaining);
+        }
+    }
+
+    if(WASM_DEBUG_m3_memset) {
+        ESP_LOGI("WASM3", "m3_memset: completed successfully");
+    }
+    return NULL;
+}
+
 #else
 
 
@@ -1628,217 +1843,157 @@ ChunkInfo get_chunk_info(M3Memory* memory, void* ptr) {
     return result;
 }
 
-#endif
-
 ///
 ///
 ///
 
-const bool WASM_DEBUG_m3_memcpy = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+// Memory copy function that handles segmented memory
 M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
-    if(WASM_DEBUG_m3_memcpy) {
-        ESP_LOGI("WASM3", "m3_memcpy called with dest=%p, src=%p, n=%zu", dest, src, n);
-    }
-
-    if (dest == NULL || src == NULL || !n) {       
-        ESP_LOGE("WASM3", "m3_memcpy: invalid arguments - dest=%p, src=%p, n=%zu", dest, src, n);        
+    // Early validation
+    if (!dest || !src || !n) {
         return m3Err_malformedData;
     }
 
-    // If memory is invalid, fall back to regular memcpy
-    if(!IsValidMemory(memory)) {
-        if(WASM_DEBUG_m3_memcpy) {
-            ESP_LOGI("WASM3", "m3_memcpy: using direct memcpy for invalid memory");
-            ESP_LOGW("WASM3", "m3_memcpy: dest=%p, src=%p", dest, src);
-        }        
-
-        goto standardMemcpy;
-    }
-
-    // Check if dest and src are M3Memory offsets or absolute pointers
-    bool dest_isSegmented = IsValidMemoryAccess(memory, (mos)dest, 0);
-    bool src_isSegmented = IsValidMemoryAccess(memory, (mos)src, 0);
-
-    if(WASM_DEBUG_m3_memcpy) {
-        ESP_LOGI("WASM3", "m3_memcpy: dest_isSegmented=%d, src_isSegmented=%d", 
-                 dest_isSegmented, src_isSegmented);
-    }
-
-    // Only use direct memcpy if BOTH pointers are absolute
-    if (!dest_isSegmented && !src_isSegmented) {
-        if(WASM_DEBUG_m3_memcpy) {
-            ESP_LOGI("WASM3", "m3_memcpy: both pointers absolute, using direct memcpy");
-        }
-       
-       goto standardMemcpy;
-    }
-
-    // From here on, at least one pointer is segmented, so we need to handle segmented copy
-    size_t remaining = n;
-    size_t dest_offset = dest_isSegmented ? (u32)dest : 0;
-    size_t src_offset = src_isSegmented ? (u32)src : 0;
-    void* absolute_src = src_isSegmented ? NULL : src;
-    void* absolute_dest = dest_isSegmented ? NULL : dest;
-
-    while (remaining > 0) {
-        // Handle destination
-        size_t dest_segment = dest_isSegmented ? (dest_offset / memory->segment_size) : 0;
-        size_t dest_segment_offset = dest_isSegmented ? (dest_offset % memory->segment_size) : 0;
-        void* curr_dest = dest_isSegmented ? 
-            ((char*)memory->segments[dest_segment]->data + dest_segment_offset) : 
-            ((char*)absolute_dest + (n - remaining));
-
-        // Handle source
-        size_t src_segment = src_isSegmented ? (src_offset / memory->segment_size) : 0;
-        size_t src_segment_offset = src_isSegmented ? (src_offset % memory->segment_size) : 0;
-        void* curr_src = src_isSegmented ? 
-            ((char*)memory->segments[src_segment]->data + src_segment_offset) : 
-            ((char*)absolute_src + (n - remaining));
-
-        // Calculate copy size for this iteration
-        size_t dest_available = dest_isSegmented ? 
-            (memory->segment_size - dest_segment_offset) : remaining;
-        size_t src_available = src_isSegmented ? 
-            (memory->segment_size - src_segment_offset) : remaining;
-        size_t copy_size = MIN(MIN(dest_available, src_available), remaining);
-
-        if(WASM_DEBUG_m3_memcpy) {
-            ESP_LOGI("WASM3", "m3_memcpy: copying %zu bytes", copy_size);
-        }
-
-        memcpy(curr_dest, curr_src, copy_size);
-
-        // Update counters
-        remaining -= copy_size;
-        if (dest_isSegmented) dest_offset += copy_size;
-        if (src_isSegmented) src_offset += copy_size;
-    }
-
-    if(WASM_DEBUG_m3_memcpy) {
-        ESP_LOGI("WASM3", "m3_memcpy: completed successfully");
-    }
-    return NULL;
-
-    standardMemcpy: {
-        if(!is_ptr_valid(dest)){
-            ESP_LOGE("WASM3", "m3_memcpy: dest (%p) is invalid pointer", dest);
+    // Handle invalid memory - use standard memcpy
+    if (!IsValidMemory(memory)) {
+        if (!is_ptr_valid(dest) || !is_ptr_valid(src)) {
             return m3Err_malformedData;
         }
-
-        if(!is_ptr_valid(src)){
-            ESP_LOGE("WASM3", "m3_memcpy: src (%p) is invalid pointer", src);
-            return m3Err_malformedData;
-        }
-
         memcpy(dest, src, n);
         return NULL;
     }
-}
 
-////////////////////////////////////////////////////////////////
+    // Determine if pointers are segmented memory offsets
+    bool dest_is_segmented = IsValidMemoryAccess(memory, (mos)dest, 0);
+    bool src_is_segmented = IsValidMemoryAccess(memory, (mos)src, 0);
 
-//todo: implement overflow handling
-const bool WASM_DEBUG_m3_memset = WASM_DEBUG_ALL || (WASM_DEBUG && false);
-M3Result m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
-    if(WASM_DEBUG_m3_memset) {
-        ESP_LOGI("WASM3", "m3_memset called with ptr=%p, value=%d, n=%zu", ptr, value, n);
-    }
-
-    if(!n){ // just ignore it (?)
+    // Direct copy if both pointers are absolute
+    if (!dest_is_segmented && !src_is_segmented) {
+        if (!is_ptr_valid(dest) || !is_ptr_valid(src)) {
+            return m3Err_malformedData;
+        }
+        memcpy(dest, src, n);
         return NULL;
     }
 
+    // Setup for segmented copy
+    size_t bytes_remaining = n;
+    size_t dest_offset = dest_is_segmented ? (u32)dest : 0;
+    size_t src_offset = src_is_segmented ? (u32)src : 0;
+    const void* abs_src = src_is_segmented ? NULL : src;
+    void* abs_dest = dest_is_segmented ? NULL : dest;
+
+    while (bytes_remaining > 0) {
+        // Calculate destination segment details
+        size_t dest_seg_idx = dest_is_segmented ? (dest_offset / memory->segment_size) : 0;
+        size_t dest_seg_offset = dest_is_segmented ? (dest_offset % memory->segment_size) : 0;
+        
+        if (dest_is_segmented && dest_seg_idx >= memory->num_segments) {
+            return m3Err_malformedData;
+        }
+
+        // Calculate source segment details
+        size_t src_seg_idx = src_is_segmented ? (src_offset / memory->segment_size) : 0;
+        size_t src_seg_offset = src_is_segmented ? (src_offset % memory->segment_size) : 0;
+        
+        if (src_is_segmented && src_seg_idx >= memory->num_segments) {
+            return m3Err_malformedData;
+        }
+
+        // Get current pointers
+        void* curr_dest = dest_is_segmented ? 
+            ((char*)memory->segments[dest_seg_idx]->data + dest_seg_offset) :
+            ((char*)abs_dest + (n - bytes_remaining));
+            
+        const void* curr_src = src_is_segmented ?
+            ((char*)memory->segments[src_seg_idx]->data + src_seg_offset) :
+            ((char*)abs_src + (n - bytes_remaining));
+
+        // Calculate copy size for this iteration
+        size_t dest_available = dest_is_segmented ? 
+            (memory->segment_size - dest_seg_offset) : bytes_remaining;
+        size_t src_available = src_is_segmented ? 
+            (memory->segment_size - src_seg_offset) : bytes_remaining;
+        size_t copy_size = MIN(MIN(dest_available, src_available), bytes_remaining);
+
+        // Perform copy for this segment
+        memcpy(curr_dest, curr_src, copy_size);
+
+        // Update tracking variables
+        bytes_remaining -= copy_size;
+        if (dest_is_segmented) dest_offset += copy_size;
+        if (src_is_segmented) src_offset += copy_size;
+    }
+
+    return NULL;
+}
+
+// Memory set function that handles segmented memory
+M3Result m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
+    // Early validation
     if (!ptr || !n) {
-        ESP_LOGE("WASM3", "m3_memset: invalid arguments - ptr=%p, n=%zu", ptr, n);
-        backtrace();
         return m3Err_malformedData;
     }
 
-    // If memory is invalid, fall back to regular memset
-    if(!IsValidMemory(memory)) {
-        if(WASM_DEBUG_m3_memset) {
-            ESP_LOGI("WASM3", "m3_memset: using direct memset for invalid memory");
+    // Handle invalid memory - use standard memset
+    if (!IsValidMemory(memory)) {
+        if (!is_ptr_valid(ptr)) {
+            return m3Err_malformedData;
         }
         memset(ptr, value, n);
         return NULL;
     }
 
-    // Check if ptr is a M3Memory offset
+    // Check if pointer is segmented
     bool is_segmented = IsValidMemoryAccess(memory, (mos)ptr, 0);
-    
-    if(WASM_DEBUG_m3_memset) {
-        ESP_LOGI("WASM3", "m3_memset: ptr is %s", is_segmented ? "segmented" : "absolute");
-    }
 
-    // Get real pointer using resolve_pointer
-    void* real_ptr = resolve_pointer(memory, ptr);
-    
-    if (real_ptr == ERROR_POINTER) {
-        ESP_LOGE("WASM3", "m3_memset: failed to resolve pointer");
-        return m3Err_malformedData;
-    }
-
+    // Direct memset for absolute pointer
     if (!is_segmented) {
-        // For absolute pointers, use direct memset
-        if(WASM_DEBUG_m3_memset) {
-            ESP_LOGI("WASM3", "m3_memset: using direct memset for absolute pointer");
+        if (!is_ptr_valid(ptr)) {
+            return m3Err_malformedData;
         }
-        memset(real_ptr, value, n);
+        memset(ptr, value, n);
         return NULL;
     }
 
-    // Handle segmented memory
-    size_t remaining = n;
+    // Setup for segmented memset
+    size_t bytes_remaining = n;
     size_t current_offset = (u32)ptr;
 
-    while (remaining > 0) {
+    while (bytes_remaining > 0) {
         // Calculate current segment
-        size_t segment_index = current_offset / memory->segment_size;
-        
-        if (segment_index >= memory->num_segments) {
-            ESP_LOGE("WASM3", "m3_memset: segment index %zu out of bounds", segment_index);
+        size_t segment_idx = current_offset / memory->segment_size;
+        if (segment_idx >= memory->num_segments) {
             return m3Err_malformedData;
         }
 
-        MemorySegment* segment = memory->segments[segment_index];
+        MemorySegment* segment = memory->segments[segment_idx];
+        
+        // Initialize segment if needed
         if (!segment || !segment->data) {
-            if(WASM_DEBUG_m3_memset) {
-                ESP_LOGI("WASM3", "m3_memset: initializing segment %zu", segment_index);
-            }
             if (InitSegment(memory, segment, true) != NULL) {
-                ESP_LOGE("WASM3", "m3_memset: failed to initialize segment %zu", segment_index);
                 return m3Err_malformedData;
             }
         }
 
-        // Calculate how much we can set in this segment
+        // Calculate memset parameters for this segment
         size_t segment_offset = current_offset % memory->segment_size;
         size_t available = memory->segment_size - segment_offset;
-        size_t to_set = MIN(remaining, available);
+        size_t to_set = MIN(bytes_remaining, available);
 
-        if(WASM_DEBUG_m3_memset) {
-            ESP_LOGI("WASM3", "m3_memset: setting %zu bytes in segment %zu", 
-                     to_set, segment_index);
-        }
-
-        // Perform the memset for this segment
+        // Perform memset for this segment
         void* segment_ptr = (char*)segment->data + segment_offset;
         memset(segment_ptr, value, to_set);
 
-        // Update counters
-        remaining -= to_set;
+        // Update tracking variables
+        bytes_remaining -= to_set;
         current_offset += to_set;
-
-        if(WASM_DEBUG_m3_memset) {
-            ESP_LOGI("WASM3", "m3_memset: remaining=%zu bytes", remaining);
-        }
     }
 
-    if(WASM_DEBUG_m3_memset) {
-        ESP_LOGI("WASM3", "m3_memset: completed successfully");
-    }
     return NULL;
 }
+
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
