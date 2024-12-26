@@ -622,6 +622,7 @@ M3Result m3_LinkEspWASI_Hello(IM3Module module, shell_t *shell, m3_wasi_context_
 {
     M3Result result = m3Err_none;
 
+    m3_wasi_context_t* wasi_context = *ctx;
     if (!wasi_context) {
         if(WASM_DEBUG_m3_LinkEspWASI_Hello) ESP_LOGI("WASM3", "m3_LinkEspWASI: !wasi_context");
         wasi_context = (m3_wasi_context_t*)malloc(sizeof(m3_wasi_context_t));
