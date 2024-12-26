@@ -241,8 +241,9 @@ void* resolve_pointer(M3Memory* memory, void* ptr) {
         if(WASM_DEBUG_resolve_pointer) ESP_LOGI("WASM3", "resolve_pointer: original: %p, resolved: %p", ptr, resolved);
 
         if (!is_ptr_valid(resolved)) {
-            ESP_LOGW("WASM3", "resolve_pointer: resolved pointer is not valid");
-            backtrace();
+            ESP_LOGW("WASM3", "resolve_pointer: resolved pointer is not valid %p %p", ptr, resolved);
+            //backtrace();
+            return ptr;
         }    
 
         return resolved;
