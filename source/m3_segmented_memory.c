@@ -142,7 +142,7 @@ void notify_memory_segment_access(IM3Memory memory, MemorySegment* segment){
 }
 
 // Core pointer resolution functions
-bool WASM_DEBUG_get_offset_pointer = WASM_DEBUG_ALL || (WASM_DEBUG && false) || true;
+bool WASM_DEBUG_get_offset_pointer = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 void* get_segment_pointer(IM3Memory memory, mos offset) {
     check_wdt_reset();    
 
@@ -257,7 +257,7 @@ void* get_segment_pointer(IM3Memory memory, mos offset) {
 }
 
 
-const bool WASM_DEBUG_resolve_pointer = WASM_DEBUG_ALL || (WASM_DEBUG && false) || true;
+const bool WASM_DEBUG_resolve_pointer = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 void* resolve_pointer(M3Memory* memory, void* ptr) {
     if(WASM_DEBUG_resolve_pointer) ESP_LOGI("WASM3", "resolve_pointer (mem: %p) called for ptr: %p", memory, ptr);
 
