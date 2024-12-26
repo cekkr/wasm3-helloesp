@@ -230,16 +230,16 @@ void* resolve_pointer(M3Memory* memory, void* ptr) {
     resolved = get_segment_pointer(memory, offset);
     if (resolved == ERROR_POINTER) return ptr;
     
-    resolve:
+    resolve: {
+        if(WASM_DEBUG_resolve_pointer) ESP_LOGI("WASM3", "resolve_pointer: original: %p, resolved: %p", ptr, resolved);
 
-    if(WASM_DEBUG_resolve_pointer) ESP_LOGI("WASM3", "resolve_pointer: original: %p, resolved: %p", ptr, resolved);
+        if (!is_ptr_valid(resolved)) {
+            ESP_LOGW("WASM3", "resolve_pointer: resolved pointer is not valid");
+            backtrace();
+        }    
 
-    if (!is_ptr_valid(resolved)) {
-        ESP_LOGW("WASM3", "resolve_pointer: resolved pointer is not valid");
-        backtrace();
-    }    
-
-    return resolved;
+        return resolved;
+    }
 }
 
 int find_segment_index(MemorySegment** segments, int num_segments, MemorySegment* segment) {
@@ -594,17 +594,16 @@ bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
     notify_memory_segment_access(memory, memory->segments[start_segment]);
     return true;
 
-    isNotSegMem:
-    nothing(); // just to shut up syntax error
+    isNotSegMem: {    
+        mos* ptr = (mos*)offset;
+        if(!is_ptr_valid(ptr)){
+            //ESP_LOGW("WASM3", "IsValidMemoryAccess: is not segmented pointer, and both not valid pointer");
+            //backtrace();
+            return true;
+        }
 
-    mos* ptr = (mos*)offset;
-    if(!is_ptr_valid(ptr)){
-        //ESP_LOGW("WASM3", "IsValidMemoryAccess: is not segmented pointer, and both not valid pointer");
-        //backtrace();
-        return true;
+        return false;
     }
-
-    return false;
 }
 
 ////////////////////////////////////////////////////////////////
@@ -1720,20 +1719,20 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
     }
     return NULL;
 
-    standardMemcpy:
+    standardMemcpy: {
+        if(!is_ptr_valid(dest)){
+            ESP_LOGE("WASM3", "m3_memcpy: dest (%p) is invalid pointer", dest);
+            return m3Err_malformedData;
+        }
 
-    if(!is_ptr_valid(dest)){
-        ESP_LOGE("WASM3", "m3_memcpy: dest (%p) is invalid pointer", dest);
-        return m3Err_malformedData;
+        if(!is_ptr_valid(src)){
+            ESP_LOGE("WASM3", "m3_memcpy: src (%p) is invalid pointer", src);
+            return m3Err_malformedData;
+        }
+
+        memcpy(dest, src, n);
+        return NULL;
     }
-
-    if(!is_ptr_valid(src)){
-        ESP_LOGE("WASM3", "m3_memcpy: src (%p) is invalid pointer", src);
-        return m3Err_malformedData;
-    }
-
-    memcpy(dest, src, n);
-    return NULL;
 }
 
 ////////////////////////////////////////////////////////////////
