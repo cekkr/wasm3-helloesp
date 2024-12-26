@@ -106,9 +106,10 @@ mos get_offset_pointer(IM3Memory memory, void* ptr) {
             mos total_offset = (i * memory->segment_size) + segment_offset;
 
             if (WASM_DEBUG_GET_OFFSET_POINTER) {
-                ESP_LOGI("WASM3", "get_offset_pointer: converted %p to offset %u (segment %zu)", 
-                         ptr, total_offset, i);
+                ESP_LOGI("WASM3", "get_offset_pointer: converted %p to offset %u (segment %zu)", ptr, total_offset, i);
             }
+            
+            //todo: notify_memory_segment_access(memory, seg);  
 
             return total_offset;
         }
@@ -131,11 +132,17 @@ void notify_memory_segment_access(IM3Memory memory, MemorySegment* segment){
     }
 
     paging_notify_segment_access(memory->paging, segment->segment_page->segment_id);
+
+    if(segment->data == NULL){
+        ESP_LOGE("WASM3", "notify_memory_segment_access: segment data is NULL after notify_memory_segment_access");
+        //todo: init now?
+    }
+
     #endif
 }
 
 // Core pointer resolution functions
-bool WASM_DEBUG_get_offset_pointer = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+bool WASM_DEBUG_get_offset_pointer = WASM_DEBUG_ALL || (WASM_DEBUG && false) || true;
 void* get_segment_pointer(IM3Memory memory, mos offset) {
     check_wdt_reset();    
 
@@ -192,6 +199,8 @@ void* get_segment_pointer(IM3Memory memory, mos offset) {
         }
     }
     
+    mos seg_offset = segment_offset;
+
     // Handle multi-segment chunks
     MemoryChunk* chunk = seg->first_chunk;
     while (chunk) {
@@ -209,11 +218,9 @@ void* get_segment_pointer(IM3Memory memory, mos offset) {
                 for (size_t i = 0; i < chunk->num_segments; i++) {
                     if (relative_offset < current_size + chunk->segment_sizes[i]) {
                         seg = memory->segments[chunk->start_segment + i];
-                        #if m3_alloc_on_segment_data
-                        notify_memory_segment_access(memory, seg);
-                        #endif
-                        return (void*)((char*)seg->data + 
-                                     (relative_offset - current_size));
+                        seg_offset = (relative_offset - current_size);
+
+                        goto resolve;
                     }
                     current_size += chunk->segment_sizes[i];
                 }
@@ -222,22 +229,41 @@ void* get_segment_pointer(IM3Memory memory, mos offset) {
         chunk = chunk->next;
     }
 
-    if(WASM_SEGMENTED_MEM_LAZY_ALLOC){
-        if(!seg->is_allocated){
-            InitSegment(memory, seg, true);
+    resolve: {
+        if(WASM_SEGMENTED_MEM_LAZY_ALLOC){
+            if(!seg->is_allocated){
+                InitSegment(memory, seg, true);
+            }
         }
-    }
-    
-    notify_memory_segment_access(memory, seg);
 
-    return (void*)((char*)seg->data + segment_offset);
+        if(WASM_DEBUG_get_offset_pointer) {
+            ESP_LOGI("WASM3", "get_segment_pointer: seg->is_allocated=%d, seg->data=%p",  seg->is_allocated, seg->data);
+        }
+            
+        notify_memory_segment_access(memory, seg);
+
+        if(WASM_DEBUG_get_offset_pointer) {
+            ESP_LOGI("WASM3", "get_segment_pointer: (after notify) seg->is_allocated=%d, seg->data=%p", seg->is_allocated, seg->data);
+        }
+
+        if(WASM_DEBUG_get_offset_pointer) {
+            ESP_LOGI("WASM3", "get_segment_pointer: pointer resolved with seg_offset: %lld", seg_offset);
+            ESP_LOGI("WASM3", "get_segment_pointer: requested segment %d", seg->index);
+            ESP_LOGI("WASM3", "get_segment_pointer: requested segment data index: %p", seg->data);
+        }        
+
+        return (void*)((mos)seg->data + seg_offset);
+    }
 }
 
 
-const bool WASM_DEBUG_resolve_pointer = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+const bool WASM_DEBUG_resolve_pointer = WASM_DEBUG_ALL || (WASM_DEBUG && false) || true;
 void* resolve_pointer(M3Memory* memory, void* ptr) {
+    if(WASM_DEBUG_resolve_pointer) ESP_LOGI("WASM3", "resolve_pointer (mem: %p) called for ptr: %p", memory, ptr);
+
     void* resolved = ptr;
     if (is_ptr_valid(ptr)) {
+        if(WASM_DEBUG_resolve_pointer) ESP_LOGI("WASM3", "resolve_pointer %p considered valid", ptr);
         goto resolve;
     }
     
@@ -322,12 +348,10 @@ MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) 
         seg->size = memory->segment_size;
         seg->first_chunk = NULL;
         memory->total_allocated_size += memory->segment_size;
-
-        /*
+        
         #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
         paging_notify_segment_allocation(memory->paging, seg->segment_page, &seg->data);
-        #endif
-        */
+        #endif        
     }
     
     return seg;
