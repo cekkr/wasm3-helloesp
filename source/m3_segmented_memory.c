@@ -153,7 +153,7 @@ void* get_segment_pointer(IM3Memory memory, mos offset) {
         return ERROR_POINTER;
     }
 
-    if(false && !IsValidMemoryAccess(memory, offset, 0)){ // this is pretty redundant
+    if(false && !IsValidMemoryAccess(memory, offset, 1)){ // this is pretty redundant
         return (void*)offset;
     }
     
@@ -918,7 +918,7 @@ void m3_free(M3Memory* memory, void* offset_ptr) {
         return;
     }
 
-    if(!IsValidMemoryAccess(memory, offset_ptr, 0)) {
+    if(!IsValidMemoryAccess(memory, offset_ptr, 1)) {
         if(is_ptr_valid(offset_ptr)){
             m3_Def_Free(offset_ptr);
             return;
@@ -1482,8 +1482,8 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
     }
 
     // Check if dest and src are M3Memory offsets or absolute pointers
-    bool dest_isSegmented = IsValidMemoryAccess(memory, (mos)dest, 0);
-    bool src_isSegmented = IsValidMemoryAccess(memory, (mos)src, 0);
+    bool dest_isSegmented = IsValidMemoryAccess(memory, (mos)dest, 1);
+    bool src_isSegmented = IsValidMemoryAccess(memory, (mos)src, 1);
 
     if(WASM_DEBUG_m3_memcpy) {
         ESP_LOGI("WASM3", "m3_memcpy: dest_isSegmented=%d, src_isSegmented=%d", 
