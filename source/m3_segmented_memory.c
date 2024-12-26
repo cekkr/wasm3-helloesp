@@ -12,8 +12,8 @@ const bool WASM_DEBUG_M3_INIT_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 #define MIN(x, y) ((x) < (y) ? (x) : (y)) 
 
 #if ENABLE_WDT
-static u32 check_wdt_trigger_every = 5;
-static u32 check_wdt_trigger_cycle = 0;
+static mos check_wdt_trigger_every = 5;
+static mos check_wdt_trigger_cycle = 0;
 
 const bool WASM_DEBUG_check_wdt_reset = false;
 void check_wdt_reset(){
@@ -224,7 +224,7 @@ void* resolve_pointer(M3Memory* memory, void* ptr) {
     
     if (!memory || memory->firm != INIT_FIRM) return ptr;
     
-    u32 offset = (u32)ptr;
+    mos offset = (mos)ptr;
     if (offset >= memory->total_size) return ptr;
     
     resolved = get_segment_pointer(memory, offset);
@@ -614,7 +614,7 @@ bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
 ////////////////////////////////////////////////////////////////
 
 
-static u32 ptr_to_offset(M3Memory* memory, void* ptr) {
+static mos ptr_to_offset(M3Memory* memory, void* ptr) {
     if (!memory || !ptr) return 0;
     
     for (size_t i = 0; i < memory->num_segments; i++) {
@@ -843,9 +843,9 @@ void* m3_malloc(M3Memory* memory, size_t size) {
     
     if (found_chunk) {
         // Calcola l'offset relativo al primo segmento
-        u32 base_offset = found_chunk->start_segment * memory->segment_size;
-        u32 chunk_offset = (char*)found_chunk - (char*)memory->segments[found_chunk->start_segment]->data;
-        u32 offset = base_offset + chunk_offset + sizeof(MemoryChunk);
+        mos base_offset = found_chunk->start_segment * memory->segment_size;
+        mos chunk_offset = (char*)found_chunk - (char*)memory->segments[found_chunk->start_segment]->data;
+        mos offset = base_offset + chunk_offset + sizeof(MemoryChunk);
         
         // Verifica che l'offset sia allineato
         if (offset % WASM_CHUNK_SIZE != 0) {
@@ -884,7 +884,7 @@ void m3_free(M3Memory* memory, void* offset_ptr) {
     }
     
     // Converti l'offset in puntatore al chunk
-    u32 offset = (u32)offset_ptr;
+    mos offset = (mos)offset_ptr;
     if (offset < sizeof(MemoryChunk)) {
         ESP_LOGE("WASM3", "m3_free: invalid offset %u (smaller than MemoryChunk)", offset);
         return;
@@ -1125,7 +1125,7 @@ void* m3_realloc(M3Memory* memory, void* offset_ptr, size_t new_size) {
     }
     
     // Get current chunk
-    u32 offset = (u32)offset_ptr;
+    mos offset = (mos)offset_ptr;
     size_t segment_index = (offset - sizeof(MemoryChunk)) / memory->segment_size;
     if (segment_index >= memory->num_segments) {
         ESP_LOGE("WASM3", "m3_realloc: segment index %zu out of bounds", segment_index);
@@ -1458,8 +1458,8 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
 
     // From here on, at least one pointer is segmented, so we need to handle segmented copy
     size_t remaining = n;
-    size_t dest_offset = dest_isSegmented ? (u32)dest : 0;
-    size_t src_offset = src_isSegmented ? (u32)src : 0;
+    size_t dest_offset = dest_isSegmented ? (mos)dest : 0;
+    size_t src_offset = src_isSegmented ? (mos)src : 0;
     void* absolute_src = src_isSegmented ? NULL : src;
     void* absolute_dest = dest_isSegmented ? NULL : dest;
 
@@ -1572,7 +1572,7 @@ M3Result m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
 
     // Handle segmented memory
     size_t remaining = n;
-    size_t current_offset = (u32)ptr;
+    size_t current_offset = (mos)ptr;
 
     while (remaining > 0) {
         // Calculate current segment
@@ -1699,6 +1699,7 @@ void* m3_malloc(M3Memory* memory, size_t size) {
         // Add new segments if needed
         if (start_segment + segments_needed > memory->num_segments) {
             if (AddSegments(memory, start_segment + segments_needed) != m3Err_none) {
+                ESP_LOGE("WASM3", "m3_malloc: Failed to add segments");
                 return NULL;
             }
         }
@@ -1714,9 +1715,15 @@ void* m3_malloc(M3Memory* memory, size_t size) {
             
             // Initialize segment if needed
             if (!seg->data) {
-                if (InitSegment(memory, seg, true) == NULL) {
-                    free_chunk(found_chunk);
-                    return NULL;
+                if(seg->is_allocated){
+                    //notify_memory_segment_access(memory, seg); 
+                }
+                else {
+                    if (InitSegment(memory, seg, true) == NULL) {
+                        free_chunk(found_chunk);
+                        ESP_LOGE("WASM3", "m3_malloc: Failed to init segment");
+                        return NULL;
+                    }
                 }
             }
             
@@ -1737,7 +1744,7 @@ void* m3_malloc(M3Memory* memory, size_t size) {
     }
     
     // Calculate return offset
-    u32 base_offset = found_chunk->start_segment * memory->segment_size;
+    mos base_offset = found_chunk->start_segment * memory->segment_size;
     memory->total_requested_size += size;
     
     return (void*)base_offset;
@@ -1813,7 +1820,7 @@ ChunkInfo get_chunk_info(M3Memory* memory, void* ptr) {
     if (!memory || !ptr) return result;
     
     // Calculate segment index
-    u32 offset = (u32)ptr;
+    mos offset = (mos)ptr;
     size_t segment_index = offset / memory->segment_size;
     if (segment_index >= memory->num_segments) return result;
     
@@ -1823,8 +1830,8 @@ ChunkInfo get_chunk_info(M3Memory* memory, void* ptr) {
     // Search for chunk that contains this address
     MemoryChunk* current = seg->first_chunk;
     while (current) {
-        u32 chunk_start = current->start_segment * memory->segment_size;
-        u32 chunk_end = chunk_start;
+        mos chunk_start = current->start_segment * memory->segment_size;
+        mos chunk_end = chunk_start;
         
         // Calculate total size across segments
         for (size_t i = 0; i < current->num_segments; i++) {
@@ -1851,77 +1858,60 @@ ChunkInfo get_chunk_info(M3Memory* memory, void* ptr) {
 M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
     // Early validation
     if (!dest || !src || !n) {
+        ESP_LOGE("WASM3", "m3_memcpy: NULL pointer or zero size");
         return m3Err_malformedData;
     }
 
-    // Handle invalid memory - use standard memcpy
+    // Handle invalid memory
     if (!IsValidMemory(memory)) {
-        ESP_LOGE("WASM3", "m3_memcpy: Invalid memory: %p", memory);       
+        ESP_LOGE("WASM3", "m3_memcpy: Invalid memory: %p", memory);
+        return m3Err_malformedData;
     }
 
-    // Determine if pointers are segmented memory offsets
-    bool dest_is_segmented = IsValidMemoryAccess(memory, (mos)dest, 0);
-    bool src_is_segmented = IsValidMemoryAccess(memory, (mos)src, 0);
+    // Check if pointers are segmented
+    bool dest_is_segmented = IsValidMemoryAccess(memory, (mos)dest, n);
+    bool src_is_segmented = IsValidMemoryAccess(memory, (mos)src, n);
 
-    // Direct copy if both pointers are absolute
-    if (!dest_is_segmented && !src_is_segmented) {
-        if (!is_ptr_valid(dest) || !is_ptr_valid(src)) {
-            ESP_LOGE("WASM3", "m3_memcpy: Invalid pointer: %p, %p", dest, src);       
-            return m3Err_malformedData;
-        }
+    if(!dest_is_segmented && !src_is_segmented) {
         memcpy(dest, src, n);
-        return NULL;
     }
 
-    // Setup for segmented copy
     size_t bytes_remaining = n;
-    size_t dest_offset = dest_is_segmented ? (u32)dest : 0;
-    size_t src_offset = src_is_segmented ? (u32)src : 0;
-    const void* abs_src = src_is_segmented ? NULL : src;
-    void* abs_dest = dest_is_segmented ? NULL : dest;
+    const void* curr_src = src;
+    void* curr_dest = dest;
 
     while (bytes_remaining > 0) {
-        // Calculate destination segment details
-        size_t dest_seg_idx = dest_is_segmented ? (dest_offset / memory->segment_size) : 0;
-        size_t dest_seg_offset = dest_is_segmented ? (dest_offset % memory->segment_size) : 0;
-        
-        if (dest_is_segmented && dest_seg_idx >= memory->num_segments) {
-            ESP_LOGE("WASM3", "m3_memcpy: dest_is_segmented && dest_seg_idx >= memory->num_segments");       
+        // Resolve pointers if they're segmented
+        void* real_dest = dest_is_segmented ? resolve_pointer(memory, curr_dest) : curr_dest;
+        void* real_src = src_is_segmented ? resolve_pointer(memory, (void*)curr_src) : curr_src;
+
+        if ((dest_is_segmented && real_dest == ERROR_POINTER) || 
+            (src_is_segmented && real_src == ERROR_POINTER)) {
+            ESP_LOGE("WASM3", "m3_memcpy: Failed to resolve pointer - src: %p, dest: %p", 
+                     curr_src, curr_dest);
             return m3Err_malformedData;
         }
 
-        // Calculate source segment details
-        size_t src_seg_idx = src_is_segmented ? (src_offset / memory->segment_size) : 0;
-        size_t src_seg_offset = src_is_segmented ? (src_offset % memory->segment_size) : 0;
+        // Calculate copy size based on segment boundaries for segmented pointers
+        size_t copy_size = bytes_remaining;
         
-        if (src_is_segmented && src_seg_idx >= memory->num_segments) {
-            ESP_LOGE("WASM3", "m3_memcpy: src_is_segmented && src_seg_idx >= memory->num_segments");
-            return m3Err_malformedData;
+        if (dest_is_segmented) {
+            size_t dest_to_boundary = memory->segment_size - ((mos)curr_dest % memory->segment_size);
+            copy_size = MIN(copy_size, dest_to_boundary);
+        }
+        
+        if (src_is_segmented) {
+            size_t src_to_boundary = memory->segment_size - ((mos)curr_src % memory->segment_size);
+            copy_size = MIN(copy_size, src_to_boundary);
         }
 
-        // Get current pointers
-        void* curr_dest = dest_is_segmented ? 
-            ((char*)memory->segments[dest_seg_idx]->data + dest_seg_offset) :
-            ((char*)abs_dest + (n - bytes_remaining));
-            
-        const void* curr_src = src_is_segmented ?
-            ((char*)memory->segments[src_seg_idx]->data + src_seg_offset) :
-            ((char*)abs_src + (n - bytes_remaining));
+        // Perform copy for current chunk
+        memcpy(real_dest, real_src, copy_size);
 
-        // Calculate copy size for this iteration
-        size_t dest_available = dest_is_segmented ? 
-            (memory->segment_size - dest_seg_offset) : bytes_remaining;
-        size_t src_available = src_is_segmented ? 
-            (memory->segment_size - src_seg_offset) : bytes_remaining;
-        size_t copy_size = MIN(MIN(dest_available, src_available), bytes_remaining);
-
-        // Perform copy for this segment
-        memcpy(curr_dest, curr_src, copy_size);
-
-        // Update tracking variables
+        // Update pointers and remaining count
+        curr_src = (const char*)curr_src + copy_size;
+        curr_dest = (char*)curr_dest + copy_size;
         bytes_remaining -= copy_size;
-        if (dest_is_segmented) dest_offset += copy_size;
-        if (src_is_segmented) src_offset += copy_size;
     }
 
     return NULL;
@@ -1931,59 +1921,42 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
 M3Result m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
     // Early validation
     if (!ptr || !n) {
+        ESP_LOGE("WASM3", "m3_memset: NULL pointer or zero size");
+        return m3Err_malformedData;
+    }    
+
+    // Handle invalid memory
+    if (!IsValidMemory(memory)) {
+        ESP_LOGE("WASM3", "m3_memset: Invalid memory: %p", memory);
         return m3Err_malformedData;
     }
 
-    // Handle invalid memory - use standard memset
-    if (!IsValidMemory(memory)) {
-        ESP_LOGE("WASM3", "m3_memset: Invalid memory: %p", memory);       
-    }
-
-    // Check if pointer is segmented
-    bool is_segmented = IsValidMemoryAccess(memory, (mos)ptr, 0);
-
-    // Direct memset for absolute pointer
-    if (!is_segmented) {
-        if (!is_ptr_valid(ptr)) {
-            ESP_LOGE("WASM3", "m3_memset: Invalid pointer: %p", ptr);
-            return m3Err_malformedData;
-        }
+    if(!IsValidMemoryAccess(memory, (mos)ptr, n)){
         memset(ptr, value, n);
         return NULL;
     }
 
-    // Setup for segmented memset
     size_t bytes_remaining = n;
-    size_t current_offset = (mos)ptr;
+    void* curr_ptr = ptr;
 
     while (bytes_remaining > 0) {
-        // Calculate current segment
-        size_t segment_idx = current_offset / memory->segment_size;
-        if (segment_idx >= memory->num_segments) {
+        // Resolve current pointer
+        void* real_ptr = resolve_pointer(memory, curr_ptr);
+        if (real_ptr == ERROR_POINTER) {
+            ESP_LOGE("WASM3", "m3_memset: Failed to resolve pointer: %p", curr_ptr);
             return m3Err_malformedData;
         }
 
-        MemorySegment* segment = memory->segments[segment_idx];
-        
-        // Initialize segment if needed
-        if (!segment || !segment->data) {
-            if (InitSegment(memory, segment, true) != NULL) {
-                return m3Err_malformedData;
-            }
-        }
+        // Calculate size until next chunk boundary
+        size_t to_boundary = memory->segment_size - ((mos)curr_ptr % memory->segment_size);
+        size_t to_set = MIN(to_boundary, bytes_remaining);
 
-        // Calculate memset parameters for this segment
-        size_t segment_offset = current_offset % memory->segment_size;
-        size_t available = memory->segment_size - segment_offset;
-        size_t to_set = MIN(bytes_remaining, available);
+        // Perform memset for current chunk
+        memset(real_ptr, value, to_set);
 
-        // Perform memset for this segment
-        void* segment_ptr = (char*)segment->data + segment_offset;
-        memset(segment_ptr, value, to_set);
-
-        // Update tracking variables
+        // Update pointer and remaining count
+        curr_ptr = (char*)curr_ptr + to_set;
         bytes_remaining -= to_set;
-        current_offset += to_set;
     }
 
     return NULL;
@@ -2172,6 +2145,6 @@ MemoryChunk* get_chunk(M3Memory* memory, void* ptr) {
 }
 
 // Funzione helper per ottenere solo l'offset base
-u32 get_chunk_base_offset(M3Memory* memory, void* ptr) {
+mos get_chunk_base_offset(M3Memory* memory, void* ptr) {
     return get_chunk_info(memory, ptr).base_offset;
 }
