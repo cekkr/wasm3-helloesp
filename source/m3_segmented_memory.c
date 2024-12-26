@@ -1964,7 +1964,7 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
 M3Result m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
     // Early validation
     if (!ptr || !n) {
-        ESP_LOGE("WASM3", "m3_memset: NULL pointer or zero size");
+        //ESP_LOGE("WASM3", "m3_memset: NULL pointer or zero size"); // study about this case?
         return m3Err_malformedData;
     }    
 
