@@ -7,7 +7,7 @@
 
 #pragma once
 
-//#include "wasm3.h"
+#include "wasm3.h"
 #include "m3_config_platforms.h"
 #include "m3_exception.h"
 
@@ -52,6 +52,14 @@
 
 # ifndef d_m3FixedHeapAlign
 #   define d_m3FixedHeapAlign                   16
+# endif
+
+# ifdef WASM_PTRS_64BITS
+# if WASM_PTRS_64BITS
+#   define d_m3Use32BitSlots                    0
+# else
+#   define d_m3Use32BitSlots                    1
+# endif
 # endif
 
 # ifndef d_m3Use32BitSlots

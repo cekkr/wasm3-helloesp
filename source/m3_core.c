@@ -9,11 +9,8 @@
 
 #include "m3_core.h"
 #include "m3_env.h"
-#include "m3_config.h"
 
-#if PASSTHROUGH_HELLOESP
-#include "wasm3.h"
-#endif
+#include "m3_config.h"
 
 //#include "m3_compile.h"
 

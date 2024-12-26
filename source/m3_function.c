@@ -519,14 +519,34 @@ M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry, 
         return "Invalid parameters";
     }
 
-    addFunctionToModule(module, entry->name, entry->signature);
+    ///
+    /// Convert p to pointers size
+    ///
+    size_t slen = strlen(entry->signature);
+    char* signature = malloc(sizeof(char)*(slen+1));
+    signature[slen] = '\0'; // is this necessary (with the slen+1)
+    strcpy(signature, entry->signature);
+
+    for(int s=0; s<slen; s++){
+        if(signature[s]=='p'){
+            if(WASM_PTRS_64BITS)
+                signature[s] = 'I';
+            else 
+                signature[s] = 'i';
+        }
+    }
+
+    /// 
+    ///
+    ///
+    addFunctionToModule(module, entry->name, signature);
 
     // Linkare la funzione nel modulo
     result = m3_LinkRawFunctionEx( 
         module,              // Modulo WASM
         "*",                 // Namespace (wildcard)
         entry->name,         // Nome della funzione
-        entry->signature,    // Firma della funzione
+        signature,    // Firma della funzione
         entry->func,         // Puntatore alla funzione
         ctx
     );
