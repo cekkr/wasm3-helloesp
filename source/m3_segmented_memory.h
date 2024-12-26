@@ -9,6 +9,7 @@
 #include "esp_heap_caps.h"
 
 #define WASM_SEGMENTED_MEM_ENABLE_HE_PAGES 1
+#define m3_alloc_on_segment_data 0
 
 #if WASM_SEGMENTED_MEM_ENABLE_HE_PAGES
 #include "he_memory.h" 

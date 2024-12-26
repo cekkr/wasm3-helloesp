@@ -142,6 +142,7 @@ void* get_segment_pointer(IM3Memory memory, mos offset) {
     if(WASM_DEBUG_get_offset_pointer) ESP_LOGI("WASM3", "get_segment_pointer called with offset %llu", offset);    
 
     if (!memory || memory->firm != INIT_FIRM) {
+        ESP_LOGE("WASM3", "get_segment_pointer: memory invalid");
         return ERROR_POINTER;
     }
 
@@ -155,9 +156,13 @@ void* get_segment_pointer(IM3Memory memory, mos offset) {
     
     // Validate segment
     if (segment_index >= memory->num_segments) {
+        ESP_LOGE("WASM3", "add_segment_pointer: pointer outside segment limits");
+        return ERROR_POINTER;
+
         // Try to grow memory if needed
-        if (segment_index - memory->num_segments < 3) {
+        if (segment_index - memory->num_segments <= 2) {
             if (AddSegments(memory, segment_index + 1 - memory->num_segments) != NULL) {
+                ESP_LOGE("WASM3", "add_segment_pointer: AddSegments failed");
                 return ERROR_POINTER;
             }
         } else {
@@ -166,19 +171,24 @@ void* get_segment_pointer(IM3Memory memory, mos offset) {
     }
     
     MemorySegment* seg = memory->segments[segment_index];
-    if (!seg || seg->firm != INIT_FIRM) return ERROR_POINTER;
+    if (!seg || seg->firm != INIT_FIRM){ 
+        ESP_LOGE("WASM3", "add_segment_pointer: seg invalid");
+        return ERROR_POINTER;
+    }
     
     // Initialize segment if needed
-    if (!seg->data) {
+    if (m3_alloc_on_segment_data && !seg->data) {
         if(seg->is_allocated){
-            //notify_memory_segment_access(memory, seg);
+            notify_memory_segment_access(memory, seg);
         }
         else {
             if(WASM_DEBUG_get_offset_pointer) ESP_LOGI("WASM3", "get_segment_pointer: requested data allocation of segment %lu", segment_index);
             seg = InitSegment(memory, seg, true);
 
-            if(seg == NULL)
+            if(seg == NULL){
+                ESP_LOGE("WASM3", "get_segment_pointer: failed init segment data");
                 return ERROR_POINTER;
+            }
         }
     }
     
@@ -643,7 +653,7 @@ static mos ptr_to_offset(M3Memory* memory, void* ptr) {
             }
             
             //todo: force segment load
-            notify_memory_segment_access(memory, memory->segments[segment_base_offset]);
+            //notify_memory_segment_access(memory, memory->segments[segment_base_offset]);
 
             return segment_base_offset + intra_segment_offset;
         }
@@ -656,7 +666,6 @@ static mos ptr_to_offset(M3Memory* memory, void* ptr) {
 ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
-#define m3_alloc_on_segment_data 0
 #if m3_alloc_on_segment_data
 void* m3_malloc(M3Memory* memory, size_t size) {
     if(WASM_DEBUG_SEGMENTED_MEMORY_ALLOC) {
