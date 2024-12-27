@@ -143,18 +143,18 @@ void notify_memory_segment_access(IM3Memory memory, MemorySegment* segment){
 
 // Core pointer resolution functions
 bool WASM_DEBUG_get_offset_pointer = WASM_DEBUG_ALL || (WASM_DEBUG && false);
-mos get_segment_pointer(IM3Memory memory, mos offset) {
+void* get_segment_pointer(IM3Memory memory, mos offset) {
     check_wdt_reset();    
 
     if(WASM_DEBUG_get_offset_pointer) ESP_LOGI("WASM3", "get_segment_pointer called with offset %llu", offset);    
 
     if (!memory || memory->firm != INIT_FIRM) {
         ESP_LOGE("WASM3", "get_segment_pointer: memory invalid");
-        return (mos)&ERROR_POINTER;
+        return &ERROR_POINTER;
     }
 
     if(false && !IsValidMemoryAccess(memory, offset, 1)){ // this is pretty redundant
-        return offset;
+        return (void*)offset;
     }
     
     // Calculate segment indices
@@ -164,23 +164,23 @@ mos get_segment_pointer(IM3Memory memory, mos offset) {
     // Validate segment
     if (segment_index >= memory->num_segments) {
         ESP_LOGE("WASM3", "add_segment_pointer: pointer outside segment limits");
-        return (mos)&ERROR_POINTER;
+        return &ERROR_POINTER;
 
         // Try to grow memory if needed
         if (segment_index - memory->num_segments <= 2) {
             if (AddSegments(memory, segment_index + 1 - memory->num_segments) != NULL) {
                 ESP_LOGE("WASM3", "add_segment_pointer: AddSegments failed");
-                return (mos)&ERROR_POINTER;
+                return &ERROR_POINTER;
             }
         } else {
-            return (mos)&ERROR_POINTER;
+            return &ERROR_POINTER;
         }
     }
     
     MemorySegment* seg = memory->segments[segment_index];
     if (!seg || seg->firm != INIT_FIRM){ 
         ESP_LOGE("WASM3", "add_segment_pointer: seg invalid");
-        return (mos)&ERROR_POINTER;
+        return &ERROR_POINTER;
     }
     
     // Initialize segment if needed
@@ -194,7 +194,7 @@ mos get_segment_pointer(IM3Memory memory, mos offset) {
 
             if(seg == NULL){
                 ESP_LOGE("WASM3", "get_segment_pointer: failed init segment data");
-                return (mos)&ERROR_POINTER;
+                return &ERROR_POINTER;
             }
         }
     }
@@ -252,36 +252,36 @@ mos get_segment_pointer(IM3Memory memory, mos offset) {
             ESP_LOGI("WASM3", "get_segment_pointer: requested segment data index: %p", seg->data);
         }        
 
-        return ((mos)seg->data + seg_offset);
+        return (seg->data + seg_offset);
     }
 }
 
 
-const bool WASM_DEBUG_m3_ResolvePointer = WASM_DEBUG_ALL || (WASM_DEBUG && false);
-mos m3_ResolvePointer(M3Memory* memory, mos ptr) {
+const bool WASM_DEBUG_m3_ResolvePointer = WASM_DEBUG_ALL || (WASM_DEBUG && false) || false;
+void* m3_ResolvePointer(M3Memory* memory, mos ptr) {
     if(WASM_DEBUG_m3_ResolvePointer) ESP_LOGI("WASM3", "m3_ResolvePointer (mem: %p) called for ptr: %p", memory, ptr);
 
-    mos resolved = ptr;
+    void* resolved = (void*)ptr;
     if (is_ptr_valid((void*)ptr)) {
         if(WASM_DEBUG_m3_ResolvePointer) ESP_LOGI("WASM3", "m3_ResolvePointer %p considered valid", ptr);
         goto resolve;
     }
-    
-    if (!memory || memory->firm != INIT_FIRM) return ptr;
-    
+
+    if (!memory || memory->firm != INIT_FIRM) return(void*) ptr;
+
     mos offset = (mos)ptr;
-    if (offset >= memory->total_size) return ptr;
-    
+    //if (offset >= memory->total_size) return (void*)ptr;
+
     resolved = get_segment_pointer(memory, offset);
-    if (resolved == ERROR_POINTER) return ptr;
-    
+    if (resolved == ERROR_POINTER) return (void*)ptr;
+
     resolve: {
         if(WASM_DEBUG_m3_ResolvePointer) ESP_LOGI("WASM3", "m3_ResolvePointer: original: %p, resolved: %p", ptr, resolved);
 
-        if (!is_ptr_valid((void*)resolved)) {
+        if (!is_ptr_valid(resolved)) {
             ESP_LOGW("WASM3", "m3_ResolvePointer: resolved pointer is not valid %p %p", ptr, resolved);
             //backtrace();
-            return ptr;
+            return (void*)ptr;
         }    
 
         return resolved;
