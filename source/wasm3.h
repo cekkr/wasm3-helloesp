@@ -158,7 +158,7 @@ M3ImportContext, * IM3ImportContext;
 #     define d_m3ErrorConst(LABEL, STRING)      const M3Result m3Err_##LABEL = { STRING };
 #   endif
 # else
-#   define d_m3ErrorConst(LABEL, STRING)        extern const M3Result m3Err_##LABEL;
+#   define d_m3ErrorConst(LABEL, STRING)        static const M3Result m3Err_##LABEL;
 # endif
 
 // -------------------------------------------------------------------------------------------------------------------------------
@@ -391,12 +391,26 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
 # define m3ApiCheckMem(addr, len)   { if (M3_UNLIKELY(((void*)(addr) < _mem) || ((uint64_t)(uintptr_t)(addr) + (len)) > ((uint64_t)(uintptr_t)(_mem)+m3_GetMemorySize(runtime)))) m3ApiTrap(m3Err_trapOutOfBoundsMemoryAccess); }
 */
 
+#if WASM_PTRS_64BITS
+typedef uint64_t mos; // memory offset
+#else
+typedef uint32_t mos;
+#endif
+
+typedef void* ptr;
+
 #define m3ApiOffsetToPtr(offset)              m3_ResolvePointer(_mem, offset)
 #define m3ApiPtrToOffset(ptr)                 get_offset_pointer(_mem, ptr)
 
-#define m3ApiReturnType(TYPE)                 TYPE* raw_return = ((TYPE*) (m3ApiOffsetToPtr(_sp++)));
-#define m3ApiMultiValueReturnType(TYPE, NAME) TYPE* NAME = ((TYPE*) (m3ApiOffsetToPtr(_sp++)));
-#define m3ApiGetArg(TYPE, NAME)               TYPE NAME = * ((TYPE *) (m3ApiOffsetToPtr(_sp++)));
+#define m3ApiReturnType(TYPE)                 TYPE* raw_return = ((TYPE*) (m3ApiOffsetToPtr((mos)(uintptr_t)pcPP(_sp))));
+#define m3ApiMultiValueReturnType(TYPE, NAME) TYPE* NAME = ((TYPE*) (m3ApiOffsetToPtr((mos)(uintptr_t)pcPP(_sp))));
+#define m3ApiGetArg(TYPE, NAME)               TYPE NAME = *((TYPE *) (m3ApiOffsetToPtr((mos)(uintptr_t)pcPP(_sp))));
+#define m3ApiGetBaseArg(TYPE, NAME)           TYPE NAME = (TYPE)(*(ptr*)(m3ApiOffsetToPtr((mos)(uintptr_t)pcPP(_sp))));
+
+#define _m3ApiReturnType(TYPE)                 TYPE* raw_return = ((TYPE*) (_sp++));
+#define _m3ApiMultiValueReturnType(TYPE, NAME) TYPE* NAME = ((TYPE*) (_sp++));
+#define _m3ApiGetArg(TYPE, NAME)               TYPE NAME = * ((TYPE *) (_sp++));
+#define _m3ApiGetBaseArg(TYPE, NAME)           TYPE NAME = (TYPE)(*(ptr*)(_sp++));
 
 //#define m3ApiGetArgMem(TYPE, NAME)            TYPE NAME = (TYPE)m3ApiOffsetToPtr((uintptr_t)(* ((uint32_t *) (_sp++)))); 
 #define m3ApiGetArgMem(TYPE, NAME)            TYPE NAME = ((TYPE) m3ApiOffsetToPtr(_sp++));

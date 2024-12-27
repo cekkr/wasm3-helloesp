@@ -17,6 +17,7 @@
 #include "m3_config.h"
 #include "m3_exception.h"
 #include "m3_segmented_memory.h"
+#include "wasm3_defs.h"
 
 typedef struct M3MemoryHeader
 {
@@ -150,6 +151,7 @@ M3Result    Read_opcode             (IM3Memory memory, m3opcode_t * o_value, byt
 M3Result    ReadLebUnsigned         (IM3Memory memory, u64 * o_value, u32 i_maxNumBits, bytes_t * io_bytes, cbytes_t i_end);
 M3Result    ReadLebSigned           (IM3Memory memory, i64 * o_value, u32 i_maxNumBits, bytes_t * io_bytes, cbytes_t i_end);
 M3Result    ReadLEB_u32             (IM3Memory memory, u32 * o_value, bytes_t * io_bytes, cbytes_t i_end);
+M3Result ReadLEB_ptr(IM3Memory memory, m3stack_t o_value, bytes_t* io_bytes, cbytes_t i_end) ;
 M3Result    ReadLEB_u7              (IM3Memory memory, u8  * o_value, bytes_t * io_bytes, cbytes_t i_end);
 M3Result    ReadLEB_i7              (IM3Memory memory, i8  * o_value, bytes_t * io_bytes, cbytes_t i_end);
 M3Result    ReadLEB_i32             (IM3Memory memory, i32 * o_value, bytes_t * io_bytes, cbytes_t i_end);

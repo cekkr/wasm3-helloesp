@@ -670,7 +670,7 @@ M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_
 
 #define WASM_ParseModule_EndWithExceptedSection true
 
-const bool WASM_DEBUG_PARSE_MODULE = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+const bool WASM_DEBUG_PARSE_MODULE = WASM_DEBUG_ALL || (WASM_DEBUG && false) || true;
 static const bool WASM_PARSE_MODULE_IGNORE_SECTION_ORDER = false;
 const bool WASM_DEBUG_PARSE_MODULE_EXCEPTED_SECTION = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result  m3_ParseModule  (IM3Environment i_environment, IM3Module * o_module, cbytes_t i_bytes, u32 i_numBytes, IM3Runtime o_runtime)

@@ -44,13 +44,13 @@
 d_m3BeginExternC
 
 // Riscrive l'operazione precedente con un nuovo operatore
-#define rewrite_op(OP)              *((void**)(_pc-1)) = (void*)(OP)
-
-// Legge un valore immediato dal program counter e lo incrementa
-#define immediate(TYPE)             *(TYPE*)m3SegmentedMemAccess(_mem, _pc++, sizeof(TYPE))
+#define rewrite_op(OP)              *((void**)(_pc-BITS_MUL)) = (void*)(OP)
 
 // Salta un valore immediato nel program counter
-#define skip_immediate(TYPE)        (_pc++)
+#define skip_immediate(TYPE)        (pcPP(_pc))
+
+// Legge un valore immediato dal program counter e lo incrementa
+#define immediate(TYPE)             *(TYPE*)m3SegmentedMemAccess(_mem, pcPP(_pc), sizeof(TYPE))
 
 // Accede al valore nello slot dello stack usando un offset immediato
 #define slot(TYPE)                  *(TYPE*)m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(TYPE))
@@ -650,7 +650,7 @@ d_m3Op (CallRawFunction)
 
     M3ImportContext ctx;
 
-    M3RawCall call = (M3RawCall) (MEMACCESS(M3RawCall, _mem, _pc++)); // *MEMACCESS..
+    M3RawCall call = (M3RawCall) (MEMACCESS(M3RawCall, _mem, (ptr)_pc++)); // *MEMACCESS..
     if(WASM_DEBUG_CallRawFunction) ESP_LOGI("WASM3", "CallRawFunction: call address %p", call);
 
     ctx.function = immediate (IM3Function);

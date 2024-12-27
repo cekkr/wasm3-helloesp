@@ -57,6 +57,7 @@ d_m3BeginExternC
 ///
 ///
 
+
 #ifdef OPERTATIONS_ON_SEGMENTED_MEM
 // iptr deprecated
 # define d_m3BaseOpSig                  iptr _pc, m3stack_t _sp, M3Memory * _mem, m3reg_t _r0
@@ -160,6 +161,8 @@ d_m3BeginExternC
     #define nextOpImpl() ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME(_pc))
     #define jumpOpImpl(PC) ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs TRACE_FUNC_NAME(PC))
 #endif
+
+//#define M3_MUSTTAIL // avoid musttail
 
 // Original
 #define nextOpDirect()              M3_MUSTTAIL return nextOpImpl()

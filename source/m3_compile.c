@@ -1294,8 +1294,8 @@ M3Result  Compile_SetLocal  (IM3Compilation o, m3opcode_t i_opcode)
 {
     M3Result result;
 
-    u32 localIndex;
-_   (ReadLEB_u32 (&o->runtime->memory, & localIndex, & o->wasm, o->wasmEnd));             //  printf ("--- set local: %d \n", localSlot);
+    m3slot_t localIndex;
+_   (ReadLEB_ptr (&o->runtime->memory, & localIndex, & o->wasm, o->wasmEnd));             //  printf ("--- set local: %d \n", localSlot);
 
     if (localIndex < GetFunctionNumArgsAndLocals (o->function))
     {
@@ -1322,8 +1322,8 @@ M3Result  Compile_GetLocal  (IM3Compilation o, m3opcode_t i_opcode)
 {
 _try {
 
-    u32 localIndex;
-_   (ReadLEB_u32 (&o->runtime->memory, & localIndex, & o->wasm, o->wasmEnd));
+    m3slot_t localIndex;
+_   (ReadLEB_ptr (&o->runtime->memory, & localIndex, & o->wasm, o->wasmEnd));
 
     if (localIndex >= GetFunctionNumArgsAndLocals (o->function))
         _throw ("local index out of bounds");
@@ -1383,8 +1383,8 @@ M3Result  Compile_GetSetGlobal  (IM3Compilation o, m3opcode_t i_opcode)
 {
     M3Result result = m3Err_none;
 
-    u32 globalIndex;
-_   (ReadLEB_u32 (&o->runtime->memory, & globalIndex, & o->wasm, o->wasmEnd));
+    m3slot_t globalIndex;
+_   (ReadLEB_ptr (&o->runtime->memory, & globalIndex, & o->wasm, o->wasmEnd));
 
     if (globalIndex < o->module->numGlobals)
     {
@@ -1424,8 +1424,8 @@ M3Result  Compile_Branch  (IM3Compilation o, m3opcode_t i_opcode)
 {
     M3Result result;
 
-    u32 depth;
-_   (ReadLEB_u32 (&o->runtime->memory, & depth, & o->wasm, o->wasmEnd));
+    m3slot_t depth;
+_   (ReadLEB_ptr (&o->runtime->memory, & depth, & o->wasm, o->wasmEnd));
 
     IM3CompilationScope scope;
 _   (GetBlockScope (o, & scope, depth));
@@ -1531,8 +1531,8 @@ WASM3_STATIC
 M3Result  Compile_BranchTable  (IM3Compilation o, m3opcode_t i_opcode)
 {
 _try {
-    u32 targetCount;
-_   (ReadLEB_u32 (&o->runtime->memory, & targetCount, & o->wasm, o->wasmEnd));
+    m3slot_t targetCount;
+_   (ReadLEB_ptr (&o->runtime->memory, & targetCount, & o->wasm, o->wasmEnd));
 
 _   (PreserveRegisterIfOccupied (o, c_m3Type_i64));         // move branch operand to a slot
     u16 slot = GetStackTopSlotNumber (o);
@@ -1775,16 +1775,16 @@ M3Result  Compile_Memory_CopyFill  (IM3Compilation o, m3opcode_t i_opcode)
 
     IM3Memory mem = &o->runtime->memory;
 
-    u32 sourceMemoryIdx, targetMemoryIdx;
+    m3slot_t sourceMemoryIdx, targetMemoryIdx;
     IM3Operation op;
     if (i_opcode == c_waOp_memoryCopy)
     {
-_       (ReadLEB_u32 (mem, & sourceMemoryIdx, & o->wasm, o->wasmEnd));
+_       (ReadLEB_ptr (mem, & sourceMemoryIdx, & o->wasm, o->wasmEnd));
         op = op_MemCopy;
     }
     else op = op_MemFill;
 
-_   (ReadLEB_u32 (mem, & targetMemoryIdx, & o->wasm, o->wasmEnd));
+_   (ReadLEB_ptr (mem, & targetMemoryIdx, & o->wasm, o->wasmEnd));
 
 _   (CopyStackTopToRegister (o, false));
 
@@ -2204,12 +2204,12 @@ WASM3_STATIC
 M3Result  Compile_Load_Store  (IM3Compilation o, m3opcode_t i_opcode)
 {
 _try {
-    u32 alignHint, memoryOffset;
+    m3slot_t alignHint, memoryOffset;
 
     IM3Memory mem = &o->runtime->memory;
 
-_   (ReadLEB_u32 (mem, & alignHint, & o->wasm, o->wasmEnd));
-_   (ReadLEB_u32 (mem, & memoryOffset, & o->wasm, o->wasmEnd));
+_   (ReadLEB_ptr (mem, & alignHint, & o->wasm, o->wasmEnd));
+_   (ReadLEB_ptr (mem, & memoryOffset, & o->wasm, o->wasmEnd));
                                                                         m3log (compile, d_indent " (offset = %d)", get_indention_string (o), memoryOffset);
     IM3OpInfo opInfo = GetOpInfo (i_opcode);
     _throwif (m3Err_unknownOpcode, not opInfo);

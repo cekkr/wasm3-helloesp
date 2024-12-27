@@ -2,11 +2,13 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "wasm3.h"
 #include "m3_exception.h"
 
 #include "esp_heap_caps.h"
+#include "wasm3_defs.h"
 
 #define WASM_SEGMENTED_MEM_ENABLE_HE_PAGES 1
 #define m3_alloc_on_segment_data 0
@@ -27,14 +29,6 @@
 #define INIT_FIRM 19942003
 #define DUMMY_MEMORY_FIRM  6991 // Dummy M3Memory firm (to use when there is a placeholder memory)
 #define M3PTR_FIRM 20190394
-
-#if WASM_PTRS_64BITS
-typedef int64_t mos; // memory offset
-#else
-typedef int32_t mos;
-#endif
-
-typedef void* ptr;
 
 typedef struct MemoryChunk {
     size_t size;           // Total size including header
@@ -122,13 +116,13 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size);
 bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size);
 ptr get_segment_pointer(IM3Memory memory, mos offset);
 ptr m3_ResolvePointer(M3Memory* memory, mos offset);
-void* m3SegmentedMemAccess(IM3Memory mem, void* offset, size_t size);
+void* m3SegmentedMemAccess(IM3Memory mem, m3stack_t offset, size_t size);
 mos get_offset_pointer(IM3Memory memory, void* ptr);
 
 /// Regions 
-void* m3_malloc(M3Memory* memory, size_t size);
-void m3_free(M3Memory* memory, void* ptr);
-void* m3_realloc(M3Memory* memory, void* ptr, size_t new_size);
+ptr m3_malloc(M3Memory* memory, size_t size);
+void m3_free(M3Memory* memory, ptr ptr);
+ptr m3_realloc(M3Memory* memory, ptr ptr, size_t new_size);
 
 M3Result m3_memset(M3Memory* memory, void* ptr, int value, size_t n);
 M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n);

@@ -447,6 +447,8 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
 
     m3stack_t stack = (m3stack_t)runtime.stack;
 
+    ESP_LOGI("WASM3", "Stack pointer at: %p", stack);
+
     i_module->runtime = & runtime;
 
     IM3Compilation o = & runtime.compilation;
@@ -1244,9 +1246,9 @@ _   (checkStartFunction(i_function->module))
 
 // Here's born _mem
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-    result = (M3Result) RunCode(i_function->compiled, (m3stack_t)(runtime->stack), &runtime->memory, d_m3OpDefaultArgs, d_m3BaseCstr);
+    result = (M3Result) RunCode(i_function->compiled, (ptr)(runtime->stack), &runtime->memory, d_m3OpDefaultArgs, d_m3BaseCstr);
 # else
-    result = (M3Result) RunCode(i_function->compiled, (m3stack_t)(runtime->stack), &runtime->memory, d_m3OpDefaultArgs);
+    result = (M3Result) RunCode(i_function->compiled, (ptr)(runtime->stack), &runtime->memory, d_m3OpDefaultArgs);
 # endif
     ReportNativeStackUsage();
 

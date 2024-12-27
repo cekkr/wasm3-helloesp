@@ -1,6 +1,7 @@
 #include "m3_segmented_memory.h"
 #include "esp_log.h"
 #include "m3_pointers.h"
+#include "wasm3_defs.h"
 #include <stdint.h>
 
 #define WASM_SEGMENTED_MEM_LAZY_ALLOC true
@@ -257,7 +258,7 @@ ptr get_segment_pointer(IM3Memory memory, mos offset) {
 }
 
 
-const bool WASM_DEBUG_m3_ResolvePointer = WASM_DEBUG_ALL || (WASM_DEBUG && false) || false;
+const bool WASM_DEBUG_m3_ResolvePointer = WASM_DEBUG_ALL || (WASM_DEBUG && false) || true;
 ptr m3_ResolvePointer(M3Memory* memory, mos offset) {
     if(WASM_DEBUG_m3_ResolvePointer) ESP_LOGI("WASM3", "m3_ResolvePointer (mem: %p) called for ptr: %p", memory, offset);
 
@@ -1697,7 +1698,7 @@ static void free_chunk(MemoryChunk* chunk) {
     m3_Def_Free(chunk);
 }
 
-void* m3_malloc(M3Memory* memory, size_t size) {
+ptr m3_malloc(M3Memory* memory, size_t size) {
     if (!memory || memory->firm != INIT_FIRM || size == 0) {
         return NULL;
     }
@@ -1787,10 +1788,10 @@ void* m3_malloc(M3Memory* memory, size_t size) {
     mos base_offset = found_chunk->start_segment * memory->segment_size;
     memory->total_requested_size += size;
     
-    return (void*)base_offset;
+    return (ptr)base_offset;
 }
 
-void m3_free(M3Memory* memory, void* ptr) {
+void m3_free(M3Memory* memory, ptr ptr) {
     if (!memory || !ptr) return;
     
     // Get chunk info
@@ -1822,16 +1823,16 @@ void m3_free(M3Memory* memory, void* ptr) {
     m3_collect_empty_segments(memory);
 }
 
-void* m3_realloc(M3Memory* memory, void* ptr, size_t new_size) {
+ptr m3_realloc(M3Memory* memory, ptr offset, size_t new_size) {
     if (!memory) return NULL;
-    if (!ptr) return m3_malloc(memory, new_size);
+    if (!offset) return m3_malloc(memory, new_size);
     if (new_size == 0) {
-        m3_free(memory, ptr);
+        m3_free(memory, offset);
         return NULL;
     }
     
     // Get current chunk info
-    ChunkInfo info = get_chunk_info(memory, ptr);
+    ChunkInfo info = get_chunk_info(memory, offset);
     MemoryChunk* old_chunk = info.chunk;
     if (!old_chunk) return NULL;
     
@@ -1841,15 +1842,15 @@ void* m3_realloc(M3Memory* memory, void* ptr, size_t new_size) {
     // If shrinking, just update the size
     if (total_new_size <= old_chunk->size) {
         old_chunk->size = total_new_size;
-        return ptr;
+        return offset;
     }
     
     // Otherwise allocate new chunk and copy data
-    void* new_ptr = m3_malloc(memory, new_size);
+    ptr new_ptr = m3_malloc(memory, new_size);
     if (!new_ptr) return NULL;
     
-    m3_memcpy(memory, new_ptr, ptr, MIN(old_chunk->size, new_size));
-    m3_free(memory, ptr);
+    m3_memcpy(memory, new_ptr, offset, MIN(old_chunk->size, new_size));
+    m3_free(memory, offset);
     
     return new_ptr;
 }
@@ -1922,8 +1923,8 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
 
     while (bytes_remaining > 0) {
         // Resolve pointers if they're segmented
-        void* real_dest = dest_is_segmented ? m3_ResolvePointer(memory, curr_dest) : curr_dest;
-        void* real_src = src_is_segmented ? m3_ResolvePointer(memory, (void*)curr_src) : curr_src;
+        void* real_dest = dest_is_segmented ? m3_ResolvePointer(memory, (mos)curr_dest) : curr_dest;
+        void* real_src = src_is_segmented ? m3_ResolvePointer(memory, (mos)curr_src) : curr_src;
 
         if ((dest_is_segmented && real_dest == ERROR_POINTER) || 
             (src_is_segmented && real_src == ERROR_POINTER)) {
@@ -1943,9 +1944,9 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
         if (src_is_segmented) {
             size_t src_to_boundary = memory->segment_size - ((mos)curr_src % memory->segment_size);
             copy_size = MIN(copy_size, src_to_boundary);
-        }
+        }        
 
-        // Perform copy for current chunk
+        // Perform copy for current chunk        
         memcpy(real_dest, real_src, copy_size);
 
         // Update pointers and remaining count
@@ -2007,8 +2008,8 @@ M3Result m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
-void* m3SegmentedMemAccess(IM3Memory memory, void* offset, size_t size) {
-    return (void*)m3_ResolvePointer(memory, (mos)offset);
+void* m3SegmentedMemAccess(IM3Memory memory, m3stack_t offset, size_t size) {
+    return (void*)m3_ResolvePointer(memory, (mos)(uintptr_t)offset);
 }
 
 

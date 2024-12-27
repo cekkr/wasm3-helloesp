@@ -342,27 +342,37 @@ typedef u16                     m3opcode_t;
 
 typedef i64                     m3reg_t;
 
+//#define BITS_MUL 1
+
 # if d_m3Use32BitSlots
 typedef u32                     m3slot_t;
+#define BITS_MUL 1
 # else
 typedef u64                     m3slot_t;
+#define BITS_MUL 2
 # endif
 
 typedef m3slot_t *              m3stack_t;
+
+static m3stack_t pcPP(m3stack_t pc){
+  m3stack_t ret = pc;
+  pc += BITS_MUL;
+  return ret;
+}
 
 typedef
 const void * const  cvptr_t;
 
 //todo: Convert #ifdef DEBUG to #if DEBUG (?)
-//#define DEBUG
+#define DEBUG 1
 
-#define d_m3LogParse 0
-#define d_m3LogCompile 0
-#define d_m3LogEmit 0
-#define d_m3LogCodePages 0
-#define d_m3_dump_code_pages 0
-#define d_m3LogModule 0
-#define d_m3LogRuntime 0
+#define d_m3LogParse DEBUG
+#define d_m3LogCompile DEBUG
+#define d_m3LogEmit DEBUG
+#define d_m3LogCodePages DEBUG
+#define d_m3_dump_code_pages DEBUG
+#define d_m3LogModule DEBUG
+#define d_m3LogRuntime DEBUG
 
 # ifdef DEBUG
 
