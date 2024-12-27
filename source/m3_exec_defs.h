@@ -8,7 +8,6 @@
 #pragma once
 
 #include "m3_core.h"
-#include "wasm3_defs.h"
 
 d_m3BeginExternC
 
