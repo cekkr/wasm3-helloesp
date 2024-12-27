@@ -7,12 +7,12 @@
 
 #include "m3_esp_try.h"
 #include "wasm3_defs.h"
+
 #define M3_IMPLEMENT_ERROR_STRINGS
 
 #include "m3_core.h"
 #include "m3_env.h"
 
-#include "m3_config.h"
 
 //#include "m3_compile.h"
 
@@ -1280,8 +1280,11 @@ M3Result ReadLEB_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t
     return result;
 }
 
+const bool WASM_DEBUG_ReadLEB_ptr = true;
 M3Result ReadLEB_ptr(IM3Memory memory, m3stack_t o_value, bytes_t* io_bytes, cbytes_t i_end) {
     if (!o_value) return m3Err_malformedData;
+    
+    if(WASM_DEBUG_ReadLEB_ptr) ESP_LOGI("WASM3", "ReadLEB_ptr at %d bits", (32*BITS_MUL));
 
     u64 value;
     M3Result result = ReadLebUnsigned(memory, &value, 32*BITS_MUL, io_bytes, i_end);
@@ -1289,14 +1292,10 @@ M3Result ReadLEB_ptr(IM3Memory memory, m3stack_t o_value, bytes_t* io_bytes, cby
         if (memory) {
             m3stack_t dest_ptr = (m3stack_t)m3_ResolvePointer(memory, o_value);
             if (!dest_ptr) return m3Err_malformedData;
-            *dest_ptr = (m3stack_t)value;
+            *dest_ptr = (m3slot_t)value;
         } else {
-            *o_value = (m3stack_t)value;
+            *o_value = (m3slot_t)value;
         }
-    }
-
-    if(result != NULL){
-        backtrace();
     }
 
     return result;

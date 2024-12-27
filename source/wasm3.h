@@ -31,6 +31,7 @@
 #include "esp_log.h"
 #include "esp_cache.h"
 #include "esp_task_wdt.h" // for watchdog reset
+
 #endif
 
 ////////////////////////////////////////////////////////////////
@@ -54,6 +55,14 @@
 
 // it's about m3_compile
 #define DISABLE_WASM3_INLINE 0
+
+# ifdef WASM_PTRS_64BITS
+# if WASM_PTRS_64BITS
+#   define d_m3Use32BitSlots                    0
+# else
+#   define d_m3Use32BitSlots                    1
+# endif
+# endif
 
 #include "m3_debug.h"
 

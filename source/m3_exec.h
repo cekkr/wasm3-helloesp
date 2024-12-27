@@ -14,6 +14,8 @@
 #include "m3_exec_defs.h"
 #include "m3_helpers.h"
 #include "m3_segmented_memory.h"
+#include "wasm3_defs.h"
+#include <stdint.h>
 
 #if PASSTHROUGH_HELLOESP
 #include "wasm3.h"
@@ -1311,7 +1313,7 @@ const bool WASM_DEBUG_Const = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 d_m3Op (Const32) {
     if(WASM_DEBUG_Const) ESP_LOGI("WASM3", "Const32 called");
 
-    u32 value = MEMACCESS_SAFE(u32, _mem, (u32)_pc++);
+    u32 value = MEMACCESS_SAFE(u32, _mem, _pc++);
 
     //ESP_ERROR_CHECK(heap_caps_check_integrity_all(true));
 
@@ -1331,7 +1333,7 @@ d_m3Op (Const64) {
     if(WASM_DEBUG_Const) ESP_LOGI("WASM3", "Const64 called");
 
     // Prima verifica la validità dell'accesso alla memoria sorgente
-    void* src_ptr = m3SegmentedMemAccess(_mem, (u32)_pc, sizeof(u64));
+    void* src_ptr = m3SegmentedMemAccess(_mem, _pc, sizeof(u64));
 
     // Leggi il valore usando memcpy per evitare problemi di allineamento
     u64 value = 0;
@@ -1347,7 +1349,7 @@ d_m3Op (Const64) {
    _pc += (M3_SIZEOF_PTR == 4) ? 2 : 1;  // Su ESP32 sempre 2 perché M3_SIZEOF_PTR == 4
 
    // Calcola l'offset di destinazione
-   u32 dest_offset = _sp + immediate(i32);
+   m3stack_t dest_offset = _sp + immediate(i32);
    
    // Verifica l'accesso alla memoria di destinazione
    void* dest = m3SegmentedMemAccess(_mem, dest_offset, sizeof(u64));

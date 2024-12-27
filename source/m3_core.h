@@ -14,10 +14,9 @@
 #include <assert.h>
 
 #include "wasm3.h"
-#include "m3_config.h"
 #include "m3_exception.h"
 #include "m3_segmented_memory.h"
-#include "wasm3_defs.h"
+
 
 typedef struct M3MemoryHeader
 {

@@ -1,7 +1,6 @@
 #include "m3_segmented_memory.h"
 #include "esp_log.h"
 #include "m3_pointers.h"
-#include "wasm3_defs.h"
 #include <stdint.h>
 
 #define WASM_SEGMENTED_MEM_LAZY_ALLOC true
