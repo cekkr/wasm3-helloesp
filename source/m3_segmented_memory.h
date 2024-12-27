@@ -29,9 +29,9 @@
 #define M3PTR_FIRM 20190394
 
 #if WASM_PTRS_64BITS
-typedef uint64_t mos; // memory offset
+typedef int64_t mos; // memory offset
 #else
-typedef uint32_t mos;
+typedef int32_t mos;
 #endif
 
 typedef struct MemoryChunk {
@@ -118,8 +118,8 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size);
 ////////////////////////////////////////////////////////////////
 
 bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size);
-void* get_segment_pointer(IM3Memory memory, mos offset);
-void* m3_ResolvePointer(M3Memory* memory, mos ptr);
+mos get_segment_pointer(IM3Memory memory, mos offset);
+mos m3_ResolvePointer(M3Memory* memory, mos ptr);
 void* m3SegmentedMemAccess(IM3Memory mem, void* offset, size_t size);
 mos get_offset_pointer(IM3Memory memory, void* ptr);
 
