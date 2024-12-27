@@ -45,16 +45,13 @@
 #define WASM_DEBUG 1
 #define WASM_DEBUG_ALL 0
 
+// #define d_m3EnableOpProfiling 1
+// d_m3EnableOpTracing 1 // else of d_m3EnableOpProfiling
+
 #define DEBUG_MEMORY 0
 
 #define WASM_ENABLE_OP_TRACE 0
 #define WASM_ENABLE_CHECK_MEMORY_PTR 0
-
-// Probably useful when you activeate WASM_ENABLE_OP_TRACE
-#define WASM_OPS_DISABLE_IRAM 1
-
-// it's about m3_compile
-#define DISABLE_WASM3_INLINE 0
 
 # ifdef WASM_PTRS_64BITS
 # if WASM_PTRS_64BITS
@@ -63,6 +60,19 @@
 #   define d_m3Use32BitSlots                    1
 # endif
 # endif
+
+///
+/// Memory allocation
+///
+
+// Probably useful when you activeate WASM_ENABLE_OP_TRACE
+#define WASM_OPS_DISABLE_IRAM 1
+
+// it's about m3_compile
+#define DISABLE_WASM3_INLINE 0
+
+#define ESP_OPS_ATTR DRAM_ATTR // Move ops from IRAM to DRAM
+//#define ESP_OPS_ATTR_PROGMEM __attribute__((section(".rodata"))) // still in flash
 
 #include "m3_debug.h"
 

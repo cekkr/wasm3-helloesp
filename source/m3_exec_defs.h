@@ -162,7 +162,7 @@ d_m3BeginExternC
     #define jumpOpImpl(PC) ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs TRACE_FUNC_NAME(PC))
 #endif
 
-#define M3_MUSTTAIL // avoid musttail
+//#define M3_MUSTTAIL // avoid musttail
 
 // Original
 #define nextOpDirect()              M3_MUSTTAIL return nextOpImpl()

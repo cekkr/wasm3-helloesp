@@ -8,7 +8,7 @@
 #include "m3_exception.h"
 
 #include "esp_heap_caps.h"
-#include "wasm3_defs.h"
+
 
 #define WASM_SEGMENTED_MEM_ENABLE_HE_PAGES 1
 #define m3_alloc_on_segment_data 0

@@ -139,7 +139,7 @@ typedef M3Result (* M3Compiler)         (IM3Compilation, m3opcode_t);
 typedef struct M3OpInfo
 {
 #ifdef DEBUG
-    const char * const      name;
+    const char * const  name;
 #endif
 
     i8                      stackOffset;

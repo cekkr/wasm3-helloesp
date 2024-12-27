@@ -2262,7 +2262,7 @@ M3Result  CompileRawFunction  (IM3Module io_module,  IM3Function io_function, co
 #define d_convertOpList(OP)                 { op_##OP##_r_r,            op_##OP##_r_s,              op_##OP##_s_r,              op_##OP##_s_s }
 
 
-const DRAM_ATTR M3OpInfo c_operations [] =
+const M3OpInfo c_operations [] =
 {
     M3OP( "unreachable",         0, none,   d_logOp (Unreachable),              Compile_Unreachable ),  // 0x00
     M3OP( "nop",                 0, none,   d_emptyOpList,                      Compile_Nop ),          // 0x01 .
