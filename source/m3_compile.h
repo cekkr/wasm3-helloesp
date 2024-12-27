@@ -138,9 +138,13 @@ typedef M3Result (* M3Compiler)         (IM3Compilation, m3opcode_t);
 
 typedef struct M3OpInfo
 {
-#ifdef DEBUG
+    #if DEBUG
+    #if M3_FUNCTIONS_ENUM
+    int idx;
+    #else
     const char * const  name;
-#endif
+    #endif
+    #endif
 
     i8                      stackOffset;
     u8                      type;
@@ -182,9 +186,17 @@ WASM3_STATIC_INLINE bool  IsRegisterSlotAlias        (u16 i_slot)    { return (i
 WASM3_STATIC_INLINE bool  IsFpRegisterSlotAlias      (u16 i_slot)    { return (i_slot == d_m3Fp0SlotAlias);  }
 WASM3_STATIC_INLINE bool  IsIntRegisterSlotAlias     (u16 i_slot)    { return (i_slot == d_m3Reg0SlotAlias); }
 
-
-#ifdef DEBUG
-    #define M3OP(...)       { __VA_ARGS__ }
+#if DEBUG
+    #if M3_FUNCTIONS_ENUM
+        // Counter per l'indice automatico
+        #define M3OP_COUNTER_INIT() static int _m3op_counter = 0
+        #define M3OP_GET_IDX()      (_m3op_counter++)
+        
+        // La macro M3OP ora usa il counter automatico
+        #define M3OP(name, ...) { M3OP_GET_IDX(), __VA_ARGS__ }
+    #else
+        #define M3OP(...)       { __VA_ARGS__ }
+    #endif
     #define M3OP_RESERVED   { "reserved" }
 #else
     // Strip-off name

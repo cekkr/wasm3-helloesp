@@ -45,14 +45,20 @@
 #define WASM_DEBUG 1
 #define WASM_DEBUG_ALL 0
 
+#define DEBUG_MEMORY 0
+
+#define WASM_ENABLE_OP_TRACE 1
+#define M3_FUNCTIONS_ENUM 1
+#define WASM_ENABLE_CHECK_MEMORY_PTR 0
+
+#if WASM_ENABLE_OP_TRACE
+    #define d_m3EnableOpTracing 1
+#endif
+
 // #define d_m3EnableOpProfiling 1
 // d_m3EnableOpTracing 1 // else of d_m3EnableOpProfiling
 
-#define DEBUG_MEMORY 0
-
-#define WASM_ENABLE_OP_TRACE 0
-#define WASM_ENABLE_CHECK_MEMORY_PTR 0
-
+/// Architecture
 # ifdef WASM_PTRS_64BITS
 # if WASM_PTRS_64BITS
 #   define d_m3Use32BitSlots                    0
@@ -60,6 +66,11 @@
 #   define d_m3Use32BitSlots                    1
 # endif
 # endif
+
+/// Operations index
+#if M3_FUNCTIONS_ENUM
+#include "m3_op_names_generated.h"
+#endif
 
 ///
 /// Memory allocation
@@ -72,12 +83,11 @@
 #define DISABLE_WASM3_INLINE 0
 
 #define ESP_OPS_ATTR DRAM_ATTR // Move ops from IRAM to DRAM
-//#define ESP_OPS_ATTR_PROGMEM __attribute__((section(".rodata"))) // still in flash
-
-#include "m3_debug.h"
 
 #include "wasm3_defs.h"
 #include "m3_config.h"
+
+#include "m3_debug.h"
 
 ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////

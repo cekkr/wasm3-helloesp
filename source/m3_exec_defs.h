@@ -69,7 +69,12 @@ d_m3BeginExternC
 # define d_m3BaseOpAllArgs              _pc, _sp, _mem, _r0
 # define d_m3BaseOpDefaultArgs          0
 # define d_m3BaseClearRegisters         _r0 = 0;
+
+#if M3_FUNCTIONS_ENUM
+# define d_m3BaseCstr                   -1
+#else
 # define d_m3BaseCstr                   ""
+#endif
 
 # define d_m3ExpOpSig(...)              d_m3BaseOpSig, __VA_ARGS__
 # define d_m3ExpOpArgs(...)             d_m3BaseOpArgs, __VA_ARGS__
@@ -106,11 +111,17 @@ d_m3BeginExternC
 
 // Definizione unificata del tipo operazione
 #if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-    typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, cstr_t i_operationName);
-    #define d_m3RetSig      d_m3RetSig_ATTR m3ret_t vectorcall
-    #define d_m3Op(NAME) M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, cstr_t i_operationName)
-
-    #define TRACE_FUNC_NAME(pc) , __FUNCTION__
+    #if M3_FUNCTIONS_ENUM
+        typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, int opId);
+        #define d_m3RetSig      d_m3RetSig_ATTR m3ret_t vectorcall
+        #define d_m3Op(NAME) M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, int opId)    
+        #define TRACE_FUNC_NAME(pc) , __FUNCTION__
+    #else
+        typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, cstr_t i_operationName);
+        #define d_m3RetSig      d_m3RetSig_ATTR m3ret_t vectorcall
+        #define d_m3Op(NAME) M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, cstr_t i_operationName)    
+        #define TRACE_FUNC_NAME(pc) , __FUNCTION__
+    #endif
 #else
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
     #define d_m3RetSig      d_m3RetSig_ATTR m3ret_t vectorcall
@@ -169,7 +180,11 @@ d_m3BeginExternC
 #define jumpOpDirect(PC)            M3_MUSTTAIL return jumpOpImpl((pc_t)(PC))
 
 #if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-d_m3RetSig  RunCode  (d_m3OpSig, cstr_t i_operationName)
+     #if M3_FUNCTIONS_ENUM
+        d_m3RetSig  RunCode  (d_m3OpSig, int opId)
+    #else 
+        d_m3RetSig  RunCode  (d_m3OpSig, cstr_t i_operationName)
+    #endif
 #else
 d_m3RetSig  RunCode  (d_m3OpSig)
 #endif
