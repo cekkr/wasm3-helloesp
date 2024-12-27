@@ -34,6 +34,8 @@ typedef int64_t mos; // memory offset
 typedef int32_t mos;
 #endif
 
+typedef void* ptr;
+
 typedef struct MemoryChunk {
     size_t size;           // Total size including header
     bool is_free;          // Free flag
@@ -118,8 +120,8 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size);
 ////////////////////////////////////////////////////////////////
 
 bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size);
-mos get_segment_pointer(IM3Memory memory, mos offset);
-mos m3_ResolvePointer(M3Memory* memory, mos ptr);
+ptr get_segment_pointer(IM3Memory memory, mos offset);
+ptr m3_ResolvePointer(M3Memory* memory, mos offset);
 void* m3SegmentedMemAccess(IM3Memory mem, void* offset, size_t size);
 mos get_offset_pointer(IM3Memory memory, void* ptr);
 
