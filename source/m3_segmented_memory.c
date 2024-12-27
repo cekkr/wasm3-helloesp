@@ -259,11 +259,11 @@ ptr get_segment_pointer(IM3Memory memory, mos offset) {
 
 const bool WASM_DEBUG_m3_ResolvePointer = WASM_DEBUG_ALL || (WASM_DEBUG && false) || false;
 ptr m3_ResolvePointer(M3Memory* memory, mos offset) {
-    if(WASM_DEBUG_m3_ResolvePointer) ESP_LOGI("WASM3", "m3_ResolvePointer (mem: %p) called for ptr: %p", memory, ptr);
+    if(WASM_DEBUG_m3_ResolvePointer) ESP_LOGI("WASM3", "m3_ResolvePointer (mem: %p) called for ptr: %p", memory, offset);
 
     ptr resolved = (ptr)offset;
     if (is_ptr_valid((void*)offset)) {
-        if(WASM_DEBUG_m3_ResolvePointer) ESP_LOGI("WASM3", "m3_ResolvePointer %p considered valid", ptr);
+        if(WASM_DEBUG_m3_ResolvePointer) ESP_LOGI("WASM3", "m3_ResolvePointer %p considered valid", offset);
         goto resolve;
     }
     
