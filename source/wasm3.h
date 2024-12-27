@@ -41,7 +41,7 @@
 
 #define M3CodePage_RemoveCodePageOfCapacity_FreePage 0
 
-#define WASM_DEBUG 0
+#define WASM_DEBUG 1
 #define WASM_DEBUG_ALL 0
 
 #define DEBUG_MEMORY 0

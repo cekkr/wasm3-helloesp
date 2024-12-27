@@ -38,9 +38,9 @@ typedef struct M3DataSegment
     const u8 *              initExpr;           // wasm code
     const u8 *              data;
 
-    u32                     initExprSize;
+    mos                     initExprSize;
     u32                     memoryRegion;
-    u32                     size;
+    mos                     size;
 }
 M3DataSegment;
 

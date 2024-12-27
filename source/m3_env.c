@@ -608,7 +608,7 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
 ////////////////////////////////////////////////////////////////////////
 
 // Memory initialization M3Runtime - M3Module
-const bool WASM_DEBUG_INIT_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+const bool WASM_DEBUG_INIT_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 const bool WASM_INIT_MEMORY_PREALLOC_SEGMENTS = false;
 M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .h
 {
@@ -647,7 +647,7 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
 ///
 ///
 
-const bool WASM_DEBUG_InitGlobals = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+const bool WASM_DEBUG_InitGlobals = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 M3Result  InitGlobals  (IM3Module io_module)
 {
     M3Result result = m3Err_none;
@@ -670,7 +670,7 @@ M3Result  InitGlobals  (IM3Module io_module)
                 {
                     bytes_t start = g->initExpr;
                     
-                    if(WASM_DEBUG_InitGlobals) ESP_LOGI("WASM3", "InitGlobals: EvaluateExpression(i64Value: %p, type: %d, start: %p, initExpr: %d, initExprSize: %d", 
+                    if(WASM_DEBUG_InitGlobals) ESP_LOGI("WASM3", "InitGlobals: EvaluateExpression(i64Value: %p, type: %d, start: %p, initExpr: %p, initExprSize: %d", 
                         &g->i64Value, g->type, &start, g->initExpr, g->initExprSize); LOG_FLUSH;
                     
                     result = EvaluateExpression (io_module, & g->i64Value, g->type, & start, g->initExpr + g->initExprSize);

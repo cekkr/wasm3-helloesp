@@ -434,7 +434,7 @@ _                   (NormalizeType (& normalType, wasmType));
     return result;
 }
 
-const bool WASM_DEBUG_PARSESECTION_DATA = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+const bool WASM_DEBUG_PARSESECTION_DATA = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 M3Result  ParseSection_Data  (M3Module * io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
@@ -459,7 +459,7 @@ _       (ReadLEB_u32 (mem, & segment->memoryRegion, & i_bytes, i_end));
 
         segment->initExpr = i_bytes;
 _       (Parse_InitExpr (io_module, & i_bytes, i_end));
-        segment->initExprSize = (u32) (i_bytes - segment->initExpr);
+        segment->initExprSize = (mos) (i_bytes - segment->initExpr);
 
         _throwif (m3Err_wasmMissingInitExpr, segment->initExprSize <= 1);
 
@@ -609,8 +609,8 @@ _       (io_module->environment->customSectionHandler(io_module, name, i_bytes, 
 }
 
 
-const bool WASM_DEBUG_PARSEMODULESECTION = WASM_DEBUG_ALL || (WASM_DEBUG && false);
-const bool WASM_DEBUG_PARSEMODULESECTION_FUNCTION = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+const bool WASM_DEBUG_PARSEMODULESECTION = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+const bool WASM_DEBUG_PARSEMODULESECTION_FUNCTION = WASM_DEBUG_ALL || (WASM_DEBUG && false); // activate backtrace on function section
 
 M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_bytes, u32 i_numBytes)
 {
@@ -670,7 +670,7 @@ M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_
 
 #define WASM_ParseModule_EndWithExceptedSection true
 
-const bool WASM_DEBUG_PARSE_MODULE = WASM_DEBUG_ALL || (WASM_DEBUG && false) || true;
+const bool WASM_DEBUG_PARSE_MODULE = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 static const bool WASM_PARSE_MODULE_IGNORE_SECTION_ORDER = false;
 const bool WASM_DEBUG_PARSE_MODULE_EXCEPTED_SECTION = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result  m3_ParseModule  (IM3Environment i_environment, IM3Module * o_module, cbytes_t i_bytes, u32 i_numBytes, IM3Runtime o_runtime)
@@ -749,7 +749,7 @@ _       (ReadLEB_u7 (mem, & section, & pos, end));
 
         if(WASM_DEBUG_PARSE_MODULE){
             ESP_LOGI("WASM3", "Reading section type: %d, current offset: %p", section, i_bytes);
-            ESP_LOGI("WASM3", "Section header bytes: %02x %02x %02x %02x", i_bytes[0], i_bytes[1], i_bytes[2], i_bytes[3]);
+            //ESP_LOGI("WASM3", "Section header bytes: %02x %02x %02x %02x", i_bytes[0], i_bytes[1], i_bytes[2], i_bytes[3]);
         }
 
         if (section != 0 && !WASM_PARSE_MODULE_IGNORE_SECTION_ORDER) {
