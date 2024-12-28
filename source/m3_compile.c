@@ -2524,48 +2524,61 @@ const M3OpInfo c_operations [] =
     M3OP( "i64.extend16_s", 177, 0,   i_64,   d_unaryOpList (i64, Extend16_s),       NULL    ),          // 0xb1
     M3OP( "i64.extend32_s", 178, 0,   i_64,   d_unaryOpList (i64, Extend32_s),       NULL    ),          // 0xb2
 
-# ifdef DEBUG // for codepage logging. the order doesn't matter:
-#define d_m3DebugOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP })
+    // for codepage logging. the order doesn't matter:
+    # if DEBUG
+        
+        #if M3_FUNCTIONS_ENUM
+            #define d_m3DebugOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP })
 
-# if d_m3HasFloat
-#define d_m3DebugTypedOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP##_i32, op_##OP##_i64 })
-# else
-#define d_m3DebugTypedOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP##_i32, op_##OP##_i64 })
-# endif
+            # if d_m3HasFloat
+                #define d_m3DebugTypedOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP##_i32, op_##OP##_i64, op_##OP##_f32, op_##OP##_f64 })
+            # else
+                #define d_m3DebugTypedOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP##_i32, op_##OP##_i64 })
+            # endif
+        #else
+            #define d_m3DebugOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP })
 
-    d_m3DebugOp (Compile, 179),          d_m3DebugOp (Entry, 180),            d_m3DebugOp (End, 181),
-    d_m3DebugOp (Unsupported, 182),      d_m3DebugOp (CallRawFunction, 183),
+            # if d_m3HasFloat
+                #define d_m3DebugTypedOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP##_i32, op_##OP##_i64, op_##OP##_f32, op_##OP##_f64 })
+            # else
+                #define d_m3DebugTypedOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP##_i32, op_##OP##_i64 })
+            # endif
+        #endif
 
-    d_m3DebugOp (GetGlobal_s32, 184),    d_m3DebugOp (GetGlobal_s64, 185),    d_m3DebugOp (ContinueLoop, 186),     d_m3DebugOp (ContinueLoopIf, 187),
 
-    d_m3DebugOp (CopySlot_32, 188),      d_m3DebugOp (PreserveCopySlot_32, 189), d_m3DebugOp (If_s, 190),          d_m3DebugOp (BranchIfPrologue_s, 191),
-    d_m3DebugOp (CopySlot_64, 192),      d_m3DebugOp (PreserveCopySlot_64, 193), d_m3DebugOp (If_r, 194),          d_m3DebugOp (BranchIfPrologue_r, 195),
+        d_m3DebugOp (Compile, 179),          d_m3DebugOp (Entry, 180),            d_m3DebugOp (End, 181),
+        d_m3DebugOp (Unsupported, 182),      d_m3DebugOp (CallRawFunction, 183),
 
-    d_m3DebugOp (Select_i32_rss, 196),   d_m3DebugOp (Select_i32_srs, 197),   d_m3DebugOp (Select_i32_ssr, 198),   d_m3DebugOp (Select_i32_sss, 199),
-    d_m3DebugOp (Select_i64_rss, 200),   d_m3DebugOp (Select_i64_srs, 201),   d_m3DebugOp (Select_i64_ssr, 202),   d_m3DebugOp (Select_i64_sss, 203),
+        d_m3DebugOp (GetGlobal_s32, 184),    d_m3DebugOp (GetGlobal_s64, 185),    d_m3DebugOp (ContinueLoop, 186),     d_m3DebugOp (ContinueLoopIf, 187),
 
-# if d_m3HasFloat
-    d_m3DebugOp (Select_f32_sss, 204),   d_m3DebugOp (Select_f32_srs, 205),   d_m3DebugOp (Select_f32_ssr, 206),
-    d_m3DebugOp (Select_f32_rss, 207),   d_m3DebugOp (Select_f32_rrs, 208),   d_m3DebugOp (Select_f32_rsr, 209),
+        d_m3DebugOp (CopySlot_32, 188),      d_m3DebugOp (PreserveCopySlot_32, 189), d_m3DebugOp (If_s, 190),          d_m3DebugOp (BranchIfPrologue_s, 191),
+        d_m3DebugOp (CopySlot_64, 192),      d_m3DebugOp (PreserveCopySlot_64, 193), d_m3DebugOp (If_r, 194),          d_m3DebugOp (BranchIfPrologue_r, 195),
 
-    d_m3DebugOp (Select_f64_sss, 210),   d_m3DebugOp (Select_f64_srs, 211),   d_m3DebugOp (Select_f64_ssr, 212),
-    d_m3DebugOp (Select_f64_rss, 213),   d_m3DebugOp (Select_f64_rrs, 214),   d_m3DebugOp (Select_f64_rsr, 215),
-# endif
+        d_m3DebugOp (Select_i32_rss, 196),   d_m3DebugOp (Select_i32_srs, 197),   d_m3DebugOp (Select_i32_ssr, 198),   d_m3DebugOp (Select_i32_sss, 199),
+        d_m3DebugOp (Select_i64_rss, 200),   d_m3DebugOp (Select_i64_srs, 201),   d_m3DebugOp (Select_i64_ssr, 202),   d_m3DebugOp (Select_i64_sss, 203),
 
-    d_m3DebugOp (MemFill, 216),          d_m3DebugOp (MemCopy, 217),
+        # if d_m3HasFloat
+            d_m3DebugOp (Select_f32_sss, 204),   d_m3DebugOp (Select_f32_srs, 205),   d_m3DebugOp (Select_f32_ssr, 206),
+            d_m3DebugOp (Select_f32_rss, 207),   d_m3DebugOp (Select_f32_rrs, 208),   d_m3DebugOp (Select_f32_rsr, 209),
 
-    d_m3DebugTypedOp (SetGlobal, 218),   d_m3DebugOp (SetGlobal_s32, 219),    d_m3DebugOp (SetGlobal_s64, 220),
+            d_m3DebugOp (Select_f64_sss, 210),   d_m3DebugOp (Select_f64_srs, 211),   d_m3DebugOp (Select_f64_ssr, 212),
+            d_m3DebugOp (Select_f64_rss, 213),   d_m3DebugOp (Select_f64_rrs, 214),   d_m3DebugOp (Select_f64_rsr, 215),
+        # endif
 
-    d_m3DebugTypedOp (SetRegister, 221), d_m3DebugTypedOp (SetSlot, 222),     d_m3DebugTypedOp (PreserveSetSlot, 223),
-# endif
+        d_m3DebugOp (MemFill, 216),          d_m3DebugOp (MemCopy, 217),
 
-# if d_m3CascadedOpcodes
-    [c_waOp_extended] = M3OP( "0xFC", 224, 0,  c_m3Type_unknown,   d_emptyOpList,  Compile_ExtendedOpcode ),  // 0xe0
-# endif
+        d_m3DebugTypedOp (SetGlobal, 218),   d_m3DebugOp (SetGlobal_s32, 219),    d_m3DebugOp (SetGlobal_s64, 220),
 
-# ifdef DEBUG
-    M3OP( "termination", 225, 0,  c_m3Type_unknown ) // 0xe1
-# endif
+        d_m3DebugTypedOp (SetRegister, 221), d_m3DebugTypedOp (SetSlot, 222),     d_m3DebugTypedOp (PreserveSetSlot, 223),
+    # endif
+
+    # if d_m3CascadedOpcodes
+        [c_waOp_extended] = M3OP( "0xFC", 224, 0,  c_m3Type_unknown,   d_emptyOpList,  Compile_ExtendedOpcode ),  // 0xe0
+    # endif
+
+    # ifdef DEBUG
+        M3OP( "termination", 225, 0,  c_m3Type_unknown ) // 0xe1
+    # endif
 };
 
 const M3OpInfo c_operationsFC [] =

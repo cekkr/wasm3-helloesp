@@ -196,15 +196,15 @@ WASM3_STATIC_INLINE bool  IsIntRegisterSlotAlias     (u16 i_slot)    { return (i
 
 #if DEBUG
     #if M3_FUNCTIONS_ENUM                  
-        #define M3OP(name, ...)       { { __VA_ARGS__ } }   
-        #define M3OP_RESERVED   { { -2 } }           
+        #define M3OP(name, ...) { __VA_ARGS__ }
+        #define M3OP_RESERVED   { -2 }
     #else
-        #define M3OP(...)       { { __VA_ARGS__ } }
-        #define M3OP_RESERVED   { { "reserved", -2 } }
+        #define M3OP(...) { __VA_ARGS__ }
+        #define M3OP_RESERVED { "reserved", -2 }
     #endif    
 #else
-    #define M3OP(name, idx, ...) { { __VA_ARGS__ } }
-    #define M3OP_RESERVED   { { 0 } }
+    #define M3OP(name, idx, ...) { __VA_ARGS__ }
+    #define M3OP_RESERVED   { 0 }
 #endif
 
 #if d_m3HasFloat
