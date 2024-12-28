@@ -1318,7 +1318,7 @@ d_m3Op (Const32) {
     //ESP_ERROR_CHECK(heap_caps_check_integrity_all(true));
 
     i32* imm = immediate(i32);
-    void* dest = m3SegmentedMemAccess(_mem, _sp + imm, sizeof(u32));
+    void* dest = m3SegmentedMemAccess(_mem, _sp + (unsigned)imm, sizeof(u32));
     
     bool isErr = (dest == ERROR_POINTER);
     if (WASM_DEBUG_Const || isErr) {
@@ -1352,7 +1352,7 @@ d_m3Op (Const64) {
 
    // Calcola l'offset di destinazione
    i32* imm = immediate(i32);
-   m3stack_t dest_offset = _sp + imm;
+   m3stack_t dest_offset = _sp + (unsigned)imm;
    
    // Verifica l'accesso alla memoria di destinazione
    void* dest = m3SegmentedMemAccess(_mem, dest_offset, sizeof(u64));
