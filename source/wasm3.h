@@ -12,6 +12,8 @@
 #define M3_VERSION_REV   1
 #define M3_VERSION       "0.5.1"
 
+#define DEBUG_TYPE static const bool
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>

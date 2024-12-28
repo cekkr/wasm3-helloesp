@@ -15,7 +15,7 @@
 //typedef M3Runtime; // forced pre-declaration (m3_env.h)
 
 #define M3CodePage_Segmented true
-const bool WASM_DEBUG_NEWCODEPAGE = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_NEWCODEPAGE = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 IM3CodePage  NewCodePage  (IM3Runtime i_runtime, u32 i_minNumLines)
 {
     if(WASM_DEBUG_NEWCODEPAGE) ESP_LOGI("WASM3", "NewCodePage called");
@@ -75,7 +75,7 @@ IM3CodePage  NewCodePage  (IM3Runtime i_runtime, u32 i_minNumLines)
     return page;
 }
 
-const bool WASM_DEBUG_FreeCodePages = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_FreeCodePages = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 void  FreeCodePages  (IM3CodePage * io_list)
 {
     if(WASM_DEBUG_FreeCodePages) ESP_LOGI("WASM3", "FreeCodePages called");

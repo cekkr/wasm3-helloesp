@@ -210,7 +210,7 @@ void  AlignSlotToType  (u16 * io_slot, u8 i_type)
     * io_slot = (* io_slot + mask) & ~mask;
 }
 
-const bool WASM_DEBUG_GetStackTopIndex = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_GetStackTopIndex = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 WASM3_STATIC_INLINE i16  GetStackTopIndex  (IM3Compilation o)
 {                                                               
     bool assert1 = o->stackIndex > o->stackFirstDynamicIndex;
@@ -436,7 +436,7 @@ void DeallocateSlot (IM3Compilation o, i16 i_slot, u8 i_type)
     }
 }
 
-const bool WASM_DEBUG_AllocateRegister = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_AllocateRegister = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 WASM3_STATIC_INLINE bool  IsRegisterTypeAllocated  (IM3Compilation o, u8 i_type)
 {
     bool res = IsRegisterAllocated (o, IsFpType (i_type));
@@ -482,7 +482,7 @@ u16  GetMaxUsedSlotPlusOne  (IM3Compilation o)
     return o->slotMaxAllocatedIndexPlusOne;
 }
 
-const bool WASM_DEBUG_PreserveRegisterIfOccupied = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_PreserveRegisterIfOccupied = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 WASM3_STATIC M3Result  PreserveRegisterIfOccupied  (IM3Compilation o, u8 i_registerType)
 {
     if(WASM_DEBUG_PreserveRegisterIfOccupied) ESP_LOGI("WASM3", "PreserveRegisterIfOccupied called");
@@ -2120,7 +2120,7 @@ _   (SetStackPolymorphic (o));
 
 // OPTZ: currently all stack slot indices take up a full word, but
 // dual stack source operands could be packed together
-const bool WASM_DEBUG_Compile_Operator = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_Compile_Operator = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 WASM3_STATIC M3Result  Compile_Operator  (IM3Compilation o, m3opcode_t i_opcode)
 {
     M3Result result;

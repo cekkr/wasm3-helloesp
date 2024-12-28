@@ -1,4 +1,4 @@
-/// Unused files, just for reference for generate_m3op_index.py
+/// Unused files, just for reference for generate_wasm_ops.py
 /// operations took from m3_compile.c
 
 const M3OpInfo c_operations [] =

@@ -16,7 +16,7 @@
 #include "esp_task_wdt.h"
 #endif
 
-const bool WASM_DEBUG_NEW_ENV = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_NEW_ENV = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 
 IM3Environment  m3_NewEnvironment  ()
 {
@@ -96,7 +96,7 @@ void m3_SetCustomSectionHandler  (IM3Environment i_environment, M3SectionHandler
 }
 
 
-const bool WASM_DEBUG_ADDFUNC = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_ADDFUNC = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 
 // returns the same io_funcType or replaces it with an equivalent that's already in the type linked list
 void  Environment_AddFuncType  (IM3Environment i_environment, IM3FuncType * io_funcType)
@@ -152,7 +152,7 @@ bool IsCodePageSafeToFree(IM3CodePage page) {
     return true;
 }
 
-const bool WASM_DEBUG_RemoveCodePageOfCapacity = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_RemoveCodePageOfCapacity = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 IM3CodePage RemoveCodePageOfCapacity(M3CodePage ** io_list, u32 i_minimumLineCount)
 {
     if(WASM_DEBUG_RemoveCodePageOfCapacity) ESP_LOGI("WASM3", "RemoveCodePageOfCapacity called (io_list=%p, i_minimumLineCount=%d)", io_list, i_minimumLineCount);
@@ -265,7 +265,7 @@ void  Environment_ReleaseCodePages  (IM3Environment i_environment, IM3CodePage i
     }
 }
 
-const bool WASM_DEBUG_STACK = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_STACK = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 IM3Memory m3_NewStack(){
     if(WASM_DEBUG_STACK) ESP_LOGI("WASM3", "m3_NewStack called");
 
@@ -279,7 +279,7 @@ IM3Memory m3_NewStack(){
     return memory;
 }
 
-const bool WASM_DEBUG_NEW_RUNTIME = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_NEW_RUNTIME = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 IM3Runtime  m3_NewRuntime  (IM3Environment i_environment, u32 i_stackSizeInBytes, void * i_userdata)
 {
     if(WASM_DEBUG_NEW_RUNTIME) ESP_LOGI("WASM3", "m3_NewRuntime called");
@@ -416,7 +416,7 @@ void  m3_FreeRuntime  (IM3Runtime i_runtime)
     }
 }
 
-const bool WASM_DEBUG_EvaluateExpression = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_EvaluateExpression = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type, bytes_t * io_bytes, cbytes_t i_end)
 {
     CALL_WATCHDOG
@@ -544,7 +544,7 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
 /// M3MemoryHeader
 ///
 
-const bool WASM_DEBUG_ResizeMemory = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_ResizeMemory = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
     if(WASM_DEBUG_ResizeMemory) ESP_LOGI("WASM3", "ResizeMemory: i_numPages = %d", i_numPages);
 
@@ -608,7 +608,7 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
 ////////////////////////////////////////////////////////////////////////
 
 // Memory initialization M3Runtime - M3Module
-const bool WASM_DEBUG_INIT_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_INIT_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 const bool WASM_INIT_MEMORY_PREALLOC_SEGMENTS = false;
 M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .h
 {
@@ -647,7 +647,7 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
 ///
 ///
 
-const bool WASM_DEBUG_InitGlobals = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_InitGlobals = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 M3Result  InitGlobals  (IM3Module io_module)
 {
     M3Result result = m3Err_none;
@@ -694,7 +694,7 @@ M3Result  InitGlobals  (IM3Module io_module)
 }
 
 
-const bool WASM_DEBUG_INIT_DATA_SEGMENTS = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_INIT_DATA_SEGMENTS = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result InitDataSegments(IM3Memory io_memory, IM3Module io_module)
 {
     M3Result result = m3Err_none;
@@ -767,7 +767,7 @@ _       (EvaluateExpression(io_module, &segmentOffset, c_m3Type_i32, &start,
 }
 
 
-const bool WASM_DEBUG_INIT_ELEMENTS = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_INIT_ELEMENTS = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result  InitElements  (IM3Module io_module)
 {
     M3Result result = m3Err_none;
@@ -885,7 +885,7 @@ _           (CompileFunction (function));
     _catch: return result;
 }
 
-const bool WASM_DEBUG_m3_LoadModule =  WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_m3_LoadModule =  WASM_DEBUG_ALL || (WASM_DEBUG && false);
 // TODO: deal with main + side-modules loading efforcement
 M3Result  m3_LoadModule  (IM3Runtime io_runtime, IM3Module io_module)
 {
@@ -1020,7 +1020,7 @@ M3ValueType  m3_GetGlobalType  (IM3Global          i_global)
 }
 
 
-const bool WASM_DEBUG_VERBOSE_v_FindFunction = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_VERBOSE_v_FindFunction = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 void *  v_FindFunction  (IM3Module i_module, const char * const i_name)
 {
     // Prefer exported functions
@@ -1447,7 +1447,7 @@ void  ReleaseCodePageNoTrack (IM3Runtime i_runtime, IM3CodePage i_codePage)
 }
 
 
-const bool WASM_DEBUG_AcquireCodePageWithCapacity = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_AcquireCodePageWithCapacity = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 IM3CodePage  AcquireCodePageWithCapacity  (IM3Runtime i_runtime, u32 i_minLineCount)
 {
     if(WASM_DEBUG_AcquireCodePageWithCapacity) ESP_LOGI("WASM3", "AcquireCodePageWithCapacity called");

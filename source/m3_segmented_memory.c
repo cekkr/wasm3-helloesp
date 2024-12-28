@@ -5,8 +5,8 @@
 
 #define WASM_SEGMENTED_MEM_LAZY_ALLOC true
 
-const bool WASM_DEBUG_GET_OFFSET_POINTER = WASM_DEBUG_ALL || (WASM_DEBUG && false);
-const bool WASM_DEBUG_M3_INIT_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_GET_OFFSET_POINTER = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_M3_INIT_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 
 #define PRINT_PTR(ptr) ESP_LOGI("WASM3", "Pointer value: (unsigned: %u, signed: %d)", (uintptr_t)ptr, (intptr_t)ptr)
 #define MIN(x, y) ((x) < (y) ? (x) : (y)) 
@@ -15,7 +15,7 @@ const bool WASM_DEBUG_M3_INIT_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 static mos check_wdt_trigger_every = 5;
 static mos check_wdt_trigger_cycle = 0;
 
-const bool WASM_DEBUG_check_wdt_reset = false;
+DEBUG_TYPE WASM_DEBUG_check_wdt_reset = false;
 void check_wdt_reset(){
     if(check_wdt_trigger_cycle++ % check_wdt_trigger_every == 0){
         CALL_WATCHDOG
@@ -27,7 +27,7 @@ void check_wdt_reset(){
 void check_wdt_reset(){}
 #endif
 
-const bool WASM_DEBUG_SEGMENTED_MEMORY_ALLOC = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_SEGMENTED_MEMORY_ALLOC = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 
 const bool DEBUG_WASM_INIT_MEMORY = false;
 // Utility functions
@@ -257,7 +257,7 @@ ptr get_segment_pointer(IM3Memory memory, mos offset) {
 }
 
 
-const bool WASM_DEBUG_m3_ResolvePointer = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_m3_ResolvePointer = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 ptr m3_ResolvePointer(M3Memory* memory, mos offset) {
     if(WASM_DEBUG_m3_ResolvePointer) ESP_LOGI("WASM3", "m3_ResolvePointer (mem: %p) called for ptr: %p", memory, offset);
 
@@ -295,7 +295,7 @@ int find_segment_index(MemorySegment** segments, int num_segments, MemorySegment
 }
 
 // Memory initialization and growth
-const bool WASM_DEBUG_INITSEGMENT = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_INITSEGMENT = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) {
     if (memory == NULL || memory->firm != INIT_FIRM){ 
         ESP_LOGW("WASM", "InitSegment: memory not initialized");
@@ -354,7 +354,7 @@ MemorySegment* InitSegment(M3Memory* memory, MemorySegment* seg, bool initData) 
     return seg;
 }
 
-const bool WASM_DEBUG_ADDSEGMENT = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_ADDSEGMENT = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result AddSegments(IM3Memory memory, size_t additional_segments) {
     if(WASM_DEBUG_ADDSEGMENT) ESP_LOGI("WASM3", "AddSegments: requested %zu segments", additional_segments);
     if (memory == NULL || memory->firm != INIT_FIRM) {
@@ -471,7 +471,7 @@ IM3Memory m3_NewMemory(){
     return memory;
 }
 
-const bool WASM_DEBUG_TOP_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_TOP_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 void FreeMemory(IM3Memory memory) {
     if (!memory) return;
     if (WASM_DEBUG_TOP_MEMORY) ESP_LOGI("WASM3", "FreeMemory called");
@@ -577,7 +577,7 @@ M3Result GrowMemory(M3Memory* memory, size_t additional_size) {
 }
 
 // Memory operations
-const bool WASM_DEBUG_IsValidMemoryAccess = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_IsValidMemoryAccess = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 bool IsValidMemoryAccess(IM3Memory memory, mos offset, size_t size) {
     check_wdt_reset();
 
@@ -1457,7 +1457,7 @@ ChunkInfo get_chunk_info(M3Memory* memory, void* ptr) {
 ///
 ///
 
-const bool WASM_DEBUG_m3_memcpy = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_m3_memcpy = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
     if(WASM_DEBUG_m3_memcpy) {
         ESP_LOGI("WASM3", "m3_memcpy called with dest=%p, src=%p, n=%zu", dest, src, n);
@@ -1561,7 +1561,7 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
 ////////////////////////////////////////////////////////////////
 
 //todo: implement overflow handling
-const bool WASM_DEBUG_m3_memset = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_m3_memset = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
     if(WASM_DEBUG_m3_memset) {
         ESP_LOGI("WASM3", "m3_memset called with ptr=%p, value=%d, n=%zu", ptr, value, n);

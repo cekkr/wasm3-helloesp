@@ -117,7 +117,7 @@ void FreeImportInfo (M3ImportInfo * i_info)
     m3_Def_Free (i_info->fieldUtf8);
 }
 
-const bool WASM_DEBUG_FUNCTION_RELEASE = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_FUNCTION_RELEASE = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 
 void  Function_Release  (IM3Function i_function)
 {    
@@ -307,7 +307,7 @@ u32  GetFunctionNumArgsAndLocals (IM3Function i_function)
 /// Function signature
 ///
 
-const bool WASM_DEBUG_PARSE_FUNCTION_SIGNATURE = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_PARSE_FUNCTION_SIGNATURE = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 
 // (Probably) abandoned function (SignatureToFuncType from WASM3)
 M3FuncType* ParseFunctionSignature(const char* signature) {
@@ -456,7 +456,7 @@ void FreeFuncType(M3FuncType* funcType) {
 /// Register function name
 ///
 
-const bool WASM_DEBUG_ADD_FUNCTION_NAME = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_ADD_FUNCTION_NAME = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result addFunctionToModule(IM3Module module, const char* functionName, const char* signature) {
     if(WASM_DEBUG_ADD_FUNCTION_NAME) ESP_LOGI("WASM3", "addFunctionToModule called");
 
@@ -557,7 +557,7 @@ M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry, 
 }
 
 // Funzione per registrare multiple funzioni da un array
-const bool WASM_DEBUG_RegisterWasmFunctions = false;
+DEBUG_TYPE WASM_DEBUG_RegisterWasmFunctions = false;
 M3Result RegisterWasmFunctions(IM3Module module, const WasmFunctionEntry* entries, size_t count, m3_wasi_context_t* ctx) {
     M3Result result = m3Err_none;
     
