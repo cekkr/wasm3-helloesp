@@ -2179,6 +2179,7 @@ _           (PushRegister (o, opInfo->type));
     {
 #       ifdef DEBUG
             #if M3_FUNCTIONS_ENUM
+            ESP_LOGW("WASM3", "No operation found for opInfo: type: %d, idx: %d, name: %s", opInfo->type, opInfo->idx, getOpName(opInfo->idx));
             result = ErrorCompile ("no operation found for opcode", o, "%d '%s'", opInfo->idx, getOpName(opInfo->idx));
             #else 
              result = ErrorCompile ("no operation found for opcode", o, "'%s'", opInfo->name);
