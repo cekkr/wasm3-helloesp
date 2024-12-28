@@ -119,8 +119,12 @@ enum M3OpNames {
     M3OP_NAME_MEMORY_FILL = 114,
 };
 
+#ifndef RODATA_ATTR
+#define RODATA_ATTR __attribute__((section(".rodata")))
+#endif
+
 // Auto-generated array of operation names
-static const char * const RODATA_ATTR opNames[] = {
+static const char * const opNames[] RODATA_ATTR = {
     "unreachable",
     "nop",
     "block",

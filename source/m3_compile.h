@@ -187,13 +187,8 @@ WASM3_STATIC_INLINE bool  IsFpRegisterSlotAlias      (u16 i_slot)    { return (i
 WASM3_STATIC_INLINE bool  IsIntRegisterSlotAlias     (u16 i_slot)    { return (i_slot == d_m3Reg0SlotAlias); }
 
 #if DEBUG
-    #if M3_FUNCTIONS_ENUM
-        // Counter per l'indice automatico
-        #define M3OP_COUNTER_INIT() static int _m3op_counter = 0
-        #define M3OP_GET_IDX()      (_m3op_counter++)
-        
-        // La macro M3OP ora usa il counter automatico
-        #define M3OP(name, ...) { M3OP_GET_IDX(), __VA_ARGS__ }
+    #if M3_FUNCTIONS_ENUM                  
+        #define M3OP(name, ...)       { __VA_ARGS__ }              
     #else
         #define M3OP(...)       { __VA_ARGS__ }
     #endif

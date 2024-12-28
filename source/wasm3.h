@@ -31,6 +31,7 @@
 #include "esp_log.h"
 #include "esp_cache.h"
 #include "esp_task_wdt.h" // for watchdog reset
+#include "esp_attr.h"
 
 #endif
 

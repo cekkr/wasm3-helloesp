@@ -493,7 +493,11 @@ void  log_emit  (IM3Compilation o, IM3Operation i_operation)
     d_m3Log(emit, "");
     if (i.info)
     {
+        #if M3_FUNCTIONS_ENUM
+        printf ("%p: %d\n", GetPagePC (o->page),  i.info->idx);
+        #else
         printf ("%p: %s\n", GetPagePC (o->page),  i.info->name);
+        #endif
     }
     else printf ("not found: %p\n", i_operation);
 }
