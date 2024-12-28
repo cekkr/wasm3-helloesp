@@ -2105,8 +2105,8 @@ _   (SetStackPolymorphic (o));
 
 // OPTZ: currently all stack slot indices take up a full word, but
 // dual stack source operands could be packed together
-WASM3_STATIC
-M3Result  Compile_Operator  (IM3Compilation o, m3opcode_t i_opcode)
+const bool WASM_DEBUG_Compile_Operator = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+WASM3_STATIC M3Result  Compile_Operator  (IM3Compilation o, m3opcode_t i_opcode)
 {
     M3Result result;
 
@@ -2126,6 +2126,7 @@ M3Result  Compile_Operator  (IM3Compilation o, m3opcode_t i_opcode)
 _       (PreserveRegisterIfOccupied (o, opInfo->type));
     }
 
+    if(WASM_DEBUG_Compile_Operator) ESP_LOGI("WASM3", "Compile_Operator: opInfo->stackOffset = %d", opInfo->stackOffset);
     if (opInfo->stackOffset == 0)
     {
         if (IsStackTopInRegister (o))
@@ -2139,9 +2140,11 @@ _           (PreserveRegisterIfOccupied (o, opInfo->type));
         }
     }
     else
-    {
-        if (IsStackTopInRegister (o))
+    {       
+        if (IsStackTopInRegister(o))
         {
+            if(WASM_DEBUG_Compile_Operator) ESP_LOGI("WASM3", "Compile_Operator: IsStackTopInRegister");
+
             op = opInfo->operations [0];  // _rs
 
             if (IsStackTopMinus1InRegister (o))
@@ -2151,6 +2154,8 @@ _           (PreserveRegisterIfOccupied (o, opInfo->type));
         }
         else if (IsStackTopMinus1InRegister (o))
         {
+            ESP_LOGI("WASM3", "Compile_Operator: IsStackTopMinus1InRegister");
+
             op = opInfo->operations [1]; // _sr
 
             if (not op)  // must be commutative, then
@@ -2158,6 +2163,8 @@ _           (PreserveRegisterIfOccupied (o, opInfo->type));
         }
         else
         {
+            ESP_LOGI("WASM3", "Compile_Operator: else PreserveRegisterIfOccupied");
+
 _           (PreserveRegisterIfOccupied (o, opInfo->type));     // _ss
             op = opInfo->operations [2];
         }
