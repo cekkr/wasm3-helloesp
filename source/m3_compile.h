@@ -195,7 +195,7 @@ WASM3_STATIC_INLINE bool  IsIntRegisterSlotAlias     (u16 i_slot)    { return (i
     #define M3OP_RESERVED   { "reserved" }
 #else
     // Strip-off name
-    #define M3OP(name, ...) { __VA_ARGS__ }
+    #define M3OP(name, idx, ...) { __VA_ARGS__ }
     #define M3OP_RESERVED   { 0 }
 #endif
 
