@@ -320,7 +320,11 @@ void  dump_code_page  (IM3CodePage i_codePage, pc_t i_startPC)
 
                     DecodeOperation (infoString, i.opcode, op, i.info, & pc);
 
+                    #if M3_FUNCTIONS_ENUM
+                    m3log (code, "%p | (op: %d)  %s", operationPC, i.info->idx, infoString);
+                    #else
                     m3log (code, "%p | %20s  %s", operationPC, i.info->name, infoString);
+                    #endif
                 }
                 else
                     m3log (code, "%p | %p", operationPC, op);
@@ -482,7 +486,11 @@ void  log_opcode  (IM3Compilation o, m3opcode_t i_opcode)
     if (i_opcode == c_waOp_end or i_opcode == c_waOp_else)
         depth--;
 
+    #if M3_FUNCTIONS_ENUM        
+    m3log (compile, "%4d | 0x%02x  %s %s", o->numOpcodes++, i_opcode, GetOpcodeIndentionString (depth), getOpName(GetOpInfo(i_opcode)->idx));
+    #else
     m3log (compile, "%4d | 0x%02x  %s %s", o->numOpcodes++, i_opcode, GetOpcodeIndentionString (depth), GetOpInfo(i_opcode)->name);
+    #endif
 }
 
 
@@ -494,7 +502,7 @@ void  log_emit  (IM3Compilation o, IM3Operation i_operation)
     if (i.info)
     {
         #if M3_FUNCTIONS_ENUM
-        printf ("%p: %d\n", GetPagePC (o->page),  i.info->idx);
+        printf ("%p: %d %s\n", GetPagePC (o->page),  i.info->idx, getOpName(i.info->idx));
         #else
         printf ("%p: %s\n", GetPagePC (o->page),  i.info->name);
         #endif

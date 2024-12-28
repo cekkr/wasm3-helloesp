@@ -1,3 +1,8 @@
+#pragma once
+
+// Auto-generated getter function
+#if DEBUG && M3_FUNCTIONS_ENUM
+
 // Auto-generated enum for operation names
 enum M3OpNames {
     M3OP_NAME_UNREACHABLE = 0,
@@ -194,7 +199,7 @@ enum M3OpNames {
 };
 
 // Auto-generated array of operation names
-static const char * const RODATA_ATTR opNames[] = {
+static const char * const opNames[] __attribute__((section(".rodata"))) = {
     "unreachable",
     "nop",
     "block",
@@ -388,9 +393,7 @@ static const char * const RODATA_ATTR opNames[] = {
     "memory_fill",
 };
 
-// Auto-generated getter function
-#ifdef DEBUG
-const char* getOpName(uint8_t id) {
+static const char* getOpName(uint8_t id) {
     return opNames[id];
 }
 #endif

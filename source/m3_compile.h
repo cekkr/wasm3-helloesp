@@ -24,6 +24,11 @@ d_m3BeginExternC
     #define WASM3_STATIC_INLINE static inline
 #endif
 
+/// Operations index
+#if M3_FUNCTIONS_ENUM
+#include "m3_op_names_generated.h"
+#endif
+
 enum
 {
     c_waOp_block                = 0x02,
@@ -139,11 +144,11 @@ typedef M3Result (* M3Compiler)         (IM3Compilation, m3opcode_t);
 typedef struct M3OpInfo
 {
     #if DEBUG
-    #if M3_FUNCTIONS_ENUM
-    int idx;
-    #else
+    #if !M3_FUNCTIONS_ENUM
     const char * const  name;
     #endif
+
+    int idx;
     #endif
 
     i8                      stackOffset;
@@ -188,23 +193,23 @@ WASM3_STATIC_INLINE bool  IsIntRegisterSlotAlias     (u16 i_slot)    { return (i
 
 #if DEBUG
     #if M3_FUNCTIONS_ENUM                  
-        #define M3OP(name, ...)       { __VA_ARGS__ }              
+        #define M3OP(name, ...)       { { __VA_ARGS__ } }   
+        #define M3OP_RESERVED   { { -2 } }           
     #else
-        #define M3OP(...)       { __VA_ARGS__ }
-    #endif
-    #define M3OP_RESERVED   { "reserved" }
+        #define M3OP(...)       { { __VA_ARGS__ } }
+        #define M3OP_RESERVED   { { "reserved", -2 } }
+    #endif    
 #else
-    // Strip-off name
-    #define M3OP(name, idx, ...) { __VA_ARGS__ }
-    #define M3OP_RESERVED   { 0 }
+    #define M3OP(name, idx, ...) { { __VA_ARGS__ } }
+    #define M3OP_RESERVED   { { 0 } }
 #endif
 
 #if d_m3HasFloat
     #define M3OP_F          M3OP
 #elif d_m3NoFloatDynamic
-    #define M3OP_F(n,o,t,op,...)        M3OP(n, o, t, { op_Unsupported, op_Unsupported, op_Unsupported, op_Unsupported }, __VA_ARGS__)
+    #define M3OP_F(n, i, o,t,op,...)        M3OP(n, i, o, t, { op_Unsupported, op_Unsupported, op_Unsupported, op_Unsupported }, __VA_ARGS__)
 #else
-    #define M3OP_F(...)     { 0 }
+    #define M3OP_F(...)     { -3, 0 }
 #endif
 
 //-----------------------------------------------------------------------------------------------------------------------------------

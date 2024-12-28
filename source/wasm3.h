@@ -68,11 +68,6 @@
 # endif
 # endif
 
-/// Operations index
-#if M3_FUNCTIONS_ENUM
-#include "m3_op_names_generated.h"
-#endif
-
 ///
 /// Memory allocation
 ///
