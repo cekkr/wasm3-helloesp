@@ -1308,7 +1308,7 @@ d_m3Op  (ContinueLoopIf)
         *(type*)ptr; \
     })
 
-DEBUG_TYPE WASM_DEBUG_Const = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_Const = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 
 d_m3Op (Const32) {
     if(WASM_DEBUG_Const) ESP_LOGI("WASM3", "Const32 called");
@@ -1317,18 +1317,20 @@ d_m3Op (Const32) {
 
     //ESP_ERROR_CHECK(heap_caps_check_integrity_all(true));
 
-    void* dest = m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(u32));
+    i32* imm = immediate(i32);
+    void* dest = m3SegmentedMemAccess(_mem, _sp + imm, sizeof(u32));
     
-    if (dest == ERROR_POINTER) {
-        ESP_LOGE("WASM3", "Destination memory access failed at sp=%u, immediate=%d", 
-                 (unsigned)_sp, immediate(i32));
-        return m3Err_pointerOverflow;
+    bool isErr = dest == ERROR_POINTER;
+    if (WASM_DEBUG_Const || isErr) {
+        ESP_LOGW("WASM3", "Destination memory access failed at sp=%u, immediate=%d", _sp, imm);
+        if(isErr) return m3Err_pointerOverflow;
     }
     
     *(u32*)dest = value;
     nextOp();
 }
 
+DEBUG_TYPE WASM_Const64_CheckAlignment = false;
 d_m3Op (Const64) {
     if(WASM_DEBUG_Const) ESP_LOGI("WASM3", "Const64 called");
 
@@ -1338,29 +1340,29 @@ d_m3Op (Const64) {
     // Leggi il valore usando memcpy per evitare problemi di allineamento
     u64 value = 0;
 
-    if (src_ptr == ERROR_POINTER) {
+    bool isErr = dest == ERROR_POINTER;
+    if (WASM_DEBUG_Const || isErr) {
         ESP_LOGI("WASM3", "Source memory access failed at pc=%u", (unsigned)_pc);
-        //return m3Err_mallocFailed;
+        if(isErr) return m3Err_mallocFailed;
     }
-    else {
-        m3_memcpy(_mem, &value, src_ptr, sizeof(u64));
-    }   
+    
+    m3_memcpy(_mem, &value, src_ptr, sizeof(u64));     
 
    _pc += (M3_SIZEOF_PTR == 4) ? 2 : 1;  // Su ESP32 sempre 2 perché M3_SIZEOF_PTR == 4
 
    // Calcola l'offset di destinazione
-   m3stack_t dest_offset = _sp + immediate(i32);
+   i32* imm = immediate(i32);
+   m3stack_t dest_offset = _sp + imm;
    
    // Verifica l'accesso alla memoria di destinazione
    void* dest = m3SegmentedMemAccess(_mem, dest_offset, sizeof(u64));
-   if (dest == ERROR_POINTER) {
-       ESP_LOGE("WASM3", "Destination memory access failed at sp=%u, immediate=%d", 
-                (unsigned)_sp, immediate(i32));
+   if (WASM_DEBUG_Const || dest == ERROR_POINTER) {
+       ESP_LOGW("WASM3", "Destination memory access failed at sp=%u, immediate=%d", _sp, imm);
        return m3Err_pointerOverflow;
    }
 
    // Verifica allineamento su ESP32
-   if ((uintptr_t)dest & 7) {
+   if (WASM_Const64_CheckAlignment && (uintptr_t)dest & 7) {
        ESP_LOGW("WASM3", "Unaligned 64-bit access at offset %u", dest_offset);
    }
 
