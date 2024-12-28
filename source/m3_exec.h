@@ -1320,7 +1320,7 @@ d_m3Op (Const32) {
     i32* imm = immediate(i32);
     void* dest = m3SegmentedMemAccess(_mem, _sp + imm, sizeof(u32));
     
-    bool isErr = dest == ERROR_POINTER;
+    bool isErr = (dest == ERROR_POINTER);
     if (WASM_DEBUG_Const || isErr) {
         ESP_LOGW("WASM3", "Destination memory access failed at sp=%u, immediate=%d", _sp, imm);
         if(isErr) return m3Err_pointerOverflow;
@@ -1340,7 +1340,7 @@ d_m3Op (Const64) {
     // Leggi il valore usando memcpy per evitare problemi di allineamento
     u64 value = 0;
 
-    bool isErr = dest == ERROR_POINTER;
+    bool isErr = (value == ERROR_POINTER);
     if (WASM_DEBUG_Const || isErr) {
         ESP_LOGI("WASM3", "Source memory access failed at pc=%u", (unsigned)_pc);
         if(isErr) return m3Err_mallocFailed;
