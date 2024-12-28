@@ -212,7 +212,19 @@ void  AlignSlotToType  (u16 * io_slot, u8 i_type)
 
 WASM3_STATIC_INLINE
 i16  GetStackTopIndex  (IM3Compilation o)
-{                                                           d_m3Assert (o->stackIndex > o->stackFirstDynamicIndex or IsStackPolymorphic (o));
+{                                                           
+    bool assert1 = o->stackIndex > o->stackFirstDynamicIndex;
+    bool assert2 = IsStackPolymorphic (o);
+    bool assert = assert1 || assert2;
+
+    if(assert){
+        ESP_LOGW("WASM3", "GetStackTopIndex: assert failed: assert1=%d, assert2=%d", assert1, assert2);
+
+        if(assert1)
+            ESP_LOGW("WASM3", "GetStackTopIndex: o->stackIndex=%d > o->stackFirstDynamicIndex=%d", o->stackIndex, o->stackFirstDynamicIndex);        
+    }
+    d_m3Assert (assert);
+
     return o->stackIndex - 1;
 }
 
@@ -2166,7 +2178,11 @@ _           (PushRegister (o, opInfo->type));
     else
     {
 #       ifdef DEBUG
-            result = ErrorCompile ("no operation found for opcode", o, "'%s'", opInfo->name);
+            #if M3_FUNCTIONS_ENUM
+            result = ErrorCompile ("no operation found for opcode", o, "%d '%s'", opInfo->idx, getOpName(opInfo->idx));
+            #else 
+             result = ErrorCompile ("no operation found for opcode", o, "'%s'", opInfo->name);
+            #endif
 #       else
             result = ErrorCompile ("no operation found for opcode", o, "%x", i_opcode);
 #       endif
