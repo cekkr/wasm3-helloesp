@@ -175,10 +175,13 @@ u8 GetSingleRetType(IM3FuncType ftype) {
 WASM3_STATIC const u16 c_m3RegisterUnallocated = 0;
 WASM3_STATIC const u16 c_slotUnused = 0xffff;
 
-WASM3_STATIC_INLINE
-bool  IsRegisterAllocated  (IM3Compilation o, u32 i_register)
+const bool WASM_DEBUG_IsRegisterAllocated = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+WASM3_STATIC_INLINE bool  IsRegisterAllocated  (IM3Compilation o, u32 i_register)
 {
-    return (o->regStackIndexPlusOne [i_register] != c_m3RegisterUnallocated);
+    u16 reg = o->regStackIndexPlusOne[i_register]; 
+    bool res = (o->regStackIndexPlusOne [i_register] != c_m3RegisterUnallocated);
+    if(WASM_DEBUG_IsRegisterAllocated) ESP_LOGI("WASM3", "IsRegisterAllocated: %d != %d ? %d", reg, c_m3RegisterUnallocated, res);
+    return res;
 }
 
 WASM3_STATIC_INLINE

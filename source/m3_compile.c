@@ -210,9 +210,9 @@ void  AlignSlotToType  (u16 * io_slot, u8 i_type)
     * io_slot = (* io_slot + mask) & ~mask;
 }
 
-WASM3_STATIC_INLINE
-i16  GetStackTopIndex  (IM3Compilation o)
-{                                                           
+const bool WASM_DEBUG_GetStackTopIndex = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+WASM3_STATIC_INLINE i16  GetStackTopIndex  (IM3Compilation o)
+{                                                               
     bool assert1 = o->stackIndex > o->stackFirstDynamicIndex;
     bool assert2 = IsStackPolymorphic (o);
     bool assert = assert1 || assert2;
@@ -224,6 +224,8 @@ i16  GetStackTopIndex  (IM3Compilation o)
             ESP_LOGW("WASM3", "GetStackTopIndex: o->stackIndex=%d > o->stackFirstDynamicIndex=%d", o->stackIndex, o->stackFirstDynamicIndex);        
     }
     d_m3Assert (assert);
+
+    if(WASM_DEBUG_GetStackTopIndex) ESP_LOGI("WASM3", "GetStackTopIndex: %d", o->stackIndex);
 
     return o->stackIndex - 1;
 }
@@ -481,27 +483,41 @@ u16  GetMaxUsedSlotPlusOne  (IM3Compilation o)
     return o->slotMaxAllocatedIndexPlusOne;
 }
 
-WASM3_STATIC
-M3Result  PreserveRegisterIfOccupied  (IM3Compilation o, u8 i_registerType)
+const bool WASM_DEBUG_PreserveRegisterIfOccupied = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+WASM3_STATIC M3Result  PreserveRegisterIfOccupied  (IM3Compilation o, u8 i_registerType)
 {
+    if(WASM_DEBUG_PreserveRegisterIfOccupied) ESP_LOGI("WASM3", "PreserveRegisterIfOccupied called");
+
     M3Result result = m3Err_none;
 
     u32 regSelect = IsFpType (i_registerType);
-
+   
     if (IsRegisterAllocated (o, regSelect))
     {
+         if(WASM_DEBUG_PreserveRegisterIfOccupied) ESP_LOGI("WASM3", "PreserveRegisterIfOccupied: IsRegisterAllocated: true");
+
         u16 stackIndex = GetRegisterStackIndex (o, regSelect);
+
+        if(WASM_DEBUG_PreserveRegisterIfOccupied) ESP_LOGI("WASM3", "PreserveRegisterIfOccupied: stackIndex = %d, DeallocateRegister", stackIndex);
         DeallocateRegister (o, regSelect);
 
         u8 type = GetStackTypeFromBottom (o, stackIndex);
+        if(WASM_DEBUG_PreserveRegisterIfOccupied) ESP_LOGI("WASM3", "PreserveRegisterIfOccupied: stack type from bottom: %d", type);
 
         // and point to a exec slot
         u16 slot = c_slotUnused;
+        if(WASM_DEBUG_PreserveRegisterIfOccupied) ESP_LOGI("WASM3", "PreserveRegisterIfOccupied: allocating slot %d...", slot);
+
 _       (AllocateSlots (o, & slot, type));
         o->wasmStack [stackIndex] = slot;
 
+        if(WASM_DEBUG_PreserveRegisterIfOccupied) ESP_LOGI("WASM3", "PreserveRegisterIfOccupied: slot allocated: %d", slot);        
+
 _       (EmitOp (o, c_setSetOps [type]));
         EmitSlotOffset (o, slot);
+    }
+    else {
+         if(WASM_DEBUG_PreserveRegisterIfOccupied) ESP_LOGI("WASM3", "PreserveRegisterIfOccupied: IsRegisterAllocated: false");
     }
 
     _catch: return result;
@@ -2186,7 +2202,7 @@ _           (PushRegister (o, opInfo->type));
     {
 #       ifdef DEBUG
             #if M3_FUNCTIONS_ENUM
-            ESP_LOGW("WASM3", "No operation found for opInfo: type: %d, idx: %d, name: %s", opInfo->type, opInfo->idx, getOpName(opInfo->idx));
+            ESP_LOGW("WASM3", "No operation found for opInfo: type: %d, idx: %d, stackOffset: %d, name: %s", opInfo->type, opInfo->stackOffset, opInfo->idx, getOpName(opInfo->idx));
             result = ErrorCompile ("no operation found for opcode", o, "%d '%s'", opInfo->idx, getOpName(opInfo->idx));
             #else 
              result = ErrorCompile ("no operation found for opcode", o, "'%s'", opInfo->name);
