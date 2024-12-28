@@ -436,21 +436,20 @@ void DeallocateSlot (IM3Compilation o, i16 i_slot, u8 i_type)
     }
 }
 
-
-WASM3_STATIC_INLINE
-bool  IsRegisterTypeAllocated  (IM3Compilation o, u8 i_type)
+const bool WASM_DEBUG_AllocateRegister = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+WASM3_STATIC_INLINE bool  IsRegisterTypeAllocated  (IM3Compilation o, u8 i_type)
 {
-    return IsRegisterAllocated (o, IsFpType (i_type));
+    bool res = IsRegisterAllocated (o, IsFpType (i_type));
+    if (WASM_DEBUG_AllocateRegister) ESP_LOGI("WASM3", "IsRegisterTypeAllocated: %d", res);
+    return res;
 }
 
-WASM3_STATIC_INLINE
-void  AllocateRegister  (IM3Compilation o, u32 i_register, u16 i_stackIndex)
+WASM3_STATIC_INLINE void  AllocateRegister  (IM3Compilation o, u32 i_register, u16 i_stackIndex)
 {                                                                                       d_m3Assert (not IsRegisterAllocated (o, i_register));
     o->regStackIndexPlusOne [i_register] = i_stackIndex + 1;
 }
 
-WASM3_STATIC_INLINE
-void  DeallocateRegister  (IM3Compilation o, u32 i_register)
+WASM3_STATIC_INLINE void  DeallocateRegister  (IM3Compilation o, u32 i_register)
 {                                                                                       d_m3Assert (IsRegisterAllocated (o, i_register));
     o->regStackIndexPlusOne [i_register] = c_m3RegisterUnallocated;
 }
