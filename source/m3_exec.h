@@ -1357,7 +1357,7 @@ d_m3Op (Const64) {
    // Verifica l'accesso alla memoria di destinazione
    void* dest = m3SegmentedMemAccess(_mem, dest_offset, sizeof(u64));
    if (WASM_DEBUG_Const || dest == ERROR_POINTER) {
-       ESP_LOGW("WASM3", "Destination memory access at sp=%u, immediate=%d, dest=%p", _sp, imm);
+       ESP_LOGW("WASM3", "Destination memory access at sp=%u, immediate=%d, dest=%p", _sp, imm, dest);
        return m3Err_pointerOverflow;
    }
 
