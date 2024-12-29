@@ -1322,7 +1322,8 @@ d_m3Op (Const32) {
 
     //ESP_ERROR_CHECK(heap_caps_check_integrity_all(true));
 
-    pc_t imm = immediate_ptr(pc_t);
+    m3slot_t imm = immediate(m3slot_t);
+    m3stack_t dest_offset = _sp + imm;
     void* dest = m3SegmentedMemAccess(_mem, _sp + imm, sizeof(u32));
     
     bool isErr = (dest == ERROR_POINTER);
@@ -1364,8 +1365,8 @@ d_m3Op (Const64) {
    _pc += (M3_SIZEOF_PTR == 4) ? 2 : 1;  // Su ESP32 sempre 2 perché M3_SIZEOF_PTR == 4
 
    // Calcola l'offset di destinazione
-   pc_t imm = immediate_ptr(pc_t);
-   pc_t dest_offset = _sp + imm;
+   m3slot_t imm = immediate(m3slot_t);
+   m3stack_t dest_offset = _sp + imm;
    
    // Verifica l'accesso alla memoria di destinazione
    void* dest = m3SegmentedMemAccess(_mem, dest_offset, sizeof(u64));
