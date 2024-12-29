@@ -6,6 +6,8 @@
 //
 
 // Allow using opcodes for compilation process
+#include "wasm3.h"
+#include "wasm3_defs.h"
 #define M3_COMPILE_OPCODES
 
 #include "m3_env.h"
@@ -1264,10 +1266,12 @@ _   ((* compiler) (o, i_opcode));
 }
 #endif
 
-WASM3_STATIC
-M3Result  Compile_Return  (IM3Compilation o, m3opcode_t i_opcode)
+DEBUG_TYPE WASM_DEBUG_Compile_Return =  WASM_DEBUG_ALL || (WASM_DEBUG && true);
+WASM3_STATIC M3Result  Compile_Return  (IM3Compilation o, m3opcode_t i_opcode)
 {
     M3Result result = m3Err_none;
+
+    if(WASM_DEBUG_Compile_Return) ESP_LOGI("WASM3", "Compile_Return called");
 
     if (not IsStackPolymorphic (o))
     {
@@ -3001,3 +3005,10 @@ _   (CompileBlockStatements (o));
 
     return result;
 }
+
+#if DEBUG
+static void WASM3_Debug_PrintOpsInfo(){
+    ESP_LOGW("WASM3","WASM3_Debug_PrintOpsInfo");
+    ESP_LOGW("WASM3", "Compile_Return: %p", &Compile_Return);
+}
+#endif
