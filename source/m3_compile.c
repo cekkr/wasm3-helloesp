@@ -1267,7 +1267,7 @@ _   ((* compiler) (o, i_opcode));
 #endif
 
 DEBUG_TYPE WASM_DEBUG_Compile_Return =  WASM_DEBUG_ALL || (WASM_DEBUG && true);
-WASM3_STATIC M3Result  Compile_Return  (IM3Compilation o, m3opcode_t i_opcode)
+WASM3_STATIC_DEBUG M3Result  Compile_Return  (IM3Compilation o, m3opcode_t i_opcode)
 {
     M3Result result = m3Err_none;
 
@@ -3005,10 +3005,3 @@ _   (CompileBlockStatements (o));
 
     return result;
 }
-
-#if DEBUG
-static void WASM3_Debug_PrintOpsInfo(){
-    ESP_LOGW("WASM3","WASM3_Debug_PrintOpsInfo");
-    ESP_LOGW("WASM3", "Compile_Return: %p", &Compile_Return);
-}
-#endif

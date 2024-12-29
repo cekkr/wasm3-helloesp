@@ -48,6 +48,11 @@
 #define WASM_DEBUG 1
 #define WASM_DEBUG_ALL 0
 
+#if HELLOESP_WASM_DEBUG
+#undef WASM_DEBUG
+#define WASM_DEBUG 1
+#endif
+
 #define DEBUG_MEMORY 0
 
 #define WASM_ENABLE_OP_TRACE 1

@@ -24,6 +24,12 @@ d_m3BeginExternC
     #define WASM3_STATIC_INLINE static inline
 #endif
 
+#if WASM_DEBUG
+#define WASM3_STATIC_DEBUG
+#else
+#define WASM3_STATIC_DEBUG WASM3_STATIC
+#endif
+
 enum
 {
     c_waOp_block                = 0x02,
@@ -221,5 +227,10 @@ M3Result    CompileFunction             (IM3Function io_function);
 
 M3Result    CompileRawFunction          (IM3Module io_module, IM3Function io_function, const void * i_function, const void * i_userdata);
 
+///
+/// For debug purposes
+///
+
+WASM3_STATIC_DEBUG M3Result  Compile_Return  (IM3Compilation o, m3opcode_t i_opcode);
 
 d_m3EndExternC
