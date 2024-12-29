@@ -147,10 +147,10 @@ typedef struct M3OpInfo
     #if DEBUG
     #if !M3_FUNCTIONS_ENUM
     const char * const  name;
+    #endif    
     #endif
 
-    int idx;
-    #endif
+    int idx; // before in debug
 
     i8                      stackOffset;
     u8                      type;
@@ -204,7 +204,8 @@ WASM3_STATIC_INLINE bool  IsIntRegisterSlotAlias     (u16 i_slot)    { return (i
         #define M3OP_RESERVED { "reserved", -2 }
     #endif    
 #else
-    #define M3OP(name, idx, ...) { __VA_ARGS__ }
+    // previously M3OP(name, idx, ...)
+    #define M3OP(name, ...) { __VA_ARGS__ }
     #define M3OP_RESERVED   { 0 }
 #endif
 
