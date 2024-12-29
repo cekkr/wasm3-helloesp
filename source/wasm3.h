@@ -61,7 +61,7 @@
 
 #if WASM_ENABLE_OP_TRACE
     //#define d_m3EnableOpTracing 1 // problems with m3_info.c DRAM size (1048932) [solve it]
-    //#define d_m3EnableOpProfiling 1 // problems with op_DumpStack reference
+    //#define d_m3EnableOpProfiling 1 // problems with op_DumpStack reference (anyway, the same problem occurs without it)
 #endif
 
 // #define d_m3EnableOpProfiling 1

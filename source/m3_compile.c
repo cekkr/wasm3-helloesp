@@ -59,7 +59,10 @@ WASM3_STATIC M3_NOINLINE M3Result  EmitOp  (IM3Compilation o, IM3Operation i_ope
     M3Result result = m3Err_none;                                 
     
     bool stackIsPolymorphic = IsStackPolymorphic (o);
-    if(WASM_DEBUG_EmitOp) ESP_LOGW("WASM3", "EmitOp: i_operation=%p, IsStackPolymorphic=%d", i_operation, stackIsPolymorphic);
+    if(WASM_DEBUG_EmitOp) {
+        ESP_LOGW("WASM3", "EmitOp called");
+        ESP_LOGW("WASM3", "EmitOp: i_operation=%p, IsStackPolymorphic=%d", i_operation, stackIsPolymorphic);
+    }
     d_m3Assert (i_operation or stackIsPolymorphic);
 
     // it's OK for page to be null; when compile-walking the bytecode without emitting

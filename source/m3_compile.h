@@ -24,7 +24,7 @@ d_m3BeginExternC
     #define WASM3_STATIC_INLINE static inline
 #endif
 
-#if WASM_DEBUG
+#if WASM_ENABLE_OP_TRACE
 #define WASM3_STATIC_DEBUG
 #else
 #define WASM3_STATIC_DEBUG WASM3_STATIC

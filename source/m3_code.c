@@ -107,7 +107,9 @@ u32  NumFreeLines  (IM3CodePage i_page)
 
 
 void  EmitWord_impl  (IM3CodePage i_page, void * i_word)
-{                                                                       d_m3Assert (i_page->info.lineIndex+1 <= i_page->info.numLines);
+{   
+    ESP_LOGI("WASM3", "EmitWord_impl called\n");           
+    d_m3Assert (i_page->info.lineIndex+1 <= i_page->info.numLines);
     i_page->code [i_page->info.lineIndex++] = i_word;
 }
 
