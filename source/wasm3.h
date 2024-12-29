@@ -91,7 +91,11 @@
 #define OP_TRACE_TYPE cstr_t
 #endif
 
+#define WASM_DEBUG_DumpStack_InOps 0
+
+///
 /// Operations index
+///
 #include "wasm3_defs.h"
 #include "m3_op_names_generated.h"
 #include "m3_config.h"

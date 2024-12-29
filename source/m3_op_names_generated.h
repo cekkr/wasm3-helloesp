@@ -1,7 +1,7 @@
 // Auto-generated enum for operation names
 #pragma once
 
-#if M3_FUNCTIONS_ENUM
+#if DEBUG && M3_FUNCTIONS_ENUM
 enum M3OpNames {
     M3OP_NAME_UNREACHABLE = 0,
     M3OP_NAME_NOP = 1,
@@ -227,17 +227,18 @@ enum M3OpNames {
     M3OP_NAME_SETSLOT = 222,
     M3OP_NAME_PRESERVESETSLOT = 223,
     M3OP_NAME_0XFC = 224,
-    M3OP_NAME_I32_TRUNC_S_SAT_F32 = 226,
-    M3OP_NAME_I32_TRUNC_U_SAT_F32 = 227,
-    M3OP_NAME_I32_TRUNC_S_SAT_F64 = 228,
-    M3OP_NAME_I32_TRUNC_U_SAT_F64 = 229,
-    M3OP_NAME_I64_TRUNC_S_SAT_F32 = 230,
-    M3OP_NAME_I64_TRUNC_U_SAT_F32 = 231,
-    M3OP_NAME_I64_TRUNC_S_SAT_F64 = 232,
-    M3OP_NAME_I64_TRUNC_U_SAT_F64 = 233,
-    M3OP_NAME_MEMORY_COPY = 234,
-    M3OP_NAME_MEMORY_FILL = 235,
-    M3OP_NAME_TERMINATION = 236,
+    M3OP_NAME_DUMPSTACK = 226,
+    M3OP_NAME_I32_TRUNC_S_SAT_F32 = 227,
+    M3OP_NAME_I32_TRUNC_U_SAT_F32 = 228,
+    M3OP_NAME_I32_TRUNC_S_SAT_F64 = 229,
+    M3OP_NAME_I32_TRUNC_U_SAT_F64 = 230,
+    M3OP_NAME_I64_TRUNC_S_SAT_F32 = 231,
+    M3OP_NAME_I64_TRUNC_U_SAT_F32 = 232,
+    M3OP_NAME_I64_TRUNC_S_SAT_F64 = 233,
+    M3OP_NAME_I64_TRUNC_U_SAT_F64 = 234,
+    M3OP_NAME_MEMORY_COPY = 235,
+    M3OP_NAME_MEMORY_FILL = 236,
+    M3OP_NAME_TERMINATION = 237,
 };
 
 // Auto-generated array of operation names
@@ -467,6 +468,7 @@ static cstr_t opNames[] __attribute__((section(".rodata"))) = {
     "SetSlot",
     "PreserveSetSlot",
     "0xFC",
+    "DumpStack",
     "i32.trunc_s:sat/f32",
     "i32.trunc_u:sat/f32",
     "i32.trunc_s:sat/f64",

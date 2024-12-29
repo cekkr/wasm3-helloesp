@@ -641,7 +641,7 @@ d_m3Op (CallIndirect)
     else forwardTrap(r);
 }
 
-DEBUG_TYPE WASM_DEBUG_CallRawFunction = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_CallRawFunction = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 d_m3Op (CallRawFunction)
 {
     CALL_WATCHDOG
@@ -1324,7 +1324,8 @@ d_m3Op (Const32) {
 
     m3slot_t imm = immediate(m3slot_t);
     m3stack_t dest_offset = _sp + imm;
-    void* dest = m3SegmentedMemAccess(_mem, _sp + imm, sizeof(u32));
+    ESP_LOGW("WASM3", "Const32: _sp = %p, dest_offset = %p, imm = %d", _sp, dest_offset, imm);
+    u32* dest = m3SegmentedMemAccess(_mem, _sp + imm, sizeof(u32));
     
     bool isErr = (dest == ERROR_POINTER);
     if (WASM_DEBUG_Const || isErr) {
@@ -1332,7 +1333,7 @@ d_m3Op (Const32) {
         if(isErr) return m3Err_pointerOverflow;
     }
     
-    *(u32*)dest = value;
+    *dest = value;
 
     nextOp();
 }

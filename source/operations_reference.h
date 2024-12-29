@@ -263,9 +263,13 @@ const M3OpInfo c_operations [] =
     [c_waOp_extended] = M3OP( "0xFC", 0, c_m3Type_unknown,   d_emptyOpList,  Compile_ExtendedOpcode ),
 # endif
 
-# ifdef DEBUG
-    M3OP( "termination", 0, c_m3Type_unknown ) // for find_operation_info
+# if DEBUG
+    M3OP( "termination", 0, c_m3Type_unknown ), // for find_operation_info
 # endif
+
+#if d_m3EnableOpTracing && WASM_DEBUG_DumpStack_InOps
+    d_m3DebugOp (DumpStack)
+#endif
 };
 
 const M3OpInfo c_operationsFC [] =
@@ -286,6 +290,6 @@ const M3OpInfo c_operationsFC [] =
 
 
 # ifdef DEBUG
-    M3OP( "termination", 0, c_m3Type_unknown ) // for find_operation_info
+    M3OP( "termination", 0, c_m3Type_unknown ) // for find_operation_info    
 # endif
 };

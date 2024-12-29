@@ -16,6 +16,10 @@ void backtrace(){
     vTaskDelay(pdMS_TO_TICKS(2000));
 }
 
+void waitForIt(){
+    vTaskDelay(pdMS_TO_TICKS(100));
+}
+
 
 m3ret_t backtrace_err(m3ret_t err){
     //ESP_LOGE("WASM3", "Error: %s", err);

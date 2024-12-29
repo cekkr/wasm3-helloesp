@@ -263,29 +263,33 @@ const M3OpInfo c_operations [] =
     [c_waOp_extended] = M3OP( "0xFC", 224, 0,  c_m3Type_unknown,   d_emptyOpList,  Compile_ExtendedOpcode ),  // 0xe0
 # endif
 
-# ifdef DEBUG
-    M3OP( "termination", 225, 0,  c_m3Type_unknown ) // 0xe1
+# if DEBUG
+    M3OP( "termination", 225, 0,  c_m3Type_unknown ), // 0xe1
 # endif
+
+#if d_m3EnableOpTracing && WASM_DEBUG_DumpStack_InOps
+    d_m3DebugOp (DumpStack, 226)
+#endif
 };
 
 const M3OpInfo c_operationsFC [] =
 {
-    M3OP_F( "i32.trunc_s:sat/f32", 226, 0,   i_32,   d_convertOpList (i32_TruncSat_f32),        Compile_Convert ),  // 0xe2
-    M3OP_F( "i32.trunc_u:sat/f32", 227, 0,   i_32,   d_convertOpList (u32_TruncSat_f32),        Compile_Convert ),  // 0xe3
-    M3OP_F( "i32.trunc_s:sat/f64", 228, 0,   i_32,   d_convertOpList (i32_TruncSat_f64),        Compile_Convert ),  // 0xe4
-    M3OP_F( "i32.trunc_u:sat/f64", 229, 0,   i_32,   d_convertOpList (u32_TruncSat_f64),        Compile_Convert ),  // 0xe5
-    M3OP_F( "i64.trunc_s:sat/f32", 230, 0,   i_64,   d_convertOpList (i64_TruncSat_f32),        Compile_Convert ),  // 0xe6
-    M3OP_F( "i64.trunc_u:sat/f32", 231, 0,   i_64,   d_convertOpList (u64_TruncSat_f32),        Compile_Convert ),  // 0xe7
-    M3OP_F( "i64.trunc_s:sat/f64", 232, 0,   i_64,   d_convertOpList (i64_TruncSat_f64),        Compile_Convert ),  // 0xe8
-    M3OP_F( "i64.trunc_u:sat/f64", 233, 0,   i_64,   d_convertOpList (u64_TruncSat_f64),        Compile_Convert ),  // 0xe9
+    M3OP_F( "i32.trunc_s:sat/f32", 227, 0,   i_32,   d_convertOpList (i32_TruncSat_f32),        Compile_Convert ),  // 0xe3
+    M3OP_F( "i32.trunc_u:sat/f32", 228, 0,   i_32,   d_convertOpList (u32_TruncSat_f32),        Compile_Convert ),  // 0xe4
+    M3OP_F( "i32.trunc_s:sat/f64", 229, 0,   i_32,   d_convertOpList (i32_TruncSat_f64),        Compile_Convert ),  // 0xe5
+    M3OP_F( "i32.trunc_u:sat/f64", 230, 0,   i_32,   d_convertOpList (u32_TruncSat_f64),        Compile_Convert ),  // 0xe6
+    M3OP_F( "i64.trunc_s:sat/f32", 231, 0,   i_64,   d_convertOpList (i64_TruncSat_f32),        Compile_Convert ),  // 0xe7
+    M3OP_F( "i64.trunc_u:sat/f32", 232, 0,   i_64,   d_convertOpList (u64_TruncSat_f32),        Compile_Convert ),  // 0xe8
+    M3OP_F( "i64.trunc_s:sat/f64", 233, 0,   i_64,   d_convertOpList (i64_TruncSat_f64),        Compile_Convert ),  // 0xe9
+    M3OP_F( "i64.trunc_u:sat/f64", 234, 0,   i_64,   d_convertOpList (u64_TruncSat_f64),        Compile_Convert ),  // 0xea
 
     M3OP_RESERVED, M3OP_RESERVED,
 
-    M3OP( "memory.copy", 234, 0,   none,   d_emptyOpList,                           Compile_Memory_CopyFill ), // 0xea
-    M3OP( "memory.fill", 235, 0,   none,   d_emptyOpList,                           Compile_Memory_CopyFill ), // 0xeb
+    M3OP( "memory.copy", 235, 0,   none,   d_emptyOpList,                           Compile_Memory_CopyFill ), // 0xeb
+    M3OP( "memory.fill", 236, 0,   none,   d_emptyOpList,                           Compile_Memory_CopyFill ), // 0xec
 
 
 # ifdef DEBUG
-    M3OP( "termination", 236, 0,  c_m3Type_unknown ) // 0xec
+    M3OP( "termination", 237, 0,  c_m3Type_unknown ) // 0xed
 # endif
 };

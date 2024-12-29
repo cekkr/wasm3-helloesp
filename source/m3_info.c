@@ -507,7 +507,13 @@ void  log_emit  (IM3Compilation o, IM3Operation i_operation)
         printf ("%p: %s\n", GetPagePC (o->page),  i.info->name);
         #endif
     }
-    else printf ("not found: %p\n", i_operation);
+    else {        
+        printf ("not found: %p\n", i_operation);
+
+        #if WASM_ENABLE_OP_TRACE
+        backtrace();
+        #endif
+    }
 }
 
 #endif // DEBUG

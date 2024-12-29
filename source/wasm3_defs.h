@@ -355,10 +355,10 @@ typedef m3slot_t *              m3stack_t;
 
 //#define MEMPTR  u32
 
-static m3stack_t pcPP(m3stack_t* pc){
-  m3stack_t* ret = pc;
+static m3slot_t* pcPP(m3slot_t* pc){
+  m3slot_t* ret = pc;
   pc += BITS_MUL;
-  return *ret;
+  return ret;
 }
 
 typedef

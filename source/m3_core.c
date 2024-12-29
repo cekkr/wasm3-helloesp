@@ -191,7 +191,6 @@ void* default_malloc(size_t size) {
 
         if(!check_memory_available_bySize(size)){
             ESP_LOGE("WASM3", "No memory available (size: %zu)", size);
-            ESP_LOGE("WASM3", "No memory available (size: %zu)", size);
             LOG_FLUSH;
             backtrace();
             return ERROR_POINTER;

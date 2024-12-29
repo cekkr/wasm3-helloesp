@@ -50,27 +50,37 @@ M3Result  EnsureCodePageNumLines  (IM3Compilation o, u32 i_numLines)
     return result;
 }
 
-WASM3_STATIC M3_NOINLINE
-M3Result  EmitOp  (IM3Compilation o, IM3Operation i_operation)
+
+DEBUG_TYPE WASM_DEBUG_EmitOp = WASM_DEBUG_ALL || (WASM_DEBUG && true); 
+WASM3_STATIC M3_NOINLINE M3Result  EmitOp  (IM3Compilation o, IM3Operation i_operation)
 {
-    M3Result result = m3Err_none;                                 d_m3Assert (i_operation or IsStackPolymorphic (o));
+    M3Result result = m3Err_none;                                 
+    
+    bool stackIsPolymorphic = IsStackPolymorphic (o);
+    if(WASM_DEBUG_EmitOp) ESP_LOGW("WASM3", "EmitOp: i_operation=%p, IsStackPolymorphic=%d", i_operation, stackIsPolymorphic);
+    d_m3Assert (i_operation or stackIsPolymorphic);
 
     // it's OK for page to be null; when compile-walking the bytecode without emitting
     if (o->page)
     {
-# if d_m3EnableOpTracing
-        if (i_operation != op_DumpStack)
-            o->numEmits++;
-# endif
+        # if d_m3EnableOpTracing
+            bool isDumpStack = (i_operation != op_DumpStack);
+            if(WASM_DEBUG_EmitOp) ESP_LOGW("WASM3", "EmitOp: isDumpStack=%d", isDumpStack);
+            if (isDumpStack)
+                o->numEmits++;
+        # endif
 
-        // have execution jump to a new page if slots are critically low
+        // have execution jump to a new page if slots are critically low       
         result = EnsureCodePageNumLines (o, d_m3CodePageFreeLinesThreshold);
 
+        if(WASM_DEBUG_EmitOp && result != NULL) ESP_LOGW("WASM3", "EmitOp: EnsureCodePageNumLines=%s", result);
+
         if (not result)
-        {                                                           if (d_m3LogEmit) log_emit (o, i_operation);
-# if d_m3RecordBacktraces
-            EmitMappingEntry (o->page, o->lastOpcodeStart - o->module->wasmStart);
-# endif // d_m3RecordBacktraces
+        {                                                           
+            if (d_m3LogEmit) log_emit (o, i_operation);
+            # if d_m3RecordBacktraces
+                EmitMappingEntry (o->page, o->lastOpcodeStart - o->module->wasmStart);
+            # endif // d_m3RecordBacktraces
             EmitWord (o->page, i_operation);
         }
     }
@@ -1182,7 +1192,8 @@ M3Result  Compile_Const_i32  (IM3Compilation o, m3opcode_t i_opcode)
 
     i32 value;
 _   (ReadLEB_i32 (&o->runtime->memory, & value, & o->wasm, o->wasmEnd));
-_   (PushConst (o, value, c_m3Type_i32));                       m3log (compile, d_indent " (const i32 = %" PRIi32 ")", get_indention_string (o), value);
+_   (PushConst (o, value, c_m3Type_i32));                       
+m3log (compile, d_indent " (const i32 = %" PRIi32 ")", get_indention_string (o), value);
     _catch: return result;
 }
 
@@ -2300,7 +2311,6 @@ M3Result  CompileRawFunction  (IM3Module io_module,  IM3Function io_function, co
 #define d_commutativeBinOpList(TYPE, NAME)  { op_##TYPE##_##NAME##_rs,  NULL,                       op_##TYPE##_##NAME##_ss,    NULL }
 #define d_convertOpList(OP)                 { op_##OP##_r_r,            op_##OP##_r_s,              op_##OP##_s_r,              op_##OP##_s_s }
 
-
 const M3OpInfo c_operations [] =
 {
     M3OP( "unreachable", 0, 0,  none,   d_logOp (Unreachable),              Compile_Unreachable ),  // 0x00
@@ -2524,82 +2534,73 @@ const M3OpInfo c_operations [] =
     M3OP( "i64.extend16_s", 177, 0,   i_64,   d_unaryOpList (i64, Extend16_s),       NULL    ),          // 0xb1
     M3OP( "i64.extend32_s", 178, 0,   i_64,   d_unaryOpList (i64, Extend32_s),       NULL    ),          // 0xb2
 
-    // for codepage logging. the order doesn't matter:
-    # if DEBUG
-        
-        #if M3_FUNCTIONS_ENUM
-            #define d_m3DebugOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP })
+# ifdef DEBUG // for codepage logging. the order doesn't matter:
+#define d_m3DebugOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP })
 
-            # if d_m3HasFloat
-                #define d_m3DebugTypedOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP##_i32, op_##OP##_i64, op_##OP##_f32, op_##OP##_f64 })
-            # else
-                #define d_m3DebugTypedOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP##_i32, op_##OP##_i64 })
-            # endif
-        #else
-            #define d_m3DebugOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP })
+# if d_m3HasFloat
+#define d_m3DebugTypedOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP##_i32, op_##OP##_i64 })
+# else
+#define d_m3DebugTypedOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP##_i32, op_##OP##_i64 })
+# endif
 
-            # if d_m3HasFloat
-                #define d_m3DebugTypedOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP##_i32, op_##OP##_i64, op_##OP##_f32, op_##OP##_f64 })
-            # else
-                #define d_m3DebugTypedOp(OP, IDX) M3OP (#OP, IDX, 0, none, { op_##OP##_i32, op_##OP##_i64 })
-            # endif
-        #endif
+    d_m3DebugOp (Compile, 179),          d_m3DebugOp (Entry, 180),            d_m3DebugOp (End, 181),
+    d_m3DebugOp (Unsupported, 182),      d_m3DebugOp (CallRawFunction, 183),
 
+    d_m3DebugOp (GetGlobal_s32, 184),    d_m3DebugOp (GetGlobal_s64, 185),    d_m3DebugOp (ContinueLoop, 186),     d_m3DebugOp (ContinueLoopIf, 187),
 
-        d_m3DebugOp (Compile, 179),          d_m3DebugOp (Entry, 180),            d_m3DebugOp (End, 181),
-        d_m3DebugOp (Unsupported, 182),      d_m3DebugOp (CallRawFunction, 183),
+    d_m3DebugOp (CopySlot_32, 188),      d_m3DebugOp (PreserveCopySlot_32, 189), d_m3DebugOp (If_s, 190),          d_m3DebugOp (BranchIfPrologue_s, 191),
+    d_m3DebugOp (CopySlot_64, 192),      d_m3DebugOp (PreserveCopySlot_64, 193), d_m3DebugOp (If_r, 194),          d_m3DebugOp (BranchIfPrologue_r, 195),
 
-        d_m3DebugOp (GetGlobal_s32, 184),    d_m3DebugOp (GetGlobal_s64, 185),    d_m3DebugOp (ContinueLoop, 186),     d_m3DebugOp (ContinueLoopIf, 187),
+    d_m3DebugOp (Select_i32_rss, 196),   d_m3DebugOp (Select_i32_srs, 197),   d_m3DebugOp (Select_i32_ssr, 198),   d_m3DebugOp (Select_i32_sss, 199),
+    d_m3DebugOp (Select_i64_rss, 200),   d_m3DebugOp (Select_i64_srs, 201),   d_m3DebugOp (Select_i64_ssr, 202),   d_m3DebugOp (Select_i64_sss, 203),
 
-        d_m3DebugOp (CopySlot_32, 188),      d_m3DebugOp (PreserveCopySlot_32, 189), d_m3DebugOp (If_s, 190),          d_m3DebugOp (BranchIfPrologue_s, 191),
-        d_m3DebugOp (CopySlot_64, 192),      d_m3DebugOp (PreserveCopySlot_64, 193), d_m3DebugOp (If_r, 194),          d_m3DebugOp (BranchIfPrologue_r, 195),
+# if d_m3HasFloat
+    d_m3DebugOp (Select_f32_sss, 204),   d_m3DebugOp (Select_f32_srs, 205),   d_m3DebugOp (Select_f32_ssr, 206),
+    d_m3DebugOp (Select_f32_rss, 207),   d_m3DebugOp (Select_f32_rrs, 208),   d_m3DebugOp (Select_f32_rsr, 209),
 
-        d_m3DebugOp (Select_i32_rss, 196),   d_m3DebugOp (Select_i32_srs, 197),   d_m3DebugOp (Select_i32_ssr, 198),   d_m3DebugOp (Select_i32_sss, 199),
-        d_m3DebugOp (Select_i64_rss, 200),   d_m3DebugOp (Select_i64_srs, 201),   d_m3DebugOp (Select_i64_ssr, 202),   d_m3DebugOp (Select_i64_sss, 203),
+    d_m3DebugOp (Select_f64_sss, 210),   d_m3DebugOp (Select_f64_srs, 211),   d_m3DebugOp (Select_f64_ssr, 212),
+    d_m3DebugOp (Select_f64_rss, 213),   d_m3DebugOp (Select_f64_rrs, 214),   d_m3DebugOp (Select_f64_rsr, 215),
+# endif
 
-        # if d_m3HasFloat
-            d_m3DebugOp (Select_f32_sss, 204),   d_m3DebugOp (Select_f32_srs, 205),   d_m3DebugOp (Select_f32_ssr, 206),
-            d_m3DebugOp (Select_f32_rss, 207),   d_m3DebugOp (Select_f32_rrs, 208),   d_m3DebugOp (Select_f32_rsr, 209),
+    d_m3DebugOp (MemFill, 216),          d_m3DebugOp (MemCopy, 217),
 
-            d_m3DebugOp (Select_f64_sss, 210),   d_m3DebugOp (Select_f64_srs, 211),   d_m3DebugOp (Select_f64_ssr, 212),
-            d_m3DebugOp (Select_f64_rss, 213),   d_m3DebugOp (Select_f64_rrs, 214),   d_m3DebugOp (Select_f64_rsr, 215),
-        # endif
+    d_m3DebugTypedOp (SetGlobal, 218),   d_m3DebugOp (SetGlobal_s32, 219),    d_m3DebugOp (SetGlobal_s64, 220),
 
-        d_m3DebugOp (MemFill, 216),          d_m3DebugOp (MemCopy, 217),
+    d_m3DebugTypedOp (SetRegister, 221), d_m3DebugTypedOp (SetSlot, 222),     d_m3DebugTypedOp (PreserveSetSlot, 223),
+# endif
 
-        d_m3DebugTypedOp (SetGlobal, 218),   d_m3DebugOp (SetGlobal_s32, 219),    d_m3DebugOp (SetGlobal_s64, 220),
+# if d_m3CascadedOpcodes
+    [c_waOp_extended] = M3OP( "0xFC", 224, 0,  c_m3Type_unknown,   d_emptyOpList,  Compile_ExtendedOpcode ),  // 0xe0
+# endif
 
-        d_m3DebugTypedOp (SetRegister, 221), d_m3DebugTypedOp (SetSlot, 222),     d_m3DebugTypedOp (PreserveSetSlot, 223),
-    # endif
+# if DEBUG
+    M3OP( "termination", 225, 0,  c_m3Type_unknown ), // 0xe1
+# endif
 
-    # if d_m3CascadedOpcodes
-        [c_waOp_extended] = M3OP( "0xFC", 224, 0,  c_m3Type_unknown,   d_emptyOpList,  Compile_ExtendedOpcode ),  // 0xe0
-    # endif
-
-    # ifdef DEBUG
-        M3OP( "termination", 225, 0,  c_m3Type_unknown ) // 0xe1
-    # endif
+#if d_m3EnableOpTracing && WASM_DEBUG_DumpStack_InOps
+    d_m3DebugOp (DumpStack, 226)
+#endif
 };
 
 const M3OpInfo c_operationsFC [] =
 {
-    M3OP_F( "i32.trunc_s:sat/f32", 226, 0,   i_32,   d_convertOpList (i32_TruncSat_f32),        Compile_Convert ),  // 0xe2
-    M3OP_F( "i32.trunc_u:sat/f32", 227, 0,   i_32,   d_convertOpList (u32_TruncSat_f32),        Compile_Convert ),  // 0xe3
-    M3OP_F( "i32.trunc_s:sat/f64", 228, 0,   i_32,   d_convertOpList (i32_TruncSat_f64),        Compile_Convert ),  // 0xe4
-    M3OP_F( "i32.trunc_u:sat/f64", 229, 0,   i_32,   d_convertOpList (u32_TruncSat_f64),        Compile_Convert ),  // 0xe5
-    M3OP_F( "i64.trunc_s:sat/f32", 230, 0,   i_64,   d_convertOpList (i64_TruncSat_f32),        Compile_Convert ),  // 0xe6
-    M3OP_F( "i64.trunc_u:sat/f32", 231, 0,   i_64,   d_convertOpList (u64_TruncSat_f32),        Compile_Convert ),  // 0xe7
-    M3OP_F( "i64.trunc_s:sat/f64", 232, 0,   i_64,   d_convertOpList (i64_TruncSat_f64),        Compile_Convert ),  // 0xe8
-    M3OP_F( "i64.trunc_u:sat/f64", 233, 0,   i_64,   d_convertOpList (u64_TruncSat_f64),        Compile_Convert ),  // 0xe9
+    M3OP_F( "i32.trunc_s:sat/f32", 227, 0,   i_32,   d_convertOpList (i32_TruncSat_f32),        Compile_Convert ),  // 0xe3
+    M3OP_F( "i32.trunc_u:sat/f32", 228, 0,   i_32,   d_convertOpList (u32_TruncSat_f32),        Compile_Convert ),  // 0xe4
+    M3OP_F( "i32.trunc_s:sat/f64", 229, 0,   i_32,   d_convertOpList (i32_TruncSat_f64),        Compile_Convert ),  // 0xe5
+    M3OP_F( "i32.trunc_u:sat/f64", 230, 0,   i_32,   d_convertOpList (u32_TruncSat_f64),        Compile_Convert ),  // 0xe6
+    M3OP_F( "i64.trunc_s:sat/f32", 231, 0,   i_64,   d_convertOpList (i64_TruncSat_f32),        Compile_Convert ),  // 0xe7
+    M3OP_F( "i64.trunc_u:sat/f32", 232, 0,   i_64,   d_convertOpList (u64_TruncSat_f32),        Compile_Convert ),  // 0xe8
+    M3OP_F( "i64.trunc_s:sat/f64", 233, 0,   i_64,   d_convertOpList (i64_TruncSat_f64),        Compile_Convert ),  // 0xe9
+    M3OP_F( "i64.trunc_u:sat/f64", 234, 0,   i_64,   d_convertOpList (u64_TruncSat_f64),        Compile_Convert ),  // 0xea
 
     M3OP_RESERVED, M3OP_RESERVED,
 
-    M3OP( "memory.copy", 234, 0,   none,   d_emptyOpList,                           Compile_Memory_CopyFill ), // 0xea
-    M3OP( "memory.fill", 235, 0,   none,   d_emptyOpList,                           Compile_Memory_CopyFill ), // 0xeb
+    M3OP( "memory.copy", 235, 0,   none,   d_emptyOpList,                           Compile_Memory_CopyFill ), // 0xeb
+    M3OP( "memory.fill", 236, 0,   none,   d_emptyOpList,                           Compile_Memory_CopyFill ), // 0xec
 
 
 # ifdef DEBUG
-    M3OP( "termination", 236, 0,  c_m3Type_unknown ) // 0xec
+    M3OP( "termination", 237, 0,  c_m3Type_unknown ) // 0xed
 # endif
 };
 
@@ -2630,17 +2631,18 @@ M3Result  CompileBlockStatements  (IM3Compilation o)
 
     while (o->wasm < o->wasmEnd)
     {
-# if d_m3EnableOpTracing
-        if (o->numEmits)
-        {
-            EmitOp          (o, op_DumpStack);
-            EmitConstant32  (o, o->numOpcodes);
-            EmitConstant32  (o, GetMaxUsedSlotPlusOne(o));
-            EmitPointer     (o, o->function);
+        # if d_m3EnableOpTracing
+            if (o->numEmits)
+            {
+                EmitOp          (o, op_DumpStack);
+                EmitConstant32  (o, o->numOpcodes);
+                EmitConstant32  (o, GetMaxUsedSlotPlusOne(o));
+                EmitPointer     (o, o->function);
 
-            o->numEmits = 0;
-        }
-# endif
+                o->numEmits = 0;
+            }
+        # endif
+
         m3opcode_t opcode;
         o->lastOpcodeStart = o->wasm;
         CHECK_MEMORY_PTR(&o->runtime->memory, "CompileBlockStatements");
