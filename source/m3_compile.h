@@ -232,5 +232,6 @@ M3Result    CompileRawFunction          (IM3Module io_module, IM3Function io_fun
 ///
 
 WASM3_STATIC_DEBUG M3Result  Compile_Return  (IM3Compilation o, m3opcode_t i_opcode);
+WASM3_STATIC_DEBUG M3Result  Compile_Const_i32  (IM3Compilation o, m3opcode_t i_opcode);
 
 d_m3EndExternC

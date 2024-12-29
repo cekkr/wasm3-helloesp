@@ -55,12 +55,13 @@
 
 #define DEBUG_MEMORY 0
 
-#define WASM_ENABLE_OP_TRACE 1
+#define WASM_ENABLE_OP_TRACE 0
 #define M3_FUNCTIONS_ENUM 1
 #define WASM_ENABLE_CHECK_MEMORY_PTR 0
 
 #if WASM_ENABLE_OP_TRACE
-    #define d_m3EnableOpTracing 1
+    //#define d_m3EnableOpTracing 1 // problems with m3_info.c DRAM size (1048932) [solve it]
+    //#define d_m3EnableOpProfiling 1 // problems with op_DumpStack reference
 #endif
 
 // #define d_m3EnableOpProfiling 1

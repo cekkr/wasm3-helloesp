@@ -61,13 +61,15 @@ d_m3BeginExternC
 // Ottiene il puntatore allo slot dello stack usando un offset immediato
 #define slot_ptr(TYPE)             (TYPE*)m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(TYPE))
 
-# if d_m3EnableOpProfiling || d_m3EnableOpTracing
+# if d_m3EnableOpProfiling || d_m3EnableOpTracing // originally only d_m3EnableOpProfiling
    # if M3_FUNCTIONS_ENUM
         d_m3RetSig  traceOp   (d_m3OpSig, int i_operation);
     #else 
         d_m3RetSig  traceOp   (d_m3OpSig, cstr_t i_operationName);
     #endif
     #define nextOp()                 M3_MUSTTAIL return traceOp (d_m3OpAllArgs, __FUNCTION__)
+# else
+#   define nextOp()                 nextOpDirect()
 # endif
 
 #define jumpOp(PC)                  jumpOpDirect(PC)
@@ -855,6 +857,7 @@ d_m3Op  (Entry)
 
 #if d_m3EnableStrace >= 2
         d_m3TracePrint("%s %s {", m3_GetFunctionName(function), SPrintFunctionArgList (function, _sp + function->numRetSlots));
+
         trace_rt->callDepth++;
 #endif
 

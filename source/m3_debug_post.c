@@ -3,5 +3,6 @@
 
 void WASM3_Debug_PrintOpsInfo(){
     ESP_LOGW("WASM3","WASM3_Debug_PrintOpsInfo");
-    ESP_LOGW("WASM3", "Compile_Return: %p", &Compile_Return);
+    ESP_LOGW("WASM3", "Compile_Return: %p", &Compile_Return); 
+    ESP_LOGW("WASM3", "Compile_Const_i32: %p", &Compile_Const_i32); 
 }

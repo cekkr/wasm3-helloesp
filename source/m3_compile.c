@@ -1187,8 +1187,7 @@ _               (Pop (o));
 
 //-------------------------------------------------------------------------------------------------------------------------
 
-WASM3_STATIC
-M3Result  Compile_Const_i32  (IM3Compilation o, m3opcode_t i_opcode)
+WASM3_STATIC_DEBUG M3Result  Compile_Const_i32  (IM3Compilation o, m3opcode_t i_opcode)
 {
     M3Result result;
 
@@ -2581,7 +2580,7 @@ const M3OpInfo c_operations [] =
     M3OP( "termination", 225, 0,  c_m3Type_unknown ), // 0xe1
 # endif
 
-#if d_m3EnableOpTracing && WASM_DEBUG_DumpStack_InOps
+#if WASM_ENABLE_OP_TRACE && WASM_DEBUG_DumpStack_InOps
     d_m3DebugOp (DumpStack, 226)
 #endif
 };

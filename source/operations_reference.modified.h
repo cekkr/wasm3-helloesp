@@ -267,7 +267,7 @@ const M3OpInfo c_operations [] =
     M3OP( "termination", 225, 0,  c_m3Type_unknown ), // 0xe1
 # endif
 
-#if d_m3EnableOpTracing && WASM_DEBUG_DumpStack_InOps
+#if WASM_ENABLE_OP_TRACE && WASM_DEBUG_DumpStack_InOps
     d_m3DebugOp (DumpStack, 226)
 #endif
 };
