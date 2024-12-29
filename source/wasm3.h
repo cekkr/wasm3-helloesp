@@ -45,7 +45,7 @@
 
 #define M3CodePage_RemoveCodePageOfCapacity_FreePage 0
 
-#define WASM_DEBUG 0
+#define WASM_DEBUG 1
 #define WASM_DEBUG_ALL 0
 
 #if HELLOESP_WASM_DEBUG
@@ -53,7 +53,7 @@
 #define WASM_DEBUG 1
 #endif
 
-#define DEBUG_MEMORY 0
+#define DEBUG_MEMORY 1
 
 #define WASM_ENABLE_OP_TRACE 0
 #define M3_FUNCTIONS_ENUM 1
@@ -61,7 +61,7 @@
 
 #if WASM_ENABLE_OP_TRACE
     //#define d_m3EnableOpTracing 1 // problems with m3_info.c DRAM size (1048932) [solve it]
-    //#define d_m3EnableOpProfiling 1 // problems with op_DumpStack reference (anyway, the same problem occurs without it)
+    #define d_m3EnableOpProfiling 1 // problems with op_DumpStack reference (anyway, the same problem occurs without it)
 #endif
 
 // #define d_m3EnableOpProfiling 1

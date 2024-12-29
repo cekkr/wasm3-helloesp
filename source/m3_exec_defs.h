@@ -40,18 +40,18 @@ d_m3BeginExternC
 
     #define MEMACCESS(type, mem, pc) \    
         (ESP_LOGI("WASM3", "MEM ACCESS type: %s\n", STRINGIFY(type)), \
-        *((type*)(m3SegmentedMemAccess(mem, CAST_PTR pc, sizeof(type)))))
+        *((type*)(m3SegmentedMemAccess(mem, pc, sizeof(type)))))
 
     #define MEMPOINT(type, mem, pc) \
         (ESP_LOGI("WASM3", "MEM POINT type: %s\n", STRINGIFY(type)), \
-        (type*)m3SegmentedMemAccess(mem, CAST_PTR pc, sizeof(type))
+        (type*)m3SegmentedMemAccess(mem, pc, sizeof(type))
 
 #else
 #define MEMACCESS(type, mem, pc) \
-    *(type*)m3SegmentedMemAccess(mem, CAST_PTR pc, sizeof(type))
+    *(type*)m3SegmentedMemAccess(mem, pc, sizeof(type))
 
 #define MEMPOINT(type, mem, pc) \
-    (type)m3SegmentedMemAccess(mem, CAST_PTR pc, sizeof(type))
+    (type)m3SegmentedMemAccess(mem, pc, sizeof(type))
 #endif
 
 ///
