@@ -528,7 +528,7 @@ typedef struct M3ProfilerSlot
 }
 M3ProfilerSlot;
 
-static M3ProfilerSlot s_opProfilerCounts [d_m3ProfilerSlotMask + 1] = {};
+static M3ProfilerSlot s_opProfilerCounts [d_m3ProfilerSlotMask + 1]  __attribute__((section(".rodata"))) = {};
 
 void  ProfileHit  (cstr_t i_operationName)
 {
