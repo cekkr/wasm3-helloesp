@@ -15,7 +15,7 @@
 //typedef M3Runtime; // forced pre-declaration (m3_env.h)
 
 #define M3CodePage_Segmented true
-DEBUG_TYPE WASM_DEBUG_NEWCODEPAGE = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_NEWCODEPAGE = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 IM3CodePage  NewCodePage  (IM3Runtime i_runtime, u32 i_minNumLines)
 {
     if(WASM_DEBUG_NEWCODEPAGE) ESP_LOGI("WASM3", "NewCodePage called");
@@ -108,7 +108,10 @@ u32  NumFreeLines  (IM3CodePage i_page)
 
 void  EmitWord_impl  (IM3CodePage i_page, void * i_word)
 {   
-    ESP_LOGI("WASM3", "EmitWord_impl called\n");           
+    ESP_LOGI("WASM3", "EmitWord_impl called i_word=%p", i_word);           
+    ESP_LOGI("WASM3", "i_page->info.lineIndex+1 %d <= %d i_page->info.numLines", (i_page->info.lineIndex+1), i_page->info.numLines);
+    ESP_LOGI("WASM3", "i_page->code = %p", i_page->code);
+
     d_m3Assert (i_page->info.lineIndex+1 <= i_page->info.numLines);
     i_page->code [i_page->info.lineIndex++] = i_word;
 }

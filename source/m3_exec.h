@@ -110,7 +110,7 @@ d_m3BeginExternC
     #define d_m3TraceStore(TYPE,offset,val)
 #endif
 
-#ifdef DEBUG
+#if DEBUG
   #define d_nullPointer newTrap (ErrorRuntime (m3Err_nullPointer,   \
                         _mem->runtime, "Null pointer"))
 

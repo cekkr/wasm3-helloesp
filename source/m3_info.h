@@ -14,7 +14,7 @@ d_m3BeginExternC
 
 void            ProfileHit              (cstr_t i_operationName);
 
-#ifdef DEBUG
+#if DEBUG
 
 void            dump_type_stack         (IM3Compilation o);
 void            log_opcode              (IM3Compilation o, m3opcode_t i_opcode);

@@ -259,6 +259,10 @@ ptr get_segment_pointer(IM3Memory memory, mos offset) {
 
 DEBUG_TYPE WASM_DEBUG_m3_ResolvePointer = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 ptr m3_ResolvePointer(M3Memory* memory, mos offset) {
+    #if TRACK_MEMACCESS
+    ESP_LOGI("WASM3", "m3_ResolvePointer: requested offset %d", offset);
+    #endif
+
     if(WASM_DEBUG_m3_ResolvePointer) ESP_LOGI("WASM3", "m3_ResolvePointer (mem: %p) called for ptr: %p", memory, offset);
 
     ptr resolved = (ptr)offset;
@@ -270,7 +274,7 @@ ptr m3_ResolvePointer(M3Memory* memory, mos offset) {
     if (!memory || memory->firm != INIT_FIRM) return (ptr)offset;
     
     resolved = get_segment_pointer(memory, offset);
-    if (resolved == (mos)ERROR_POINTER) return (ptr)offset;
+    if (resolved == ERROR_POINTER) return (ptr)offset;
     
     resolve: {
         if(WASM_DEBUG_m3_ResolvePointer) ESP_LOGI("WASM3", "m3_ResolvePointer: original: %p, resolved: %p", offset, resolved);

@@ -159,7 +159,7 @@ _   (Module_PreallocFunctions(io_module, io_module->numFunctions));
     return result;
 }
 
-#ifdef DEBUG
+#if DEBUG
 void  Module_GenerateNames  (IM3Module i_module)
 {
     for (u32 i = 0; i < i_module->numFunctions; ++i)

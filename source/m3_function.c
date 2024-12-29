@@ -11,6 +11,7 @@
 #include "m3_function.h"
 //#include "m3_env.h"
 #include "m3_bind.h" 
+#include "wasm3.h"
 //#include "m3_pointers.h"
 
 M3Result AllocFuncType (IM3FuncType * o_functionType, u32 i_numTypes)
@@ -505,6 +506,7 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName, const c
 }
 
 // Funzione helper per registrare una funzione nel modulo
+DEBUG_TYPE WASM_DEBUG_RegisterWasmFunction = false;
 M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry, m3_wasi_context_t* ctx) {
     M3Result result = m3Err_none;
     
@@ -536,7 +538,7 @@ M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry, 
         }
     }
 
-    ESP_LOGI("WASM3", "New signature for %s: %s", entry->name, signature);
+    if(WASM_DEBUG_RegisterWasmFunction) ESP_LOGI("WASM3", "New signature for %s: %s", entry->name, signature);
 
     /// 
     ///
@@ -546,13 +548,14 @@ M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry, 
     // Linkare la funzione nel modulo
     result = m3_LinkRawFunctionEx( 
         module,              // Modulo WASM
-        "*",                 // Namespace (wildcard)
+        "env",                 // Namespace (wildcard)
         entry->name,         // Nome della funzione
         signature,    // Firma della funzione
         entry->func,         // Puntatore alla funzione
         ctx
     );
-    
+
+    if(WASM_DEBUG_RegisterWasmFunction) ESP_LOGI("WASM3", "Function %s registered", entry->name);
     return result;
 }
 

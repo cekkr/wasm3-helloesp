@@ -35,15 +35,15 @@ d_m3BeginExternC
 // Helper macro per accesso sicuro a offset specifici
 # define m3MemAccessAt(mem, off, sz)   m3SegmentedMemAccess((M3Memory*)(mem), (off), (sz))
 
-#ifdef TRACK_MEMACCESS
+#if TRACK_MEMACCESS && 0 // disabled
     #define STRINGIFY(x) #x
 
-    #define MEMACCESS(type, mem, pc) \    
+    #define MEMACCESS(type, mem, pc) \
         (ESP_LOGI("WASM3", "MEM ACCESS type: %s\n", STRINGIFY(type)), \
         *((type*)(m3SegmentedMemAccess(mem, pc, sizeof(type)))))
 
     #define MEMPOINT(type, mem, pc) \
-        (ESP_LOGI("WASM3", "MEM POINT type: %s\n", STRINGIFY(type)), \
+        (ESP_LOGI("WASM3", "MEM POINT type: %s\n", STRINGIFY(type))), \
         (type*)m3SegmentedMemAccess(mem, pc, sizeof(type))
 
 #else

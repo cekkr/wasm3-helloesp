@@ -10,6 +10,7 @@
 
 #include "m3_env.h"
 #include "m3_segmented_memory.h"
+#include "wasm3.h"
 
 
 #if PASSTHROUGH_HELLOESP
@@ -152,7 +153,7 @@ bool IsCodePageSafeToFree(IM3CodePage page) {
     return true;
 }
 
-DEBUG_TYPE WASM_DEBUG_RemoveCodePageOfCapacity = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_RemoveCodePageOfCapacity = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 IM3CodePage RemoveCodePageOfCapacity(M3CodePage ** io_list, u32 i_minimumLineCount)
 {
     if(WASM_DEBUG_RemoveCodePageOfCapacity) ESP_LOGI("WASM3", "RemoveCodePageOfCapacity called (io_list=%p, i_minimumLineCount=%d)", io_list, i_minimumLineCount);
@@ -162,8 +163,10 @@ IM3CodePage RemoveCodePageOfCapacity(M3CodePage ** io_list, u32 i_minimumLineCou
 
     while (page)
     {
+        if(WASM_DEBUG_RemoveCodePageOfCapacity) ESP_LOGI("WASM3", "RemoveCodePageOfCapacity: freeing page %p", page);
         if (NumFreeLines(page) >= i_minimumLineCount)
         {
+             if(WASM_DEBUG_RemoveCodePageOfCapacity) ESP_LOGI("WASM3", "RemoveCodePageOfCapacity: page->info.usageCount = %d", page->info.usageCount);
             d_m3Assert(page->info.usageCount == 0);
             
             // Verifica se è sicuro deallocare
@@ -359,7 +362,6 @@ void *  m3_GetUserData  (IM3Runtime i_runtime)
 {
     return i_runtime ? i_runtime->userdata : NULL;
 }
-
 
 void *  ForEachModule  (IM3Runtime i_runtime, ModuleVisitor i_visitor, void * i_info)
 {
@@ -926,7 +928,7 @@ _   (InitDataSegments (&io_runtime->memory, io_module));
 _   (InitElements (io_module));
     if(WASM_DEBUG_m3_LoadModule) ESP_LOGI("WASM3", "InitElements completed");
 
-#ifdef DEBUG
+#if DEBUG
     Module_GenerateNames(io_module);
 #endif
 
@@ -1020,7 +1022,7 @@ M3ValueType  m3_GetGlobalType  (IM3Global          i_global)
 }
 
 
-DEBUG_TYPE WASM_DEBUG_VERBOSE_v_FindFunction = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_VERBOSE_v_FindFunction = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 void *  v_FindFunction  (IM3Module i_module, const char * const i_name)
 {
     // Prefer exported functions
@@ -1064,7 +1066,7 @@ void *  v_FindFunction  (IM3Module i_module, const char * const i_name)
     return NULL;
 }
 
-
+//DEBUG_TYPE WASM_DEBUG_m3_FindFunction = true;
 M3Result  m3_FindFunction  (IM3Function * o_function, IM3Runtime i_runtime, const char * const i_functionName)
 {
     M3Result result = m3Err_none;                               d_m3Assert (o_function and i_runtime and i_functionName);
@@ -1447,19 +1449,21 @@ void  ReleaseCodePageNoTrack (IM3Runtime i_runtime, IM3CodePage i_codePage)
 }
 
 
-DEBUG_TYPE WASM_DEBUG_AcquireCodePageWithCapacity = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_AcquireCodePageWithCapacity = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 IM3CodePage  AcquireCodePageWithCapacity  (IM3Runtime i_runtime, u32 i_minLineCount)
 {
-    if(WASM_DEBUG_AcquireCodePageWithCapacity) ESP_LOGI("WASM3", "AcquireCodePageWithCapacity called");
-    
+    if(WASM_DEBUG_AcquireCodePageWithCapacity) ESP_LOGI("WASM3", "AcquireCodePageWithCapacity: RemoveCodePageOfCapacity");
     IM3CodePage page = RemoveCodePageOfCapacity (& i_runtime->pagesOpen, i_minLineCount);
 
     if (not page)
     {
+        if(WASM_DEBUG_AcquireCodePageWithCapacity) ESP_LOGI("WASM3", "AcquireCodePageWithCapacity: Environment_AcquireCodePage");
         page = Environment_AcquireCodePage (i_runtime->environment, i_minLineCount);
 
-        if (not page)
+        if (not page){
+            if(WASM_DEBUG_AcquireCodePageWithCapacity) ESP_LOGI("WASM3", "AcquireCodePageWithCapacity: NewCodePage");
             page = NewCodePage (i_runtime, i_minLineCount);
+        }
 
         if (page)
             i_runtime->numCodePages++;

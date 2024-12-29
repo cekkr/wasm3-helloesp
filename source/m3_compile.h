@@ -100,7 +100,7 @@ typedef struct
 
     IM3CodePage         page;
 
-#ifdef DEBUG
+#if DEBUG
     u32                 numEmits;
     u32                 numOpcodes;
 #endif

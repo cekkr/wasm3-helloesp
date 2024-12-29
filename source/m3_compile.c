@@ -2280,9 +2280,10 @@ _   (Compile_Operator (o, i_opcode));
     _catch: return result;
 }
 
-
+DEBUG_TYPE WASM_DEBUG_CompileRawFunction = WASM_DEBUG_ALL || (WASM_DEBUG && true);;
 M3Result  CompileRawFunction  (IM3Module io_module,  IM3Function io_function, const void * i_function, const void * i_userdata)
 {
+    if(WASM_DEBUG_CompileRawFunction) ESP_LOGI("WASM3", "CompileRawFunction called");
     d_m3Assert (io_module->runtime);
 
     IM3CodePage page = AcquireCodePageWithCapacity (io_module->runtime, 4);
@@ -2292,9 +2293,16 @@ M3Result  CompileRawFunction  (IM3Module io_module,  IM3Function io_function, co
         io_function->compiled = GetPagePC (page);
         io_function->module = io_module;
 
+        if(WASM_DEBUG_CompileRawFunction) ESP_LOGI("WASM3", "CompileRawFunction: EmitWord op_CallRawFunction");
         EmitWord (page, op_CallRawFunction);
+
+        if(WASM_DEBUG_CompileRawFunction) ESP_LOGI("WASM3", "CompileRawFunction: EmitWord i_function");
         EmitWord (page, i_function);
+
+        if(WASM_DEBUG_CompileRawFunction) ESP_LOGI("WASM3", "CompileRawFunction: EmitWord io_function");
         EmitWord (page, io_function);
+
+        if(WASM_DEBUG_CompileRawFunction) ESP_LOGI("WASM3", "CompileRawFunction: EmitWord i_userdata");
         EmitWord (page, i_userdata);
 
         ReleaseCodePage (io_module->runtime, page);

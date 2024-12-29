@@ -355,8 +355,12 @@ typedef m3slot_t *              m3stack_t;
 
 //#define MEMPTR  u32
 
-static m3slot_t* pcPP(m3slot_t* pc){
-  m3slot_t* ret = pc;
+static m3stack_t* pcPP(m3stack_t* pc){
+  #if TRACK_MEMACCESS
+  ESP_LOGI("WASM3","pc++ for %p", pc);
+  #endif
+
+  m3stack_t* ret = pc;
   pc += BITS_MUL;
   return ret;
 }
@@ -365,7 +369,7 @@ typedef
 const void * const  cvptr_t;
 
 //todo: Convert #ifdef DEBUG to #if DEBUG (?)
-#ifdef WASM_DEBUG
+#if WASM_DEBUG
   #define DEBUG WASM_DEBUG
 #else
   #define DEBUG 0
@@ -375,13 +379,13 @@ const void * const  cvptr_t;
 #define d_m3LogCompile DEBUG
 #define d_m3LogEmit DEBUG
 #define d_m3LogCodePages DEBUG
-#define d_m3_dump_code_pages DEBUG
+#define d_m3_dump_code_pages 0 // lacks of invalid pointers (check dump_code_page in m3_info.c)
 #define d_m3LogModule DEBUG
 #define d_m3LogRuntime DEBUG
 
 # ifdef DEBUG
 
-#   define d_m3Log(CATEGORY, FMT, ...)                  printf (" %8s  |  " FMT, #CATEGORY, ##__VA_ARGS__);
+#   define d_m3Log(CATEGORY, FMT, ...)                  ESP_LOGI ("WASM3", " %8s  |  " FMT, #CATEGORY, ##__VA_ARGS__);
 
 #   if d_m3LogParse
 #       define m3log_parse(CATEGORY, FMT, ...)          d_m3Log(CATEGORY, FMT, ##__VA_ARGS__)
@@ -427,7 +431,7 @@ const void * const  cvptr_t;
 
 
 # if defined(ASSERTS) || (defined(DEBUG) && !defined(NASSERTS))
-#   define d_m3Assert(ASS)  if (!(ASS)) { printf("Assertion failed at %s:%d : %s\n", __FILE__, __LINE__, #ASS); /*abort();*/ } 
+#   define d_m3Assert(ASS)  if (!(ASS)) { ESP_LOGI("WASM3", "Assertion failed at %s:%d : %s\n", __FILE__, __LINE__, #ASS); /*abort();*/ } 
 # else
 #   define d_m3Assert(ASS)
 # endif
