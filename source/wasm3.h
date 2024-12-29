@@ -92,11 +92,8 @@
 #endif
 
 /// Operations index
-#if WASM_ENABLE_OP_TRACE && M3_FUNCTIONS_ENUM
-#include "m3_op_names_generated.h"
-#endif
-
 #include "wasm3_defs.h"
+#include "m3_op_names_generated.h"
 #include "m3_config.h"
 
 #include "m3_debug.h"

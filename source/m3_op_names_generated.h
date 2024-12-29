@@ -1,7 +1,7 @@
 // Auto-generated enum for operation names
 #pragma once
 
-#if DEBUG && M3_FUNCTIONS_ENUM
+#if M3_FUNCTIONS_ENUM
 enum M3OpNames {
     M3OP_NAME_UNREACHABLE = 0,
     M3OP_NAME_NOP = 1,

@@ -24,11 +24,6 @@ d_m3BeginExternC
     #define WASM3_STATIC_INLINE static inline
 #endif
 
-/// Operations index
-#if M3_FUNCTIONS_ENUM
-#include "m3_op_names_generated.h"
-#endif
-
 enum
 {
     c_waOp_block                = 0x02,
