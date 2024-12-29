@@ -445,7 +445,7 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
     runtime.stack = savedRuntime->stack;
     runtime.memory = savedRuntime->memory;
 
-    m3stack_t stack = (m3stack_t)runtime.stack;
+    void* stack = runtime.stack;
 
     ESP_LOGI("WASM3", "Stack pointer at: %p", stack);
 
@@ -869,9 +869,9 @@ _           (CompileFunction (function));
         io_module->startFunction = -1;
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-        result = (M3Result) RunCode (function->compiled, (m3stack_t) runtime->stack, &runtime->memory, d_m3OpDefaultArgs, d_m3BaseCstr);
+        result = (M3Result) RunCode (function->compiled,  runtime->stack, &runtime->memory, d_m3OpDefaultArgs, d_m3BaseCstr);
 # else
-        result = (M3Result) RunCode (function->compiled, (m3stack_t) runtime->stack, &runtime->memory, d_m3OpDefaultArgs);
+        result = (M3Result) RunCode (function->compiled,  runtime->stack, &runtime->memory, d_m3OpDefaultArgs);
 # endif
 
         if (result)
@@ -1297,9 +1297,9 @@ _   (checkStartFunction(i_function->module))
     }
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-    result = (M3Result) RunCode(i_function->compiled, (m3stack_t)(runtime->stack), &runtime->memory, d_m3OpDefaultArgs, d_m3BaseCstr);
+    result = (M3Result) RunCode(i_function->compiled, (runtime->stack), &runtime->memory, d_m3OpDefaultArgs, d_m3BaseCstr);
 # else
-    result = (M3Result) RunCode(i_function->compiled, (m3stack_t)(runtime->stack), &runtime->memory, d_m3OpDefaultArgs);
+    result = (M3Result) RunCode(i_function->compiled, (runtime->stack), &runtime->memory, d_m3OpDefaultArgs);
 # endif
 
     ReportNativeStackUsage();
@@ -1347,9 +1347,9 @@ _   (checkStartFunction(i_function->module))
     }
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-    result = (M3Result) RunCode(i_function->compiled, (m3stack_t)(runtime->stack), &runtime->memory, d_m3OpDefaultArgs, d_m3BaseCstr);
+    result = (M3Result) RunCode(i_function->compiled, (runtime->stack), &runtime->memory, d_m3OpDefaultArgs, d_m3BaseCstr);
 # else
-    result = (M3Result) RunCode(i_function->compiled, (m3stack_t)(runtime->stack), &runtime->memory, d_m3OpDefaultArgs);
+    result = (M3Result) RunCode(i_function->compiled, (runtime->stack), &runtime->memory, d_m3OpDefaultArgs);
 # endif
     
     ReportNativeStackUsage();

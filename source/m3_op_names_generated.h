@@ -241,7 +241,7 @@ enum M3OpNames {
 };
 
 // Auto-generated array of operation names
-static const char * const opNames[] __attribute__((section(".rodata"))) = {
+static cstr_t opNames[] __attribute__((section(".rodata"))) = {
     "unreachable",
     "nop",
     "block",
@@ -481,7 +481,7 @@ static const char * const opNames[] __attribute__((section(".rodata"))) = {
 };
 
 // Auto-generated getter function
-static const char* getOpName(uint8_t id) {
+static cstr_t getOpName(uint8_t id) {
     return opNames[id];
 }
 #endif

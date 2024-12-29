@@ -82,6 +82,20 @@
 
 #define ESP_OPS_ATTR DRAM_ATTR // Move ops from IRAM to DRAM
 
+///
+/// Debug
+///
+#if M3_FUNCTIONS_ENUM
+#define OP_TRACE_TYPE int
+#else
+#define OP_TRACE_TYPE cstr_t
+#endif
+
+/// Operations index
+#if WASM_ENABLE_OP_TRACE && M3_FUNCTIONS_ENUM
+#include "m3_op_names_generated.h"
+#endif
+
 #include "wasm3_defs.h"
 #include "m3_config.h"
 
@@ -330,7 +344,7 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
     // Arguments and return values are passed in and out through the stack pointer _sp.
     // Placeholder return value slots are first and arguments after. So, the first argument is at _sp [numReturns]
     // Return values should be written into _sp [0] to _sp [num_returns - 1]
-    typedef const void * (* M3RawCall) (IM3Runtime runtime, IM3ImportContext _ctx, uint64_t * _sp, void * _mem);
+    typedef const void * (* M3RawCall) (IM3Runtime runtime, IM3ImportContext _ctx, MEMPTR _sp, IM3Runtime _mem);
 
     M3Result            m3_LinkRawFunction          (IM3Module              io_module,
                                                      const char * const     i_moduleName,

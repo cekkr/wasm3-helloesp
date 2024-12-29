@@ -39,31 +39,26 @@ d_m3BeginExternC
     #define STRINGIFY(x) #x
 
     #define MEMACCESS(type, mem, pc) \    
-        (printf("MEM ACCESS type: %s\n", STRINGIFY(type)), \
+        (ESP_LOGI("WASM3", "MEM ACCESS type: %s\n", STRINGIFY(type)), \
         *((type*)(m3SegmentedMemAccess(mem, pc, sizeof(type)))))
 
     #define MEMPOINT(type, mem, pc) \
-    (pc_t)m3SegmentedMemAccess(mem, pc, sizeof(type))
+        (ESP_LOGI("WASM3", "MEM POINT type: %s\n", STRINGIFY(type)), \
+        (type*)m3SegmentedMemAccess(mem, pc, sizeof(type))
 
 #else
 #define MEMACCESS(type, mem, pc) \
     *(type*)m3SegmentedMemAccess(mem, pc, sizeof(type))
 
 #define MEMPOINT(type, mem, pc) \
-    (pc_t)m3SegmentedMemAccess(mem, pc, sizeof(type))
+    (type)m3SegmentedMemAccess(mem, pc, sizeof(type))
 #endif
 
 ///
 ///
 ///
 
-
-#ifdef OPERTATIONS_ON_SEGMENTED_MEM
-// iptr deprecated
-# define d_m3BaseOpSig                  iptr _pc, m3stack_t _sp, M3Memory * _mem, m3reg_t _r0
-#else
-# define d_m3BaseOpSig                  pc_t _pc, m3stack_t _sp, M3Memory * _mem, m3reg_t _r0
-#endif
+# define d_m3BaseOpSig                   pc_t _pc, m3stack_t _sp, M3Memory * _mem, m3reg_t _r0
 
 # define d_m3BaseOpArgs                 _sp, _mem, _r0
 # define d_m3BaseOpAllArgs              _pc, _sp, _mem, _r0
@@ -111,17 +106,10 @@ d_m3BeginExternC
 
 // Definizione unificata del tipo operazione
 #if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-    #if M3_FUNCTIONS_ENUM
-        typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, int opId);
-        #define d_m3RetSig      d_m3RetSig_ATTR m3ret_t vectorcall
-        #define d_m3Op(NAME) M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, int opId)    
-        #define TRACE_FUNC_NAME(pc) , __FUNCTION__
-    #else
-        typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, cstr_t i_operationName);
-        #define d_m3RetSig      d_m3RetSig_ATTR m3ret_t vectorcall
-        #define d_m3Op(NAME) M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, cstr_t i_operationName)    
-        #define TRACE_FUNC_NAME(pc) , __FUNCTION__
-    #endif
+    typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, OP_TRACE_TYPE opId);
+    #define d_m3RetSig      d_m3RetSig_ATTR m3ret_t vectorcall
+    #define d_m3Op(NAME) M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, OP_TRACE_TYPE opId)    
+    #define TRACE_FUNC_NAME(pc) , __FUNCTION__
 #else
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
     #define d_m3RetSig      d_m3RetSig_ATTR m3ret_t vectorcall

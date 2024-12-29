@@ -26,6 +26,9 @@ typedef struct M3MemoryHeader
 }
 M3MemoryHeader;
 
+typedef void /*const*/ *                    code_t;
+typedef code_t const * /*__restrict__*/     pc_t;
+
 #define d_m3CodePageFreeLinesThreshold      4+2       // max is: select _sss & CallIndirect + 2 for bridge
 
 #define d_m3DefaultMemPageSize              65536

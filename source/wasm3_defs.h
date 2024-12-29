@@ -353,10 +353,12 @@ typedef u64                     m3slot_t;
 
 typedef m3slot_t *              m3stack_t;
 
-static m3stack_t pcPP(m3stack_t pc){
-  m3stack_t ret = pc;
+//#define MEMPTR  u32
+
+static m3stack_t pcPP(m3stack_t* pc){
+  m3stack_t* ret = pc;
   pc += BITS_MUL;
-  return ret;
+  return *ret;
 }
 
 typedef
@@ -427,7 +429,7 @@ const void * const  cvptr_t;
 # endif
 
 typedef void /*const*/ *                    code_t;
-typedef code_t const * /*__restrict__*/     pc_t;
+typedef code_t const * /*__restrict__*/     MEMPTR;
 
 // check in m3_exec.h
 #define d_m3RecordBacktraces 0

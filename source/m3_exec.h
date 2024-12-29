@@ -49,10 +49,11 @@ d_m3BeginExternC
 #define rewrite_op(OP)              *((void**)(_pc-BITS_MUL)) = (void*)(OP)
 
 // Salta un valore immediato nel program counter
-#define skip_immediate(TYPE)        (pcPP(_pc))
+#define skip_immediate(TYPE)        (pcPP(&_pc))
 
 // Legge un valore immediato dal program counter e lo incrementa
-#define immediate(TYPE)             *(TYPE*)m3SegmentedMemAccess(_mem, pcPP(_pc), sizeof(TYPE))
+#define immediate_ptr(TYPE)             (TYPE*)m3SegmentedMemAccess(_mem, pcPP(&_pc), sizeof(TYPE))
+#define immediate(TYPE)                 *immediate_ptr(TYPE)
 
 // Accede al valore nello slot dello stack usando un offset immediato
 #define slot(TYPE)                  *(TYPE*)m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(TYPE))
@@ -60,14 +61,13 @@ d_m3BeginExternC
 // Ottiene il puntatore allo slot dello stack usando un offset immediato
 #define slot_ptr(TYPE)             (TYPE*)m3SegmentedMemAccess(_mem, _sp + immediate(i32), sizeof(TYPE))
 
-# if d_m3EnableOpProfiling
-                                    d_m3RetSig  profileOp   (d_m3OpSig, cstr_t i_operationName);
-#   define nextOp()                 M3_MUSTTAIL return profileOp (d_m3OpAllArgs, __FUNCTION__)
-# elif d_m3EnableOpTracing
-                                    d_m3RetSig  debugOp     (d_m3OpSig, cstr_t i_operationName);
-#   define nextOp()                 M3_MUSTTAIL return debugOp (d_m3OpAllArgs, __FUNCTION__)
-# else
-#   define nextOp()                 nextOpDirect()
+# if d_m3EnableOpProfiling || d_m3EnableOpTracing
+   # if M3_FUNCTIONS_ENUM
+        d_m3RetSig  traceOp   (d_m3OpSig, int i_operation);
+    #else 
+        d_m3RetSig  traceOp   (d_m3OpSig, cstr_t i_operationName);
+    #endif
+    #define nextOp()                 M3_MUSTTAIL return traceOp (d_m3OpAllArgs, __FUNCTION__)
 # endif
 
 #define jumpOp(PC)                  jumpOpDirect(PC)
@@ -569,7 +569,7 @@ d_m3Op (Call)
     i32 stackOffset            = immediate (i32);
     IM3Memory memory           =_mem; //  m3MemInfo (_mem);
 
-    m3stack_t sp = _sp + stackOffset;
+    pc_t sp = _sp + stackOffset;
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
     m3ret_t r = Call(callPC, sp, memory, d_m3OpDefaultArgs, d_m3BaseCstr);
@@ -596,7 +596,7 @@ d_m3Op (CallIndirect)
     i32 stackOffset            = immediate (i32);
     IM3Memory memory          =_mem; //  m3MemInfo (_mem);
 
-    m3stack_t sp = _sp + stackOffset;
+    pc_t sp = _sp + stackOffset;
 
     m3ret_t r = m3Err_none;
 
@@ -1077,7 +1077,7 @@ d_m3Op  (DumpStack)
 #if d_m3HasFloat
     printf ("                                    fp0: %" PRIf64 "\n", _fp0);
 #endif
-    m3stack_t sp = _sp;
+    pc_t sp = _sp;
 
     for (u32 i = 0; i < stackHeight; ++i)
     {
@@ -1308,30 +1308,42 @@ d_m3Op  (ContinueLoopIf)
         *(type*)ptr; \
     })
 
-DEBUG_TYPE WASM_DEBUG_Const = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_Const = WASM_DEBUG_ALL || (WASM_DEBUG && true); // Const32 and Const64
 
 d_m3Op (Const32) {
+    /* Simply Also Known As
+    u32 value = * (u32 *)_pc++;
+    slot (u32) = value;
+    nextOp ();
+    */
     if(WASM_DEBUG_Const) ESP_LOGI("WASM3", "Const32 called");
 
     u32 value = MEMACCESS_SAFE(u32, _mem, _pc++);
 
     //ESP_ERROR_CHECK(heap_caps_check_integrity_all(true));
 
-    i32* imm = immediate(i32);
-    void* dest = m3SegmentedMemAccess(_mem, _sp + (unsigned)imm, sizeof(u32));
+    pc_t imm = immediate_ptr(pc_t);
+    void* dest = m3SegmentedMemAccess(_mem, _sp + imm, sizeof(u32));
     
     bool isErr = (dest == ERROR_POINTER);
     if (WASM_DEBUG_Const || isErr) {
-        ESP_LOGW("WASM3", "Destination memory failed at sp=%u, immediate=%d, dest=%p", _sp, imm, dest);
+        ESP_LOGW("WASM3", "Destination memory failed at sp=%u, immediate=%d, dest=%p, _pc=%p", _sp, imm, dest, _pc);
         if(isErr) return m3Err_pointerOverflow;
     }
     
     *(u32*)dest = value;
+
     nextOp();
 }
 
 DEBUG_TYPE WASM_Const64_CheckAlignment = false;
 d_m3Op (Const64) {
+    /* Simply Also Known As
+    u64 value = * (u64 *)_pc;
+    _pc += (M3_SIZEOF_PTR == 4) ? 2 : 1;
+    slot (u64) = value;
+    nextOp ();
+    */
     if(WASM_DEBUG_Const) ESP_LOGI("WASM3", "Const64 called");
 
     // Prima verifica la validità dell'accesso alla memoria sorgente
@@ -1348,11 +1360,12 @@ d_m3Op (Const64) {
     
     m3_memcpy(_mem, &value, src_ptr, sizeof(u64));     
 
+    // aka immediate(i32);
    _pc += (M3_SIZEOF_PTR == 4) ? 2 : 1;  // Su ESP32 sempre 2 perché M3_SIZEOF_PTR == 4
 
    // Calcola l'offset di destinazione
-   i32* imm = immediate(i32);
-   m3stack_t dest_offset = _sp + (unsigned)imm;
+   pc_t imm = immediate_ptr(pc_t);
+   pc_t dest_offset = _sp + imm;
    
    // Verifica l'accesso alla memoria di destinazione
    void* dest = m3SegmentedMemAccess(_mem, dest_offset, sizeof(u64));
@@ -1639,6 +1652,30 @@ d_m3RetSig  profileOp  (d_m3OpSig, cstr_t i_operationName)
     nextOpDirect();
 }
 # endif
+
+# if d_m3EnableOpTracing || d_m3EnableOpProfiling
+    #if M3_FUNCTIONS_ENUM
+        d_m3RetSig traceOp(d_m3OpSig, int opIdx){
+            # if d_m3EnableOpTracing
+                return debugOp(d_m3OpAllArgs, getOpName(opIdx));
+            # endif
+
+            # if d_m3EnableOpProfiling
+                return profileOp(d_m3OpAllArgs, getOpName(opIdx));
+            # endif
+        }
+    #else
+        d_m3RetSig traceOp(d_m3OpSig, cstr_t opName){
+            # if d_m3EnableOpTracing
+                return debugOp(d_m3OpAllArgs, opName);
+            # endif
+
+            # if d_m3EnableOpProfiling
+                return profileOp(d_m3OpAllArgs, opName);
+            # endif
+        }
+    #endif
+#endif
 
 d_m3EndExternC
 
