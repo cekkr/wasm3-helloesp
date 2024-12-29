@@ -6,6 +6,7 @@
 //
 
 #include "m3_esp_try.h"
+#include "m3_exec_defs.h"
 #include "wasm3_defs.h"
 
 #define M3_IMPLEMENT_ERROR_STRINGS
@@ -1076,8 +1077,8 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
     u8* dest_ptr;
     
     if (memory) {
-        source_ptr = (const u8*)m3_ResolvePointer(memory, *io_bytes);
-        dest_ptr = (u8*)m3_ResolvePointer(memory, o_value);
+        source_ptr = MEMACCESS(const u8*, memory, io_bytes);
+        dest_ptr = MEMPOINT(u8*, memory, o_value);
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
             return m3Err_malformedData;
     } else {
@@ -1092,7 +1093,7 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
     const u8* check_ptr = source_ptr + offset;
     
     if ((void*)check_ptr > (void*)i_end){
-        __read_checkWasmUnderrun(check_ptr, i_end);
+        __read_checkWasmUnderrun((mos)check_ptr, (mos)i_end);
         return m3Err_wasmUnderrun;
     }
 
@@ -1109,8 +1110,8 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
     m3opcode_t* dest_ptr;
     
     if (memory) {
-        source_ptr = (const u8*)m3_ResolvePointer(memory, *io_bytes);
-        dest_ptr = (m3opcode_t*)m3_ResolvePointer(memory, o_value);
+        source_ptr = MEMACCESS(const u8, memory, io_bytes);
+        dest_ptr = MEMPOINT(m3opcode_t, memory, o_value);
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
             return m3Err_malformedData;
     } else {
@@ -1156,8 +1157,8 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
     u64* dest_ptr;
     
     if (memory) {
-        source_ptr = (const u8*)m3_ResolvePointer(memory, *io_bytes);
-        dest_ptr = (u64*)m3_ResolvePointer(memory, o_value);
+        source_ptr = MEMACCESS(const u8, memory, io_bytes);
+        dest_ptr = MEMPOINT(u64, memory, o_value);
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
             return m3Err_malformedData;
     } else {
@@ -1173,8 +1174,8 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
     const u8* check_ptr = source_ptr;
     M3Result result = m3Err_wasmUnderrun;
 
-    while (check_ptr <= (const u8*)i_end) {
-        u64 byte = *check_ptr;
+    while (check_ptr <= i_end) {
+        u64 byte = MEMACCESS(u64, memory, check_ptr);
         value |= ((byte & 0x7f) << shift);
         shift += 7;
         offset++;
@@ -1192,8 +1193,10 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
     }
 
     *dest_ptr = value;
+    MEMACCESS(bytes_t, memory, io_bytes) = check_ptr;
+
     if (result == m3Err_none) {
-        *io_bytes = (bytes_t)((const u8*)*io_bytes + offset); // Apply calculated offset to original pointer
+        //*io_bytes = (bytes_t)((const u8*)*io_bytes + offset); // Apply calculated offset to original pointer
     } else if (result == m3Err_wasmUnderrun) {
         __read_checkWasmUnderrun(check_ptr + 1, i_end);
     }
@@ -1209,8 +1212,8 @@ M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t
     i64* dest_ptr;
     
     if (memory) {
-        source_ptr = (const u8*)m3_ResolvePointer(memory, *io_bytes);
-        dest_ptr = (i64*)m3_ResolvePointer(memory, o_value);
+        source_ptr = MEMACCESS(const u8, memory, io_bytes);
+        dest_ptr = MEMPOINT(i64, memory, o_value);        
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
             return m3Err_malformedData;
     } else {
@@ -1227,7 +1230,7 @@ M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t
     M3Result result = m3Err_wasmUnderrun;
 
     while (check_ptr <= (const u8*)i_end) {
-        u64 byte = *check_ptr;
+        u64 byte = MEMACCESS(u64, memory, check_ptr);
         value |= ((byte & 0x7f) << shift);
         shift += 7;
         offset++;
@@ -1249,8 +1252,10 @@ M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t
     }    
 
     *dest_ptr = value;
+    MEMACCESS(bytes_t, memory, io_bytes) = check_ptr;
+
     if (result == m3Err_none) {
-        *io_bytes = (bytes_t)((const u8*)*io_bytes + offset); // Apply calculated offset to original pointer
+        //*io_bytes = (bytes_t)((const u8*)*io_bytes + offset); // Apply calculated offset to original pointer
     } else if (result == m3Err_wasmUnderrun) {
         __read_checkWasmUnderrun(check_ptr + 1, i_end);
     }

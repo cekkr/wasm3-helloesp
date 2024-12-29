@@ -40,18 +40,18 @@ d_m3BeginExternC
 
     #define MEMACCESS(type, mem, pc) \    
         (ESP_LOGI("WASM3", "MEM ACCESS type: %s\n", STRINGIFY(type)), \
-        *((type*)(m3SegmentedMemAccess(mem, pc, sizeof(type)))))
+        *((type*)(m3SegmentedMemAccess(mem, CAST_PTR pc, sizeof(type)))))
 
     #define MEMPOINT(type, mem, pc) \
         (ESP_LOGI("WASM3", "MEM POINT type: %s\n", STRINGIFY(type)), \
-        (type*)m3SegmentedMemAccess(mem, pc, sizeof(type))
+        (type*)m3SegmentedMemAccess(mem, CAST_PTR pc, sizeof(type))
 
 #else
 #define MEMACCESS(type, mem, pc) \
-    *(type*)m3SegmentedMemAccess(mem, pc, sizeof(type))
+    *(type*)m3SegmentedMemAccess(mem, CAST_PTR pc, sizeof(type))
 
 #define MEMPOINT(type, mem, pc) \
-    (type)m3SegmentedMemAccess(mem, pc, sizeof(type))
+    (type)m3SegmentedMemAccess(mem, CAST_PTR pc, sizeof(type))
 #endif
 
 ///
@@ -161,7 +161,11 @@ d_m3BeginExternC
     #define jumpOpImpl(PC) ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs TRACE_FUNC_NAME(PC))
 #endif
 
-//#define M3_MUSTTAIL // avoid musttail
+#define AVOID_M3_MUSTTAIL 1
+#if AVOID_M3_MUSTTAIL
+    #undef M3_MUSTTAIL
+    #define M3_MUSTTAIL 
+#endif 
 
 // Original
 #define nextOpDirect()              M3_MUSTTAIL return nextOpImpl()

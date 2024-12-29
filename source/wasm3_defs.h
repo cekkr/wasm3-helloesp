@@ -365,7 +365,11 @@ typedef
 const void * const  cvptr_t;
 
 //todo: Convert #ifdef DEBUG to #if DEBUG (?)
-#define DEBUG 1
+#ifdef WASM_DEBUG
+  #define DEBUG WASM_DEBUG
+#else
+  #define DEBUG 0
+#endif
 
 #define d_m3LogParse DEBUG
 #define d_m3LogCompile DEBUG

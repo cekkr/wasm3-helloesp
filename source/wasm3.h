@@ -45,7 +45,7 @@
 
 #define M3CodePage_RemoveCodePageOfCapacity_FreePage 0
 
-#define WASM_DEBUG 1
+#define WASM_DEBUG 0
 #define WASM_DEBUG_ALL 0
 
 #if HELLOESP_WASM_DEBUG
@@ -446,6 +446,8 @@ typedef uint64_t mos; // memory offset
 #else
 typedef uint32_t mos;
 #endif
+
+#define CAST_PTR (mos)(uintptr_t)
 
 typedef void* ptr;
 
