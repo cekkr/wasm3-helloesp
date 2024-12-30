@@ -14,19 +14,18 @@
 size_t  SPrintArg  (char * o_string, size_t i_stringBufferSize, voidptr_t i_sp, u8 i_type)
 {
     int len = 0;
-
-    * o_string = 0;
-
-    if      (i_type == c_m3Type_i32)
+    //* o_string = 0;
+    
+    if (i_type == c_m3Type_i32)
         len = snprintf (o_string, i_stringBufferSize, "%" PRIi32, * (i32 *) i_sp);
     else if (i_type == c_m3Type_i64)
         len = snprintf (o_string, i_stringBufferSize, "%" PRIi64, * (i64 *) i_sp);
-#if d_m3HasFloat
+    #if d_m3HasFloat
     else if (i_type == c_m3Type_f32)
         len = snprintf (o_string, i_stringBufferSize, "%" PRIf32, * (f32 *) i_sp);
     else if (i_type == c_m3Type_f64)
         len = snprintf (o_string, i_stringBufferSize, "%" PRIf64, * (f64 *) i_sp);
-#endif
+    #endif
 
     len = M3_MAX (0, len);
 
@@ -37,10 +36,10 @@ size_t  SPrintArg  (char * o_string, size_t i_stringBufferSize, voidptr_t i_sp, 
 cstr_t  SPrintFunctionArgList  (IM3Function i_function, m3stack_t i_sp)
 {
     int ret;
-    static char string [256];
 
-    char * s = string;
-    ccstr_t e = string + sizeof(string) - 1;
+    int size = 256;    
+    char* s = malloc(size*sizeof(char));
+    ccstr_t e = s + size - 1;
 
     ret = snprintf (s, e-s, "(");
     s += M3_MAX (0, ret);
@@ -72,7 +71,7 @@ cstr_t  SPrintFunctionArgList  (IM3Function i_function, m3stack_t i_sp)
     ret = snprintf (s, e-s, ")");
     s += M3_MAX (0, ret);
 
-    return string;
+    return s;
 }
 
 #endif

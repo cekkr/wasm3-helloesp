@@ -1018,7 +1018,7 @@ M3Result ReadLEB_ptr(IM3Memory memory, m3stack_t o_value, bytes_t* io_bytes, cby
 
     u64 value;
     M3Result result = ReadLebUnsigned(memory, &value, 32*BITS_MUL, io_bytes, i_end);
-    *o_value = (mos)value;
+    *o_value = (u32)value;
 
     return result;
 }

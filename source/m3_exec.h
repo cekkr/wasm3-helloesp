@@ -92,11 +92,11 @@ d_m3BeginExternC
 #if d_m3EnableStrace == 1
     // Flat trace
     #define d_m3TracePrepare
-    #define d_m3TracePrint(fmt, ...)            fprintf(stderr, fmt "\n", ##__VA_ARGS__)
+    #define d_m3TracePrint(fmt, ...)            printf(fmt "\n", ##__VA_ARGS__)
 #elif d_m3EnableStrace >= 2
     // Structured trace
     #define d_m3TracePrepare                    const IM3Runtime trace_rt = m3MemRuntime(_mem);
-    #define d_m3TracePrint(fmt, ...)            fprintf(stderr, "%*s" fmt "\n", (trace_rt->callDepth)*2, "", ##__VA_ARGS__)
+    #define d_m3TracePrint(fmt, ...)            printf("%*s" fmt "\n", (trace_rt->callDepth)*2, "", ##__VA_ARGS__)
 #else
     #define d_m3TracePrepare
     #define d_m3TracePrint(fmt, ...)
@@ -131,7 +131,11 @@ d_m3BeginExternC
 #endif
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
+#if M3_FUNCTIONS_ENUM
+d_m3RetSig  Call  (d_m3OpSig, OP_TRACE_TYPE opId)
+#else
 d_m3RetSig  Call  (d_m3OpSig, cstr_t i_operationName)
+#endif
 # else
 d_m3RetSig  Call  (d_m3OpSig)
 # endif
@@ -353,7 +357,7 @@ d_m3UnaryOp_i (u64, Popcnt, __builtin_popcountll)
 #define OP_WRAP_I64(X) ((X) & 0x00000000ffffffff)
 
 d_m3Op(i32_Wrap_i64_r){
-    _r0 = OP_WRAP_I64((i64) _r0);
+    _r0 = OP_WRAP_I64((i64) _r0);    
     nextOp ();
 }
 
@@ -495,7 +499,7 @@ d_m3Op(TO##_Reinterpret_##FROM##_r_r)                       \
     union { FROM c; TO t; } u;                              \
     u.c = (FROM) SRC;                                       \
     REG = u.t;                                              \
-nextOp ();                                               \
+    nextOp ();                                               \
 }                                                           \
                                                             \
 d_m3Op(TO##_Reinterpret_##FROM##_r_s)                       \
@@ -503,7 +507,7 @@ d_m3Op(TO##_Reinterpret_##FROM##_r_s)                       \
     union { FROM c; TO t; } u;                              \
     u.c = slot (FROM);                                      \
     REG = u.t;                                              \
-nextOp ();                                               \
+    nextOp ();                                               \
 }                                                           \
                                                             \
 d_m3Op(TO##_Reinterpret_##FROM##_s_r)                       \
@@ -511,7 +515,7 @@ d_m3Op(TO##_Reinterpret_##FROM##_s_r)                       \
     union { FROM c; TO t; } u;                              \
     u.c = (FROM) SRC;                                       \
     slot (TO) = u.t;                                        \
-nextOp ();                                               \
+    nextOp ();                                               \
 }                                                           \
                                                             \
 d_m3Op(TO##_Reinterpret_##FROM##_s_s)                       \
@@ -519,7 +523,7 @@ d_m3Op(TO##_Reinterpret_##FROM##_s_s)                       \
     union { FROM c; TO t; } u;                              \
     u.c = slot (FROM);                                      \
     slot (TO) = u.t;                                        \
-nextOp ();                                               \
+    nextOp ();                                               \
 }
 
 #if d_m3HasFloat
@@ -569,15 +573,15 @@ d_m3Op (Call)
 {
     pc_t callPC                 = immediate (pc_t);
     i32 stackOffset            = immediate (i32);
-    IM3Memory memory           =_mem; //  m3MemInfo (_mem);
+    IM3Memory memory           = _mem; //  m3MemInfo (_mem);
 
     pc_t sp = _sp + stackOffset;
 
-# if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
+    # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
     m3ret_t r = Call(callPC, sp, memory, d_m3OpDefaultArgs, d_m3BaseCstr);
-# else
+    # else
     m3ret_t r = Call(callPC, sp, memory, d_m3OpDefaultArgs);
-# endif
+    # endif
 
     // Non serve più refreshare _mem dato che usiamo la memoria segmentata
     
@@ -615,16 +619,17 @@ d_m3Op (CallIndirect)
 
                 if (M3_LIKELY(not r))
                 {
-# if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
+                    # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
                     r = Call(function->compiled, sp, memory, d_m3OpDefaultArgs, d_m3BaseCstr);
-# else
+                    # else
                     r = Call(function->compiled, sp, memory, d_m3OpDefaultArgs);
-# endif
+                    # endif
 
                     // Non serve più refreshare _mem
                     
-                    if (M3_LIKELY(not r))
+                    if (M3_LIKELY(not r)){
                         nextOpDirect();
+                    }
                     else
                     {
                         pushBacktraceFrame();
@@ -855,11 +860,13 @@ d_m3Op  (Entry)
             m3_memcpy (_mem, stack, function->constants, function->numConstantBytes);
         }
 
-#if d_m3EnableStrace >= 2
-        d_m3TracePrint("%s %s {", m3_GetFunctionName(function), SPrintFunctionArgList (function, _sp + function->numRetSlots));
+        #if d_m3EnableStrace >= 2
+            const char* funName = m3_GetFunctionName(function);
+            const char* printFunArgs = SPrintFunctionArgList (function, _sp + function->numRetSlots);
+            d_m3TracePrint("%s %s {", funName, printFunArgs);
 
-        trace_rt->callDepth++;
-#endif
+            trace_rt->callDepth++;
+        #endif
 
         m3ret_t r = nextOpImpl ();
 
@@ -871,9 +878,11 @@ d_m3Op  (Entry)
         } else {
             int rettype = GetSingleRetType(function->funcType);
             if (rettype != c_m3Type_none) {
-                char str [128] = { 0 };
-                SPrintArg (str, 127, _sp, rettype);
+                int size = 256;
+                char* str = malloc(size*sizeof(char));
+                SPrintArg (str, size, _sp, rettype);
                 d_m3TracePrint("} = %s", str);
+                free(str);
             } else {
                 d_m3TracePrint("}");
             }
@@ -889,7 +898,7 @@ d_m3Op  (Entry)
     else newTrap (m3Err_trapStackOverflow);
 }
 
-DEBUG_TYPE WASM_DEBUG_Loop = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_Loop = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 d_m3Op  (Loop)
 {
     if(WASM_DEBUG_Loop) ESP_LOGI("WASM3", "Loop beginning");
@@ -909,17 +918,18 @@ d_m3Op  (Loop)
 
     do
     {
-#if d_m3EnableStrace >= 3
-        d_m3TracePrint("iter {");
-        trace_rt->callDepth++;
-#endif
+        #if d_m3EnableStrace >= 3
+            d_m3TracePrint("iter {");
+            trace_rt->callDepth++;
+        #endif
         
+        if(WASM_DEBUG_Loop) ESP_LOGI("WASM3", "op_Loop: _pc: %p", _pc);
         r = nextOpImpl ();
         
-#if d_m3EnableStrace >= 3
-        trace_rt->callDepth--;
-        d_m3TracePrint("}");
-#endif
+        #if d_m3EnableStrace >= 3
+            trace_rt->callDepth--;
+            d_m3TracePrint("}");
+        #endif
 
         // Non abbiamo più bisogno di refreshare _mem poiché non usiamo più
         // un singolo blocco mallocated. Invece, ogni accesso alla memoria
@@ -1264,7 +1274,7 @@ d_m3Op  (BranchIfPrologue_s)
     else jumpOp (branch);
 }
 
-DEBUG_TYPE WASM_DEBUG_ContinueLoop = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_ContinueLoop = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 d_m3Op  (ContinueLoop)
 {
     if(WASM_DEBUG_ContinueLoop) ESP_LOGI("WASM3", "ContinueLoop called");
@@ -1280,14 +1290,14 @@ d_m3Op  (ContinueLoop)
 }
 
 
-DEBUG_TYPE WASM_DEBUG_ContinueLoopIf = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_ContinueLoopIf = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 d_m3Op  (ContinueLoopIf)
 {
     if(WASM_DEBUG_ContinueLoopIf) ESP_LOGI("WASM3", "ContinueLoopIf called");
 
     i32 condition = (i32) _r0;
     void * loopId = immediate (void *);
-
+    
     if(WASM_DEBUG_ContinueLoopIf) ESP_LOGI("WASM3", "ContinueLoopIf: condition: %d, loopId: %p", condition, loopId);
 
     if (condition)

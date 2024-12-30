@@ -440,8 +440,10 @@ M3Result  AllocateConstantSlots  (IM3Compilation o, u16 * o_slot, u8 i_type)
 // unique slots.
 WASM3_STATIC_INLINE
 M3Result  IncrementSlotUsageCount  (IM3Compilation o, u16 i_slot)
-{                                                                                       d_m3Assert (i_slot < d_m3MaxFunctionSlots);
-    M3Result result = m3Err_none;                                                       d_m3Assert (o->m3Slots [i_slot] > 0);
+{                                                                                       
+    d_m3Assert (i_slot < d_m3MaxFunctionSlots);
+    M3Result result = m3Err_none;                                                       
+    d_m3Assert (o->m3Slots [i_slot] > 0);
 
     // OPTZ (memory): 'm3Slots' could still be fused with 'typeStack' if 4 bits were used to indicate: [0,1,2,many]. The many-case
     // would scan 'wasmStack' to determine the actual usage count
@@ -1914,8 +1916,7 @@ _           (FindReferencedLocalWithinCurrentBlock (o, & preservedSlotNumber, sl
     return result;
 }
 
-WASM3_STATIC
-M3Result  Compile_LoopOrBlock  (IM3Compilation o, m3opcode_t i_opcode)
+WASM3_STATIC M3Result  Compile_LoopOrBlock  (IM3Compilation o, m3opcode_t i_opcode)
 {
     M3Result result;
 

@@ -111,7 +111,7 @@ d_m3BeginExternC
     
     // Modified TRACE_FUNC_NAME to pass opId when OP_TRACE_TYPE is int
     #if M3_FUNCTIONS_ENUM
-        #define TRACE_FUNC_NAME ,-4
+        #define TRACE_FUNC_NAME ,opId
     #else
         #define TRACE_FUNC_NAME ,__FUNCTION__
     #endif
@@ -130,7 +130,7 @@ d_m3BeginExternC
             if (trace_context.current_stack_depth >= TRACE_STACK_DEPTH_MAX) { \
                 result = m3Err_trapStackOverflow; \
             } else { \
-                IM3Operation op = (void*)(* MEMPOINT(IM3Operation, _mem, _pc)); \
+                IM3Operation op = (MEMACCESS(IM3Operation, _mem, _pc)); \
                 trace_enter(op, trace_context.current_stack_depth, __FUNCTION__); \
                 trace_context.current_stack_depth++; \
                 result = op(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME); \
@@ -145,7 +145,7 @@ d_m3BeginExternC
             if (trace_context.current_stack_depth >= TRACE_STACK_DEPTH_MAX) { \
                 result = m3Err_trapStackOverflow; \
             } else { \
-                IM3Operation op = (void*)(* MEMPOINT(IM3Operation, _mem, PC)); \
+                IM3Operation op = (MEMACCESS(IM3Operation, _mem, PC)); \
                 trace_enter(op, trace_context.current_stack_depth, __FUNCTION__); \
                 trace_context.current_stack_depth++; \
                 result = op(PC + 1, d_m3OpArgs TRACE_FUNC_NAME); \
@@ -157,12 +157,15 @@ d_m3BeginExternC
     #else
         #define nextOpImpl() ({\
             IM3Operation op = (MEMACCESS(IM3Operation, _mem, _pc)); \
-            op(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME); \
+            ESP_LOGI("WASM3", "Call OP: %p", op); waitForIt(); \
+            M3Result result = op(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME); \
+            result; \
         })
 
         #define jumpOpImpl(PC) ({ \
             IM3Operation op = (MEMACCESS(IM3Operation, _mem, _pc)); \
-            op(PC + 1, d_m3OpArgs TRACE_FUNC_NAME); \
+            M3Result result = op(PC + 1, d_m3OpArgs TRACE_FUNC_NAME); \
+            result; \
         })
     #endif
 #else
@@ -170,7 +173,7 @@ d_m3BeginExternC
     #define jumpOpImpl(PC) ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs TRACE_FUNC_NAME)
 #endif
 
-#define AVOID_M3_MUSTTAIL 1
+#define AVOID_M3_MUSTTAIL 0
 #if AVOID_M3_MUSTTAIL
     #undef M3_MUSTTAIL
     #define M3_MUSTTAIL 

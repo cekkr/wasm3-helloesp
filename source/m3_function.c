@@ -118,8 +118,8 @@ void FreeImportInfo (M3ImportInfo * i_info)
     m3_Def_Free (i_info->fieldUtf8);
 }
 
-DEBUG_TYPE WASM_DEBUG_FUNCTION_RELEASE = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 
+DEBUG_TYPE WASM_DEBUG_FUNCTION_RELEASE = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 void  Function_Release  (IM3Function i_function)
 {    
     #define FUNCTIONS_ON_SEGMENTED_MEM 0
