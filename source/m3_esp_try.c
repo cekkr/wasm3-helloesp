@@ -11,7 +11,7 @@ static esp_err_t last_error;
 
 void backtrace(){
     LOG_FLUSH; LOG_FLUSH;
-    esp_backtrace_print(100);
+    esp_backtrace_print(20);
     LOG_FLUSH; LOG_FLUSH;
     vTaskDelay(pdMS_TO_TICKS(2000));
 }

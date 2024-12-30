@@ -97,9 +97,8 @@ void m3_SetCustomSectionHandler  (IM3Environment i_environment, M3SectionHandler
 }
 
 
-DEBUG_TYPE WASM_DEBUG_ADDFUNC = WASM_DEBUG_ALL || (WASM_DEBUG && false);
-
 // returns the same io_funcType or replaces it with an equivalent that's already in the type linked list
+DEBUG_TYPE WASM_DEBUG_ADDFUNC = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 void  Environment_AddFuncType  (IM3Environment i_environment, IM3FuncType * io_funcType)
 {
     if(WASM_DEBUG_ADDFUNC) ESP_LOGI("WASM3", "Called Environment_AddFuncType");
@@ -153,7 +152,7 @@ bool IsCodePageSafeToFree(IM3CodePage page) {
     return true;
 }
 
-DEBUG_TYPE WASM_DEBUG_RemoveCodePageOfCapacity = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_RemoveCodePageOfCapacity = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 IM3CodePage RemoveCodePageOfCapacity(M3CodePage ** io_list, u32 i_minimumLineCount)
 {
     if(WASM_DEBUG_RemoveCodePageOfCapacity) ESP_LOGI("WASM3", "RemoveCodePageOfCapacity called (io_list=%p, i_minimumLineCount=%d)", io_list, i_minimumLineCount);
@@ -1449,7 +1448,7 @@ void  ReleaseCodePageNoTrack (IM3Runtime i_runtime, IM3CodePage i_codePage)
 }
 
 
-DEBUG_TYPE WASM_DEBUG_AcquireCodePageWithCapacity = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_AcquireCodePageWithCapacity = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 IM3CodePage  AcquireCodePageWithCapacity  (IM3Runtime i_runtime, u32 i_minLineCount)
 {
     if(WASM_DEBUG_AcquireCodePageWithCapacity) ESP_LOGI("WASM3", "AcquireCodePageWithCapacity: RemoveCodePageOfCapacity");

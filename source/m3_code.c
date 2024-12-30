@@ -9,13 +9,13 @@
 
 #include "m3_code.h"
 #include "m3_env.h"
+#include "wasm3.h"
 
 //---------------------------------------------------------------------------------------------------------------------------------
 
 //typedef M3Runtime; // forced pre-declaration (m3_env.h)
 
-#define M3CodePage_Segmented true
-DEBUG_TYPE WASM_DEBUG_NEWCODEPAGE = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_NEWCODEPAGE = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 IM3CodePage  NewCodePage  (IM3Runtime i_runtime, u32 i_minNumLines)
 {
     if(WASM_DEBUG_NEWCODEPAGE) ESP_LOGI("WASM3", "NewCodePage called");
@@ -48,22 +48,22 @@ IM3CodePage  NewCodePage  (IM3Runtime i_runtime, u32 i_minNumLines)
         page->info.sequence = ++i_runtime->newCodePageSequence;
         page->info.numLines = (pageSize - sizeof (M3CodePageHeader)) / sizeof (code_t);
 
-#if d_m3RecordBacktraces
-        u32 pageSizeBt = sizeof (M3CodeMappingPage) + sizeof (M3CodeMapEntry) * page->info.numLines;
-        page->info.mapping = (M3CodeMappingPage *)m3_Def_Malloc (pageSizeBt);
+        #if d_m3RecordBacktraces
+            u32 pageSizeBt = sizeof (M3CodeMappingPage) + sizeof (M3CodeMapEntry) * page->info.numLines;
+            page->info.mapping = (M3CodeMappingPage *)m3_Def_Malloc (pageSizeBt);
 
-        if (page->info.mapping)
-        {
-            page->info.mapping->size = 0;
-            page->info.mapping->capacity = page->info.numLines;
-        }
-        else
-        {
-            m3_Def_Free (page);
-            return NULL;
-        }
-        page->info.mapping->basePC = GetPageStartPC(page);
-#endif // d_m3RecordBacktraces
+            if (page->info.mapping)
+            {
+                page->info.mapping->size = 0;
+                page->info.mapping->capacity = page->info.numLines;
+            }
+            else
+            {
+                m3_Def_Free (page);
+                return NULL;
+            }
+            page->info.mapping->basePC = GetPageStartPC(page);
+        #endif // d_m3RecordBacktraces
 
         m3log (runtime, "new page: %p; seq: %d; bytes: %d; lines: %d", GetPagePC (page), page->info.sequence, pageSize, page->info.numLines);
     }
@@ -106,11 +106,14 @@ u32  NumFreeLines  (IM3CodePage i_page)
 }
 
 
+DEBUG_TYPE WASM_DEBUG_EmitWord_impl = true;
 void  EmitWord_impl  (IM3CodePage i_page, void * i_word)
 {   
-    ESP_LOGI("WASM3", "EmitWord_impl called i_word=%p", i_word);           
-    ESP_LOGI("WASM3", "i_page->info.lineIndex+1 %d <= %d i_page->info.numLines", (i_page->info.lineIndex+1), i_page->info.numLines);
-    ESP_LOGI("WASM3", "i_page->code = %p", i_page->code);
+    if(WASM_DEBUG_EmitWord_impl){
+        ESP_LOGI("WASM3", "EmitWord_impl called i_word=%p", i_word);           
+        ESP_LOGI("WASM3", "i_page->info.lineIndex+1 %d <= %d i_page->info.numLines", (i_page->info.lineIndex+1), i_page->info.numLines);
+        ESP_LOGI("WASM3", "i_page->code = %p", &i_page->code);
+    }
 
     d_m3Assert (i_page->info.lineIndex+1 <= i_page->info.numLines);
     i_page->code [i_page->info.lineIndex++] = i_word;

@@ -502,7 +502,7 @@ void  log_emit  (IM3Compilation o, IM3Operation i_operation)
     if (i.info)
     {
         #if M3_FUNCTIONS_ENUM
-        printf ("%p: %d %s\n", GetPagePC (o->page),  i.info->idx, getOpName(i.info->idx));
+        printf ("emit op: %p %d %s\n", GetPagePC (o->page),  i.info->idx, getOpName(i.info->idx));
         #else
         printf ("%p: %s\n", GetPagePC (o->page),  i.info->name);
         #endif

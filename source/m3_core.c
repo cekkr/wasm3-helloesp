@@ -618,8 +618,8 @@ const bool WASM_READ_BACKTRACE_WASMUNDERRUN = true;
 const bool WASM_READ_IGNORE_END = false;
 
 DEBUG_TYPE WASM_DEBUG_READ_RESOLVE_POINTER = WASM_DEBUG_ALL || (WASM_DEBUG && false);
-DEBUG_TYPE WASM_DEBUG_READ_CHECKWASMUNDERRUN = WASM_DEBUG_ALL || (WASM_DEBUG && true);
-DEBUG_TYPE WASM_DEBUG_Read = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_READ_CHECKWASMUNDERRUN = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_Read = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 
 void __read_checkWasmUnderrun(mos pos, mos end){
     if(WASM_DEBUG_READ_CHECKWASMUNDERRUN){
@@ -657,9 +657,10 @@ M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_
     // Calculate offset separately
     const size_t offset = sizeof(u64);
     bytes_t check_ptr = (bytes_t)source_ptr + offset;
-    
-    if ((void*)check_ptr > (void*)i_end){
-        __read_checkWasmUnderrun(CAST_PTR check_ptr, CAST_PTR i_end);
+    cbytes_t end = MEMPOINT(cbytes_t, memory, i_end);
+
+    if ((void*)check_ptr > (void*)end){
+        __read_checkWasmUnderrun(CAST_PTR check_ptr, CAST_PTR end);
         return m3Err_wasmUnderrun;
     }
 
@@ -694,9 +695,10 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
     // Calculate offset separately
     const size_t offset = sizeof(u32);
     const bytes_t check_ptr = (bytes_t)source_ptr + offset;
-    
-    if ((void*)check_ptr > (void*)i_end){
-        __read_checkWasmUnderrun(CAST_PTR check_ptr, CAST_PTR i_end);
+    cbytes_t end = MEMPOINT(cbytes_t, memory, i_end);
+
+    if ((void*)check_ptr > (void*)end){
+        __read_checkWasmUnderrun(CAST_PTR check_ptr, CAST_PTR end);
         return m3Err_wasmUnderrun;
     }
 
@@ -733,8 +735,9 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
     
     const size_t offset = sizeof(f64);
     const bytes_t check_ptr = (bytes_t)source_ptr + offset;
+    cbytes_t end = MEMPOINT(cbytes_t, memory, i_end);
     
-    if ((void*)check_ptr > (void*)i_end){
+    if ((void*)check_ptr > (void*)end){
         __read_checkWasmUnderrun(CAST_PTR check_ptr, CAST_PTR i_end);
         return m3Err_wasmUnderrun;
     }
@@ -769,9 +772,10 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
     
     const size_t offset = sizeof(f32);
     const u8* check_ptr = (bytes_t)source_ptr + offset;
-    
-    if ((void*)check_ptr > (void*)i_end){
-        __read_checkWasmUnderrun(CAST_PTR check_ptr, CAST_PTR i_end);
+    cbytes_t end = MEMPOINT(cbytes_t, memory, i_end);
+
+    if ((void*)check_ptr > (void*)end){
+        __read_checkWasmUnderrun(CAST_PTR check_ptr, CAST_PTR end);
         return m3Err_wasmUnderrun;
     }
 
@@ -806,9 +810,10 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
     
     const size_t offset = sizeof(u8);
     const bytes_t check_ptr = (bytes_t)source_ptr + offset;
+    cbytes_t end = MEMPOINT(cbytes_t, memory, i_end);
     
-    if ((void*)check_ptr > (void*)i_end){
-        __read_checkWasmUnderrun(CAST_PTR check_ptr, CAST_PTR i_end);
+    if ((void*)check_ptr > (void*)end){
+        __read_checkWasmUnderrun(CAST_PTR check_ptr, CAST_PTR end);
         return m3Err_wasmUnderrun;
     }
     
@@ -842,10 +847,11 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
     size_t offset = 1; // why 1 and not sizeof(m3opcode_t)?
     bytes_t check_ptr = (bytes_t)source_ptr + offset;
 
-    m3opcode_t opcode;    
-    
-    if ((void*)check_ptr > (void*)i_end){
-        __read_checkWasmUnderrun(CAST_PTR check_ptr, CAST_PTR i_end);
+    m3opcode_t opcode;  
+
+    cbytes_t end = MEMPOINT(cbytes_t, memory, i_end);
+    if ((void*)check_ptr > (void*)end){
+        __read_checkWasmUnderrun(CAST_PTR check_ptr, CAST_PTR end);
         return m3Err_wasmUnderrun;
     }        
 
@@ -854,8 +860,8 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
     #if d_m3CascadedOpcodes == 0
         if (M3_UNLIKELY(opcode == c_waOp_extended)) {
             check_ptr++;
-            if ((void*)(source_ptr + offset) > (void*)i_end){
-                __read_checkWasmUnderrun(CAST_PTR (source_ptr + offset), CAST_PTR i_end);
+            if ((void*)(source_ptr + offset) > (void*)end){
+                __read_checkWasmUnderrun(CAST_PTR (source_ptr + offset), CAST_PTR end);
                 return m3Err_wasmUnderrun;
             }
 
@@ -895,11 +901,16 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
     bytes_t check_ptr = source_ptr;
     M3Result result = m3Err_none;
 
-    if(check_ptr > i_end) result = m3Err_wasmUnderrun;
+    cbytes_t end = MEMPOINT(cbytes_t, memory, i_end);
+    if(check_ptr > end) {
+        result = m3Err_wasmUnderrun;
+        ESP_LOGW("WASM3", "ReadLebUnsinged: check_ptr > end (%p > %p)", check_ptr, end);
+    }
 
-    while (check_ptr <= i_end) {
+    while (check_ptr <= end) {
         u64 byte = MEMACCESS(u64, memory, check_ptr);
-        
+        check_ptr++;      
+
         value |= ((byte & 0x7f) << shift);
         shift += 7;
 
@@ -911,10 +922,9 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
         if (shift >= i_maxNumBits) {
             result = m3Err_lebOverflow;
             break;
-        }
-        check_ptr++;
+        }                  
     }
-
+    
     MEMACCESS(u64, memory, dest_ptr) = value;
     MEMACCESS(bytes_t, memory, io_bytes) = check_ptr;
 
@@ -956,7 +966,8 @@ M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t
 
     while (check_ptr <= i_end) {
         u64 byte = MEMACCESS(u64, memory, check_ptr);
-        
+        check_ptr++;
+
         value |= ((byte & 0x7f) << shift);
         shift += 7;
 
@@ -972,8 +983,7 @@ M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t
         if (shift >= i_maxNumBits) {
             result = m3Err_lebOverflow;
             break;
-        }
-        check_ptr++;
+        }        
     }
 
     MEMACCESS(i64, memory, dest_ptr) = value;
