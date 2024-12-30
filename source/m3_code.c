@@ -106,13 +106,14 @@ u32  NumFreeLines  (IM3CodePage i_page)
 }
 
 
-DEBUG_TYPE WASM_DEBUG_EmitWord_impl = true;
+DEBUG_TYPE WASM_DEBUG_EmitWord_impl = false;
 void  EmitWord_impl  (IM3CodePage i_page, void * i_word)
 {   
     if(WASM_DEBUG_EmitWord_impl){
         ESP_LOGI("WASM3", "EmitWord_impl called i_word=%p", i_word);           
         ESP_LOGI("WASM3", "i_page->info.lineIndex+1 %d <= %d i_page->info.numLines", (i_page->info.lineIndex+1), i_page->info.numLines);
         ESP_LOGI("WASM3", "i_page->code = %p", &i_page->code);
+        waitForIt();
     }
 
     d_m3Assert (i_page->info.lineIndex+1 <= i_page->info.numLines);

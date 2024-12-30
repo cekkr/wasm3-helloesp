@@ -15,6 +15,11 @@
 //#include "m3_config.h"
 //#include "m3_config_platforms.h"
 
+#if WASM_DEBUG || DEBUG
+#undef d_m3EnableExceptionBreakpoint
+#define d_m3EnableExceptionBreakpoint 1
+#endif
+
 # if d_m3EnableExceptionBreakpoint
 
 // declared in m3_info.c

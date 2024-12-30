@@ -430,8 +430,8 @@ const void * const  cvptr_t;
 # endif
 
 
-# if defined(ASSERTS) || (defined(DEBUG) && !defined(NASSERTS))
-#   define d_m3Assert(ASS)  if (!(ASS)) { ESP_LOGI("WASM3", "Assertion failed at %s:%d : %s\n", __FILE__, __LINE__, #ASS); /*abort();*/ } 
+# if defined(ASSERTS) || (defined(DEBUG) && !defined(NASSERTS)) || WASM_DEBUG
+#   define d_m3Assert(ASS)  if (!(ASS)) { ESP_LOGI("WASM3", "Assertion failed at %s:%d : %s\n", __FILE__, __LINE__, #ASS); waitForIt(); /*abort();*/ } 
 # else
 #   define d_m3Assert(ASS)
 # endif

@@ -486,10 +486,15 @@ void  log_opcode  (IM3Compilation o, m3opcode_t i_opcode)
     if (i_opcode == c_waOp_end or i_opcode == c_waOp_else)
         depth--;
 
+    IM3OpInfo opInfo = GetOpInfo(i_opcode);
+
+    // i_opcode was 0x%02x
     #if M3_FUNCTIONS_ENUM        
-    m3log (compile, "%4d | 0x%02x  %s %s", o->numOpcodes++, i_opcode, GetOpcodeIndentionString (depth), getOpName(GetOpInfo(i_opcode)->idx));
+    m3log (compile, "compile op | %4d | 0x%02x  %s (%d) %s", 
+        o->numOpcodes++, i_opcode, GetOpcodeIndentionString (depth), opInfo->idx, getOpName(opInfo->idx));
     #else
-    m3log (compile, "%4d | 0x%02x  %s %s", o->numOpcodes++, i_opcode, GetOpcodeIndentionString (depth), GetOpInfo(i_opcode)->name);
+    m3log (compile, "compile op | %4d | 0x%02x  %s (%d) %s", 
+        o->numOpcodes++, i_opcode, GetOpcodeIndentionString (depth), opInfo->idx, opInfo->name);
     #endif
 }
 

@@ -66,7 +66,7 @@ d_m3BeginExternC
 # define d_m3BaseClearRegisters         _r0 = 0;
 
 #if M3_FUNCTIONS_ENUM
-# define d_m3BaseCstr                   -1
+# define d_m3BaseCstr                   -3
 #else
 # define d_m3BaseCstr                   ""
 #endif

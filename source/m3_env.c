@@ -417,7 +417,7 @@ void  m3_FreeRuntime  (IM3Runtime i_runtime)
     }
 }
 
-DEBUG_TYPE WASM_DEBUG_EvaluateExpression = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_EvaluateExpression = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type, bytes_t * io_bytes, cbytes_t i_end)
 {
     CALL_WATCHDOG
@@ -480,26 +480,33 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
 
         if (not result)
         {
-            if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: RunCode");
+            IM3Memory memory = &runtime.memory;
+            if(WASM_DEBUG_EvaluateExpression) {
+                ESP_LOGI("WASM3", "EvaluateExpression: RunCode (m3code: %p, stack: %p, memory: %p)", m3code, stack, memory);
+                waitForIt();
+            }
 
             # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
             m3ret_t r = RunCode (m3code, stack, &o->runtime->memory , d_m3OpDefaultArgs, d_m3BaseCstr); // NULL or &o->runtime ?
             # else
-            m3ret_t r = RunCode (m3code, stack, &o->runtime->memory , d_m3OpDefaultArgs); 
+            m3ret_t r = RunCode (m3code, stack, memory , d_m3OpDefaultArgs); 
             # endif
             
-            if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: RunCode r: %d", r);
+            if(WASM_DEBUG_EvaluateExpression) {
+                ESP_LOGI("WASM3", "EvaluateExpression: RunCode r: %p", r);
+            }
+
             if (r == 0)
             {                                                                               
                 m3log (runtime, "expression result: %s", SPrintValue (stack, i_type));
-                
+
                 if (SizeOfType (i_type) == sizeof (u32))
                 {
                     if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: going to: * (u32 *) o_expressed = * ((u32 *) stack);");
 
                     #if M3Runtime_Stack_Segmented
                     //* (u32 *) o_expressed = * ((u32 *) m3_ResolvePointer(&i_module->runtime->memory, stack));
-                    * (u32 *) m3_ResolvePointer(&i_module->runtime->memory, o_expressed) = * ((u32 *) m3_ResolvePointer(&i_module->runtime->memory, stack));
+                    * (u32 *) m3_ResolvePointer(&i_module->runtime->memory, CAST_PTR o_expressed) = * ((u32 *) m3_ResolvePointer(&i_module->runtime->memory, stack));
                     #else 
                      * (u32 *) o_expressed = * ((u32 *) stack);
                     #endif
@@ -515,6 +522,8 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
                     * (u64 *) o_expressed = * ((u64 *) stack);
                     #endif
                 }
+
+                 if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: cycle completed");
             }
         }
 
@@ -665,14 +674,16 @@ M3Result  InitGlobals  (IM3Module io_module)
         {
             for (u32 i = 0; i < io_module->numGlobals; ++i)
             {
-                M3Global * g = & io_module->globals [i];                        m3log (runtime, "initializing global: %d", i);
+                M3Global * g = & io_module->globals [i];                        
+                m3log (runtime, "initializing global: %d", i);
+
                 if(WASM_DEBUG_InitGlobals) ESP_LOGI("WASM3","InitGlobals: init global: %d", i);
                 if (g->initExpr)
                 {
                     bytes_t start = g->initExpr;
                     
                     if(WASM_DEBUG_InitGlobals) ESP_LOGI("WASM3", "InitGlobals: EvaluateExpression(i64Value: %p, type: %d, start: %p, initExpr: %p, initExprSize: %d", 
-                        &g->i64Value, g->type, &start, g->initExpr, g->initExprSize); LOG_FLUSH;
+                        &g->i64Value, g->type, &start, g->initExpr, g->initExprSize); 
                     
                     result = EvaluateExpression (io_module, & g->i64Value, g->type, & start, g->initExpr + g->initExprSize);
 
@@ -683,10 +694,10 @@ M3Result  InitGlobals  (IM3Module io_module)
                     else break;
                 }
                 else
-                {                                                               m3log (runtime, "importing global");
-
+                {                                                    
+                    m3log (runtime, "importing global");
                 }
-            }
+            }            
         }
         //          else result = ErrorModule (m3Err_mallocFailed, io_module, "could allocate globals for module: '%s", io_module->name);
     }

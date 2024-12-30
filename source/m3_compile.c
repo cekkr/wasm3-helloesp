@@ -62,13 +62,17 @@ WASM3_STATIC M3_NOINLINE M3Result  EmitOp  (IM3Compilation o, IM3Operation i_ope
     if(WASM_DEBUG_EmitOp) {
         ESP_LOGW("WASM3", "EmitOp called");
         ESP_LOGW("WASM3", "EmitOp: i_operation=%p, IsStackPolymorphic=%d", i_operation, stackIsPolymorphic);
+        waitForIt();
     }
     d_m3Assert (i_operation or stackIsPolymorphic);
 
     // it's OK for page to be null; when compile-walking the bytecode without emitting
+    if(WASM_DEBUG_EmitOp) ESP_LOGI("WASM3", "EmitOp: o->page is %p", o->page);
     if (o->page)
     {
         # if d_m3EnableOpTracing
+            if(WASM_DEBUG_EmitOp) ESP_LOGI("WASM3", "EmitOp. check if DumpStack");
+
             bool isDumpStack = (i_operation != op_DumpStack);
             if(WASM_DEBUG_EmitOp) ESP_LOGW("WASM3", "EmitOp: isDumpStack=%d", isDumpStack);
             if (isDumpStack)
@@ -87,7 +91,15 @@ WASM3_STATIC M3_NOINLINE M3Result  EmitOp  (IM3Compilation o, IM3Operation i_ope
                 EmitMappingEntry (o->page, o->lastOpcodeStart - o->module->wasmStart);
             # endif // d_m3RecordBacktraces
             EmitWord (o->page, i_operation);
+
+            if(WASM_DEBUG_EmitOp){ 
+                ESP_LOGI("WASM3", "EmitOp: EmitWord completed");
+                //backtrace(); waitForIt();
+            }
         }
+    }
+    else {
+        if(WASM_DEBUG_EmitOp) ESP_LOGI("WASM3", "EmitOp: o->page is null");
     }
 
     return result;
@@ -1268,7 +1280,7 @@ _   ((* compiler) (o, i_opcode));
 }
 #endif
 
-DEBUG_TYPE WASM_DEBUG_Compile_Return =  WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_Compile_Return =  WASM_DEBUG_ALL || (WASM_DEBUG && false);
 WASM3_STATIC_DEBUG M3Result  Compile_Return  (IM3Compilation o, m3opcode_t i_opcode)
 {
     M3Result result = m3Err_none;
@@ -1318,7 +1330,7 @@ M3Result  Compile_End  (IM3Compilation o, m3opcode_t i_opcode)
     {
         ValidateBlockEnd (o);
 
-//      if (not IsStackPolymorphic (o))
+        if (not IsStackPolymorphic (o))
         {
             if (o->function)
             {
@@ -1326,10 +1338,16 @@ _               (ReturnValues (o, & o->block, false));
             }
 
 _           (EmitOp (o, op_Return));
-        }
+        }        
     }
 
-    _catch: return result;
+    _catch: { 
+        if(result != NULL){ 
+            ESP_LOGE("WASM3", "Compile_End error: %s", result);        
+        }
+
+        return result;
+    }
 }
 
 
@@ -2137,7 +2155,7 @@ _   (SetStackPolymorphic (o));
 
 // OPTZ: currently all stack slot indices take up a full word, but
 // dual stack source operands could be packed together
-DEBUG_TYPE WASM_DEBUG_Compile_Operator = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_Compile_Operator = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 WASM3_STATIC M3Result  Compile_Operator  (IM3Compilation o, m3opcode_t i_opcode)
 {
     M3Result result;
@@ -2280,7 +2298,7 @@ _   (Compile_Operator (o, i_opcode));
     _catch: return result;
 }
 
-DEBUG_TYPE WASM_DEBUG_CompileRawFunction = WASM_DEBUG_ALL || (WASM_DEBUG && true);;
+DEBUG_TYPE WASM_DEBUG_CompileRawFunction = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result  CompileRawFunction  (IM3Module io_module,  IM3Function io_function, const void * i_function, const void * i_userdata)
 {
     if(WASM_DEBUG_CompileRawFunction) ESP_LOGI("WASM3", "CompileRawFunction called");
@@ -2638,13 +2656,18 @@ IM3OpInfo  GetOpInfo  (m3opcode_t opcode)
     return NULL;
 }
 
+DEBUG_TYPE WASM_DEBUG_CompileBlockStatements =  WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result  CompileBlockStatements  (IM3Compilation o)
 {
+    if(WASM_DEBUG_CompileBlockStatements) ESP_LOGI("WASM3", "CompileBlockStatements called");
+
     M3Result result = m3Err_none;
     bool validEnd = false;
 
     while (o->wasm < o->wasmEnd)
     {
+        if(WASM_DEBUG_CompileBlockStatements) ESP_LOGI("WASM3", "CompileBlockStatements: while %p < %p", &o->wasm, &o->wasmEnd);
+
         # if d_m3EnableOpTracing
             if (o->numEmits)
             {
@@ -2660,7 +2683,8 @@ M3Result  CompileBlockStatements  (IM3Compilation o)
         m3opcode_t opcode;
         o->lastOpcodeStart = o->wasm;
         CHECK_MEMORY_PTR(&o->runtime->memory, "CompileBlockStatements");
-_       (Read_opcode (&o->runtime->memory, & opcode, & o->wasm, o->wasmEnd));                log_opcode (o, opcode);
+_       (Read_opcode (&o->runtime->memory, & opcode, & o->wasm, o->wasmEnd));                
+        log_opcode (o, opcode);
 
         // Restrict opcodes when evaluating expressions
         if (not o->function) {
@@ -2674,14 +2698,20 @@ _       (Read_opcode (&o->runtime->memory, & opcode, & o->wasm, o->wasmEnd));   
             }
         }
 
+        if(WASM_DEBUG_CompileBlockStatements) ESP_LOGI("WASM3", "CompileBlockStatements: valid opcode");
+
         IM3OpInfo opinfo = GetOpInfo (opcode);
 
-        if (opinfo == NULL)
+        if (opinfo == NULL){
+            if(WASM_DEBUG_CompileBlockStatements) ESP_LOGW("WASM3", "CompileBlockStatements: opcode is null");
             _throw (ErrorCompile (m3Err_unknownOpcode, o, "opcode '%x' not available", opcode));
+        }
 
         if (opinfo->compiler) {
-_           ((* opinfo->compiler) (o, opcode))
+            if(WASM_DEBUG_CompileBlockStatements) ESP_LOGI("WASM3", "CompileBlockStatements: compiler available (%p)", opinfo->compiler);
+_           ((* opinfo->compiler) (o, opcode))            
         } else {
+            if(WASM_DEBUG_CompileBlockStatements) ESP_LOGI("WASM3", "CompileBlockStatements: compiler not available");
 _           (Compile_Operator (o, opcode));
         }
 
@@ -2699,9 +2729,15 @@ _           (Compile_Operator (o, opcode));
             break;
         }
     }
+
     _throwif(m3Err_wasmMalformed, !(validEnd));
 
 _catch:
+    if(result != NULL){
+        ESP_LOGE("WASM3", "CompileBlockStatements: error during compilation: %s", result);
+    }
+
+    if(WASM_DEBUG_CompileBlockStatements) ESP_LOGI("WASM3", "CompileBlockStatements: END");
     return result;
 }
 
@@ -2727,7 +2763,7 @@ _           (PushAllocatedSlot (o, type));
     _catch: return result;
 }
 
-
+DEBUG_TYPE WASM_DEBUG_CompileBlock = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result  CompileBlock  (IM3Compilation o, IM3FuncType i_blockType, m3opcode_t i_blockOpcode)
 {
                                                                                         d_m3Assert (not IsRegisterAllocated (o, 0));                        
@@ -2822,22 +2858,29 @@ _           (PopType (o, type));
 
 _   (CompileBlockStatements (o));
 
+    if(WASM_DEBUG_CompileBlock) ESP_LOGW("WASM3", "CompileBlock: ValidateBlockEnd");
 _   (ValidateBlockEnd (o));
 
+    if(WASM_DEBUG_CompileBlock) ESP_LOGW("WASM3", "CompileBlock: if o->function: %p", o->function); 
     if (o->function)    // skip for expressions
     {
-        if (not IsStackPolymorphic (o))
+        if (not IsStackPolymorphic (o)){
+            if(WASM_DEBUG_CompileBlock) ESP_LOGW("WASM3", "CompileBlock: not IsStackPolymorphic");
 _           (ResolveBlockResults (o, & o->block, /* isBranch: */ false));
+        }
 
+        if(WASM_DEBUG_CompileBlock) ESP_LOGW("WASM3", "CompileBlock: UnwindBlockStack"); 
 _       (UnwindBlockStack (o))
 
         if (not ((i_blockOpcode == c_waOp_if and numResults) or o->previousOpcode == c_waOp_else))
         {
+            if(WASM_DEBUG_CompileBlock) ESP_LOGW("WASM3", "CompileBlock: PushBlockResults"); 
             o->stackIndex = o->block.exitStackIndex;
 _           (PushBlockResults (o));
         }
     }
 
+    if(WASM_DEBUG_CompileBlock) ESP_LOGW("WASM3", "CompileBlock: PatchBranches");
     PatchBranches (o);
 
     o->block = outerScope;

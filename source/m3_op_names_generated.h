@@ -484,7 +484,9 @@ static cstr_t opNames[] __attribute__((section(".rodata"))) = {
 };
 
 // Auto-generated getter function
+static cstr_t str_unkwown = "unkwon";
 static cstr_t getOpName(uint8_t id) {
+    if(id < 0) return str_unkwown;
     return opNames[id];
 }
 #endif
