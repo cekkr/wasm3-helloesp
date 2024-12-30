@@ -623,7 +623,7 @@ DEBUG_TYPE WASM_DEBUG_Read = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 
 void __read_checkWasmUnderrun(mos pos, mos end){
     if(WASM_DEBUG_READ_CHECKWASMUNDERRUN){
-        ESP_LOGE("WASM3", "m3Err_wasmUnderrun (pos=%d, end=%d)", pos, end);
+        ESP_LOGE("WASM3", "m3Err_wasmUnderrun (pos=%x, end=%x)", pos, end);
         LOG_FLUSH;
         backtrace();
     }
@@ -892,8 +892,10 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
 
     u64 value = 0;
     u32 shift = 0;
-    const u8* check_ptr = source_ptr;
-    M3Result result = m3Err_wasmUnderrun;
+    bytes_t check_ptr = source_ptr;
+    M3Result result = m3Err_none;
+
+    if(check_ptr > i_end) result = m3Err_wasmUnderrun;
 
     while (check_ptr <= i_end) {
         u64 byte = MEMACCESS(u64, memory, check_ptr);
@@ -916,7 +918,8 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
     MEMACCESS(u64, memory, dest_ptr) = value;
     MEMACCESS(bytes_t, memory, io_bytes) = check_ptr;
 
-    if (result == m3Err_wasmUnderrun) {
+    if (result != NULL && result == m3Err_wasmUnderrun) {
+        ESP_LOGW("WASM3", "ReadLebUnsigned: underrun %p == %p", result, m3Err_wasmUnderrun);
         __read_checkWasmUnderrun(CAST_PTR (check_ptr + 1), CAST_PTR i_end);
     }
 
@@ -947,9 +950,11 @@ M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t
     i64 value = 0;
     u32 shift = 0;
     bytes_t check_ptr = source_ptr;
-    M3Result result = m3Err_wasmUnderrun;
+    M3Result result = m3Err_none;
 
-    while (check_ptr <= (const u8*)i_end) {
+    if(check_ptr > i_end) result = m3Err_wasmUnderrun;
+
+    while (check_ptr <= i_end) {
         u64 byte = MEMACCESS(u64, memory, check_ptr);
         
         value |= ((byte & 0x7f) << shift);
@@ -974,7 +979,8 @@ M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t
     MEMACCESS(i64, memory, dest_ptr) = value;
     MEMACCESS(bytes_t, memory, io_bytes) = check_ptr;
 
-    if (result == m3Err_wasmUnderrun) {
+    if (result != NULL && result == m3Err_wasmUnderrun) {
+        ESP_LOGW("WASM3", "ReadLebUnsigned: underrun %p == %p", result, m3Err_wasmUnderrun);
         __read_checkWasmUnderrun(CAST_PTR (check_ptr + 1), CAST_PTR i_end);
     }
 
