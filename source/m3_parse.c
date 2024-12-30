@@ -777,7 +777,7 @@ _       (ReadLEB_u7 (mem, & section, & pos, end));
                 }               
             }
 
-            if(forcedEnd) {
+            if(forcedEnd){
                 end = cyclePos;
                 module->wasmEnd = cyclePos;
                 break;

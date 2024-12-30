@@ -632,14 +632,14 @@ M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_
     if (!io_bytes || !o_value) 
         return m3Err_malformedData;
 
-    const u8* source_ptr;
+    const u64* source_ptr;
     u8* dest_ptr;
     
     if (memory) {
         //source_ptr = (const u8*)m3_ResolvePointer(memory, *io_bytes);
         //dest_ptr = (u8*)m3_ResolvePointer(memory, o_value);
 
-        source_ptr = MEMACCESS(const u8*, memory, io_bytes);
+        source_ptr = MEMACCESS(const u64*, memory, io_bytes);
         dest_ptr = MEMPOINT(u8*, memory, o_value);
 
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
@@ -660,9 +660,10 @@ M3Result Read_u64(IM3Memory memory, u64* o_value, bytes_t* io_bytes, cbytes_t i_
         return m3Err_wasmUnderrun;
     }
 
-    m3_memcpy(memory, dest_ptr, source_ptr, sizeof(u64));
+    MEMACCESS(u64, memory, dest_ptr) = * source_ptr;
+    MEMACCESS(bytes_t, memory, io_bytes) = check_ptr;
     M3_BSWAP_u64(*(u64*)dest_ptr);
-    *io_bytes = (bytes_t)((const u8*)*io_bytes + offset); // Apply offset to original pointer
+    
     return m3Err_none;
 }
 
@@ -670,11 +671,11 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
     if (!io_bytes || !o_value) 
         return m3Err_malformedData;
 
-    const u8* source_ptr;
-    u8* dest_ptr;
+    const u32* source_ptr;
+    bytes_t dest_ptr;
     
     if (memory) {
-        source_ptr = MEMACCESS(const u8*, memory, io_bytes);
+        source_ptr = MEMACCESS(const u32*, memory, io_bytes);
         dest_ptr = MEMPOINT(u8*, memory, o_value);
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
             return m3Err_malformedData;
@@ -687,16 +688,19 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
     
     // Calculate offset separately
     const size_t offset = sizeof(u32);
-    const u8* check_ptr = source_ptr + offset;
+    const bytes_t check_ptr = (bytes_t)source_ptr + offset;
     
     if ((void*)check_ptr > (void*)i_end){
         __read_checkWasmUnderrun(CAST_PTR check_ptr, CAST_PTR i_end);
         return m3Err_wasmUnderrun;
     }
 
-    m3_memcpy(memory, dest_ptr, source_ptr, sizeof(u32));
+    ESP_LOGW("WASM3", "source_ptr: %p, *source_ptr: %d", source_ptr, *source_ptr);
+
+    MEMACCESS(u32, memory, dest_ptr) = * source_ptr;
+    MEMACCESS(bytes_t, memory, io_bytes) = check_ptr;
     M3_BSWAP_u32(*(u32*)dest_ptr);
-    *io_bytes = (bytes_t)((const u8*)*io_bytes + offset);
+
     return m3Err_none;
 }
 
@@ -705,11 +709,11 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
     if (!io_bytes || !o_value) 
         return m3Err_malformedData;
 
-    const u8* source_ptr;
-    u8* dest_ptr;
+    const f64* source_ptr;
+    bytes_t dest_ptr;
     
     if (memory) {
-        source_ptr = MEMACCESS(const u8*, memory, io_bytes);
+        source_ptr = MEMACCESS(const f64*, memory, io_bytes);
         dest_ptr = MEMPOINT(u8*, memory, o_value);
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
             return m3Err_malformedData;
@@ -721,16 +725,17 @@ M3Result Read_f64(IM3Memory memory, f64* o_value, bytes_t* io_bytes, cbytes_t i_
     }
     
     const size_t offset = sizeof(f64);
-    const u8* check_ptr = source_ptr + offset;
+    const bytes_t check_ptr = (bytes_t)source_ptr + offset;
     
     if ((void*)check_ptr > (void*)i_end){
         __read_checkWasmUnderrun(CAST_PTR check_ptr, CAST_PTR i_end);
         return m3Err_wasmUnderrun;
     }
 
-    m3_memcpy(memory, dest_ptr, source_ptr, sizeof(f64));
+    MEMACCESS(f64, memory, dest_ptr) = * source_ptr;
+    MEMACCESS(bytes_t, memory, io_bytes) = check_ptr;
     M3_BSWAP_f64(*(f64*)dest_ptr);
-    *io_bytes = (bytes_t)((const u8*)*io_bytes + offset);
+
     return m3Err_none;
 }
 
@@ -738,12 +743,12 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
     if (!io_bytes || !o_value) 
         return m3Err_malformedData;
 
-    const u8* source_ptr;
-    u8* dest_ptr;
+    const f32* source_ptr;
+    bytes_t dest_ptr;
     
     if (memory) {
-        source_ptr = MEMACCESS(const u8*, memory, io_bytes);
-        dest_ptr = MEMPOINT(u8*, memory, o_value);
+        source_ptr = MEMACCESS(const f32*, memory, io_bytes);
+        dest_ptr = MEMPOINT(bytes_t, memory, o_value);
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
             return m3Err_malformedData;
     } else {
@@ -754,16 +759,17 @@ M3Result Read_f32(IM3Memory memory, f32* o_value, bytes_t* io_bytes, cbytes_t i_
     }
     
     const size_t offset = sizeof(f32);
-    const u8* check_ptr = source_ptr + offset;
+    const u8* check_ptr = (bytes_t)source_ptr + offset;
     
     if ((void*)check_ptr > (void*)i_end){
         __read_checkWasmUnderrun(CAST_PTR check_ptr, CAST_PTR i_end);
         return m3Err_wasmUnderrun;
     }
 
-    m3_memcpy(memory, dest_ptr, source_ptr, sizeof(f32));
+    MEMACCESS(f32, memory, dest_ptr) = * source_ptr;
+    MEMACCESS(bytes_t, memory, io_bytes) = check_ptr;
     M3_BSWAP_f32(*(f32*)dest_ptr);
-    *io_bytes = (bytes_t)((const u8*)*io_bytes + offset);
+
     return m3Err_none;
 }
 #endif
@@ -773,11 +779,11 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
         return m3Err_malformedData;
 
     const u8* source_ptr;
-    u8* dest_ptr;
+    bytes_t dest_ptr;
     
     if (memory) {
         source_ptr = MEMACCESS(const u8*, memory, io_bytes);
-        dest_ptr = MEMPOINT(u8*, memory, o_value);
+        dest_ptr = MEMPOINT(bytes_t, memory, o_value);
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
             return m3Err_malformedData;
     } else {
@@ -788,15 +794,16 @@ M3Result Read_u8(IM3Memory memory, u8* o_value, bytes_t* io_bytes, cbytes_t i_en
     }
     
     const size_t offset = sizeof(u8);
-    const u8* check_ptr = source_ptr + offset;
+    const bytes_t check_ptr = (bytes_t)source_ptr + offset;
     
     if ((void*)check_ptr > (void*)i_end){
         __read_checkWasmUnderrun(CAST_PTR check_ptr, CAST_PTR i_end);
         return m3Err_wasmUnderrun;
     }
+    
+    MEMACCESS(u8, memory, dest_ptr) = * source_ptr;
+    MEMACCESS(bytes_t, memory, io_bytes) = check_ptr;
 
-    m3_memcpy(memory, dest_ptr, source_ptr, sizeof(u8));
-    *io_bytes = (bytes_t)((const u8*)*io_bytes + offset);
     return m3Err_none;
 }
 
@@ -805,11 +812,11 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
         return m3Err_malformedData;
 
     const u8* source_ptr;
-    m3opcode_t* dest_ptr;
+    bytes_t dest_ptr;
     
     if (memory) {
-        source_ptr = MEMACCESS(const u8*, memory, io_bytes);
-        dest_ptr = MEMPOINT(m3opcode_t*, memory, o_value);
+        source_ptr = MEMACCESS(u8*, memory, io_bytes);
+        dest_ptr = MEMPOINT(bytes_t, memory, o_value);
         if (!source_ptr || source_ptr == ERROR_POINTER || !dest_ptr) 
             return m3Err_malformedData;
     } else {
@@ -819,32 +826,33 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
         dest_ptr = o_value;
     }
 
-    size_t offset = 1;
-    const u8* check_ptr = source_ptr + offset;
+    size_t offset = 1; // why 1 and not sizeof(m3opcode_t)?
+    bytes_t check_ptr = (bytes_t)source_ptr + offset;
+
+    m3opcode_t opcode;    
     
     if ((void*)check_ptr > (void*)i_end){
         __read_checkWasmUnderrun(CAST_PTR check_ptr, CAST_PTR i_end);
         return m3Err_wasmUnderrun;
-    }
+    }        
 
-    m3opcode_t opcode;
-    m3_memcpy(memory, &opcode, source_ptr, sizeof(u8));
+    opcode = * source_ptr;
 
-#if d_m3CascadedOpcodes == 0
-    if (M3_UNLIKELY(opcode == c_waOp_extended)) {
-        offset++;
-        if ((void*)(source_ptr + offset) > (void*)i_end){
-            __read_checkWasmUnderrun(CAST_PTR (source_ptr + offset), CAST_PTR i_end);
-            return m3Err_wasmUnderrun;
+    #if d_m3CascadedOpcodes == 0
+        if (M3_UNLIKELY(opcode == c_waOp_extended)) {
+            check_ptr++;
+            if ((void*)(source_ptr + offset) > (void*)i_end){
+                __read_checkWasmUnderrun(CAST_PTR (source_ptr + offset), CAST_PTR i_end);
+                return m3Err_wasmUnderrun;
+            }
+
+            u8 extended_byte = *check_ptr++;            
+            opcode = (opcode << 8) | extended_byte;
         }
-        u8 extended_byte;
-        m3_memcpy(memory, &extended_byte, source_ptr + 1, sizeof(u8));
-        opcode = (opcode << 8) | extended_byte;
-    }
-#endif
+    #endif    
 
-    *dest_ptr = opcode;
-    *io_bytes = (bytes_t)((const u8*)*io_bytes + offset);
+    MEMACCESS(m3opcode_t, memory, dest_ptr) = opcode;
+    MEMACCESS(const u8*, memory, io_bytes) = check_ptr;
     return m3Err_none;
 }
 
@@ -873,8 +881,7 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
     M3Result result = m3Err_wasmUnderrun;
 
     while (check_ptr <= i_end) {
-        u8 byte;
-        m3_memcpy(memory, &byte, check_ptr, sizeof(u8));
+        u64 byte = MEMACCESS(u64, memory, check_ptr);
         
         value |= ((byte & 0x7f) << shift);
         shift += 7;
@@ -926,8 +933,7 @@ M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t
     M3Result result = m3Err_wasmUnderrun;
 
     while (check_ptr <= (const u8*)i_end) {
-        u8 byte;
-        m3_memcpy(memory, &byte, check_ptr, sizeof(u8));
+        u64 byte = MEMACCESS(u64, memory, check_ptr);
         
         value |= ((byte & 0x7f) << shift);
         shift += 7;
@@ -977,7 +983,7 @@ M3Result ReadLEB_ptr(IM3Memory memory, m3stack_t o_value, bytes_t* io_bytes, cby
     
     if(WASM_DEBUG_ReadLEB_ptr) ESP_LOGI("WASM3", "ReadLEB_ptr at %d bits", (32*BITS_MUL));
 
-    mos value;
+    u64 value;
     M3Result result = ReadLebUnsigned(memory, &value, 32*BITS_MUL, io_bytes, i_end);
     *o_value = (mos)value;
 
