@@ -244,11 +244,12 @@ WASM3_STATIC_INLINE i16  GetStackTopIndex  (IM3Compilation o)
     bool assert2 = IsStackPolymorphic (o);
     bool assert = assert1 || assert2;
 
-    if(assert){
+    if(!assert){
         ESP_LOGW("WASM3", "GetStackTopIndex: assert failed: assert1=%d, assert2=%d", assert1, assert2);
 
-        if(assert1)
+        if(!assert1){
             ESP_LOGW("WASM3", "GetStackTopIndex: o->stackIndex=%d > o->stackFirstDynamicIndex=%d", o->stackIndex, o->stackFirstDynamicIndex);        
+        }
     }
     d_m3Assert (assert);
 
