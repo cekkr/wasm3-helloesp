@@ -104,22 +104,23 @@ d_m3BeginExternC
 #define d_m3RetSig_ATTR static inline
 #endif
 
-// Definizione unificata del tipo operazione
 #if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, OP_TRACE_TYPE opId);
     #define d_m3RetSig      d_m3RetSig_ATTR m3ret_t vectorcall
     #define d_m3Op(NAME) M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, OP_TRACE_TYPE opId)    
     
-    // __FUNCTION__ it's a char* C predefined identifier 
-    // currently unused in IM3Operation call TRACE_FUNC_NAME(__FUNCTION__)
-    //#define TRACE_FUNC_NAME(pc) , __FUNCTION__
-    #define TRACE_FUNC_NAME(func) , func
+    // Modified TRACE_FUNC_NAME to pass opId when OP_TRACE_TYPE is int
+    #if M3_FUNCTIONS_ENUM
+        #define TRACE_FUNC_NAME ,-4
+    #else
+        #define TRACE_FUNC_NAME ,__FUNCTION__
+    #endif
 #else
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
     #define d_m3RetSig      d_m3RetSig_ATTR m3ret_t vectorcall
     #define d_m3Op(NAME) M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
 
-    #define TRACE_FUNC_NAME(func)
+    #define TRACE_FUNC_NAME
 #endif
 
 #if M3Runtime_Stack_Segmented
@@ -132,7 +133,7 @@ d_m3BeginExternC
                 IM3Operation op = (void*)(* MEMPOINT(IM3Operation, _mem, _pc)); \
                 trace_enter(op, trace_context.current_stack_depth, __FUNCTION__); \
                 trace_context.current_stack_depth++; \
-                result = op(_pc + 1, d_m3OpArgs, TRACE_FUNC_NAME(opId)); \
+                result = op(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME); \
                 trace_context.current_stack_depth--; \
                 trace_exit(op, trace_context.current_stack_depth, __FUNCTION__); \
             } \
@@ -144,10 +145,10 @@ d_m3BeginExternC
             if (trace_context.current_stack_depth >= TRACE_STACK_DEPTH_MAX) { \
                 result = m3Err_trapStackOverflow; \
             } else { \
-                IM3Operation op = (void*)(* MEMPOINT(IM3Operation, _mem, _pc)); \
+                IM3Operation op = (void*)(* MEMPOINT(IM3Operation, _mem, PC)); \
                 trace_enter(op, trace_context.current_stack_depth, __FUNCTION__); \
                 trace_context.current_stack_depth++; \
-                result = op(_pc + 1, d_m3OpArgs, TRACE_FUNC_NAME(opId)); \
+                result = op(PC + 1, d_m3OpArgs TRACE_FUNC_NAME); \
                 trace_context.current_stack_depth--; \
                 trace_exit(op, trace_context.current_stack_depth, __FUNCTION__); \
             } \
@@ -156,17 +157,17 @@ d_m3BeginExternC
     #else
         #define nextOpImpl() ({\
             IM3Operation op = (MEMACCESS(IM3Operation, _mem, _pc)); \
-            op(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME(opId)); \
+            op(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME); \
         })
 
         #define jumpOpImpl(PC) ({ \
             IM3Operation op = (MEMACCESS(IM3Operation, _mem, _pc)); \
-            op(PC + 1, d_m3OpArgs TRACE_FUNC_NAME(__FUNCTION__)); \
+            op(PC + 1, d_m3OpArgs TRACE_FUNC_NAME); \
         })
     #endif
 #else
-    #define nextOpImpl() ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME(_pc))
-    #define jumpOpImpl(PC) ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs TRACE_FUNC_NAME(PC))
+    #define nextOpImpl() ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME)
+    #define jumpOpImpl(PC) ((IM3Operation)(*  PC))( PC + 1, d_m3OpArgs TRACE_FUNC_NAME)
 #endif
 
 #define AVOID_M3_MUSTTAIL 1
@@ -180,16 +181,17 @@ d_m3BeginExternC
 #define jumpOpDirect(PC)            M3_MUSTTAIL return jumpOpImpl((pc_t)(PC))
 
 #if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-     #if M3_FUNCTIONS_ENUM
-        d_m3RetSig  RunCode  (d_m3OpSig, int opId)
-    #else 
-        d_m3RetSig  RunCode  (d_m3OpSig, cstr_t i_operationName)
+    #if M3_FUNCTIONS_ENUM
+        d_m3RetSig RunCode (d_m3OpSig, OP_TRACE_TYPE opId)
+    #else
+        d_m3RetSig RunCode (d_m3OpSig, cstr_t i_operationName)
     #endif
+    {
+        nextOpDirect();
+    }
 #else
-d_m3RetSig  RunCode  (d_m3OpSig)
+    d_m3RetSig RunCode (d_m3OpSig)
+    {
+        nextOpDirect();
+    }
 #endif
-{
-    nextOpDirect();
-}
-
-d_m3EndExternC

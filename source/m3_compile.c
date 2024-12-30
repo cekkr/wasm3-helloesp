@@ -2205,7 +2205,7 @@ _           (PreserveRegisterIfOccupied (o, opInfo->type));
         }
         else if (IsStackTopMinus1InRegister (o))
         {
-            ESP_LOGI("WASM3", "Compile_Operator: IsStackTopMinus1InRegister");
+            if(WASM_DEBUG_Compile_Operator) ESP_LOGI("WASM3", "Compile_Operator: IsStackTopMinus1InRegister");
 
             op = opInfo->operations [1]; // _sr
 
@@ -2214,7 +2214,7 @@ _           (PreserveRegisterIfOccupied (o, opInfo->type));
         }
         else
         {
-            ESP_LOGI("WASM3", "Compile_Operator: else PreserveRegisterIfOccupied");
+            if(WASM_DEBUG_Compile_Operator) ESP_LOGI("WASM3", "Compile_Operator: else PreserveRegisterIfOccupied");
 
 _           (PreserveRegisterIfOccupied (o, opInfo->type));     // _ss
             op = opInfo->operations [2];

@@ -507,16 +507,16 @@ void  log_emit  (IM3Compilation o, IM3Operation i_operation)
     if (i.info)
     {
         #if M3_FUNCTIONS_ENUM
-        printf ("emit op: %p %d %s\n", GetPagePC (o->page),  i.info->idx, getOpName(i.info->idx));
+        ESP_LOGI ("WASM3", "emit op: %p %d %s\n", GetPagePC (o->page),  i.info->idx, getOpName(i.info->idx));
         #else
-        printf ("%p: %s\n", GetPagePC (o->page),  i.info->name);
+        ESP_LOGI ("WASM3", "%p: %s\n", GetPagePC (o->page),  i.info->name);
         #endif
     }
     else {        
-        printf ("not found: %p\n", i_operation);
+        ESP_LOGI ("WASM3", "not found: %p\n", i_operation);
 
         #if WASM_ENABLE_OP_TRACE
-        backtrace();
+        //backtrace();
         #endif
     }
 }
