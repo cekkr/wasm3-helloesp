@@ -257,7 +257,7 @@ ptr get_segment_pointer(IM3Memory memory, mos offset) {
 }
 
 
-DEBUG_TYPE WASM_DEBUG_m3_ResolvePointer = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_m3_ResolvePointer = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 ptr m3_ResolvePointer(M3Memory* memory, mos offset) {
     #if TRACK_MEMACCESS
     ESP_LOGI("WASM3", "m3_ResolvePointer: requested offset %d", offset);
@@ -1985,7 +1985,7 @@ M3Result m3_memset(M3Memory* memory, void* ptr, int value, size_t n) {
 
     while (bytes_remaining > 0) {
         // Resolve current pointer
-        void* real_ptr = m3_ResolvePointer(memory, curr_ptr);
+        void* real_ptr = m3_ResolvePointer(memory, CAST_PTR curr_ptr);
         if (real_ptr == ERROR_POINTER) {
             ESP_LOGE("WASM3", "m3_memset: Failed to resolve pointer: %p", curr_ptr);
             return m3Err_malformedData;

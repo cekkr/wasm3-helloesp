@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "he_defines.h"
 #include <stdint.h>
 
 #define M3_STR__(x) #x
@@ -354,16 +355,6 @@ typedef u64                     m3slot_t;
 typedef m3slot_t *              m3stack_t;
 
 //#define MEMPTR  u32
-
-static m3stack_t* pcPP(m3stack_t* pc){
-  #if TRACK_MEMACCESS
-  ESP_LOGI("WASM3","pc++ for %p", pc);
-  #endif
-
-  m3stack_t* ret = pc;
-  pc += BITS_MUL;
-  return ret;
-}
 
 typedef
 const void * const  cvptr_t;

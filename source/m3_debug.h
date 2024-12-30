@@ -29,7 +29,7 @@ static struct {
 };
 
 // Funzioni di tracciamento unificate
-NOINLINE_ATTR static void trace_enter(const void* op, int depth, const char* func_name) {
+NOINLINE_ATTR static void trace_enter(const void* op, int depth, const char* func_name) { 
     if (depth >= TRACE_STACK_DEPTH_MAX) {
         ESP_LOGE(trace_context.TAG, "Stack overflow! Max depth: %d", TRACE_STACK_DEPTH_MAX);
         return;
@@ -53,6 +53,7 @@ NOINLINE_ATTR static void trace_enter(const void* op, int depth, const char* fun
     new_entry->func_name = func_name;
     
     ESP_LOGD(trace_context.TAG, "ENTER [%d]: %s (%p)", depth, func_name ? func_name : "unknown", op);
+    waitForIt();
 }
 
 NOINLINE_ATTR static void trace_exit(const void* op, int depth, const char* func_name) {

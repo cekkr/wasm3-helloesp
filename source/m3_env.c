@@ -11,6 +11,7 @@
 #include "m3_env.h"
 #include "m3_segmented_memory.h"
 #include "wasm3.h"
+#include "wasm3_defs.h"
 
 
 #if PASSTHROUGH_HELLOESP
@@ -417,7 +418,7 @@ void  m3_FreeRuntime  (IM3Runtime i_runtime)
     }
 }
 
-DEBUG_TYPE WASM_DEBUG_EvaluateExpression = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_EvaluateExpression = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type, bytes_t * io_bytes, cbytes_t i_end)
 {
     CALL_WATCHDOG
@@ -446,7 +447,7 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
     runtime.stack = savedRuntime->stack;
     runtime.memory = savedRuntime->memory;
 
-    void* stack = runtime.stack;
+    m3stack_t stack = runtime.stack;
 
     ESP_LOGI("WASM3", "Stack pointer at: %p", stack);
 
@@ -470,7 +471,9 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
         IM3FuncType ftype = runtime.environment->retFuncTypes[i_type];
 
         if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: GetPagePC");
+
         pc_t m3code = GetPagePC (o->page);
+
         if(WASM_DEBUG_EvaluateExpression) ESP_LOGI("WASM3", "EvaluateExpression: CompileBlock");
         result = CompileBlock (o, ftype, c_waOp_block);
 
@@ -480,14 +483,14 @@ M3Result  EvaluateExpression  (IM3Module i_module, void * o_expressed, u8 i_type
 
         if (not result)
         {
-            IM3Memory memory = &runtime.memory;
+            IM3Memory memory = &o->runtime->memory; //&runtime.memory; // &o->runtime->memory
             if(WASM_DEBUG_EvaluateExpression) {
-                ESP_LOGI("WASM3", "EvaluateExpression: RunCode (m3code: %p, stack: %p, memory: %p)", m3code, stack, memory);
+                ESP_LOGI("WASM3", "EvaluateExpression: RunCode (m3code: %p, *m3code: %p, stack: %p, memory: %p)", m3code, *m3code , stack, memory);
                 waitForIt();
             }
 
             # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-            m3ret_t r = RunCode (m3code, stack, &o->runtime->memory , d_m3OpDefaultArgs, d_m3BaseCstr); // NULL or &o->runtime ?
+            m3ret_t r = RunCode (m3code, stack, memory , d_m3OpDefaultArgs, d_m3BaseCstr); // NULL or &o->runtime ?
             # else
             m3ret_t r = RunCode (m3code, stack, memory , d_m3OpDefaultArgs); 
             # endif

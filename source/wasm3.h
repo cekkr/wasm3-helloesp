@@ -59,6 +59,7 @@
 #define TRACK_MEMACCESS 0
 #define M3_FUNCTIONS_ENUM 1
 #define WASM_ENABLE_CHECK_MEMORY_PTR 0
+#define WASM_PTRS_64BITS 0
 
 #if WASM_ENABLE_OP_TRACE
     //#define d_m3EnableOpTracing 1 // problems with m3_info.c DRAM size (1048932) [solve it]
@@ -71,12 +72,10 @@
 // d_m3EnableOpTracing 1 // else of d_m3EnableOpProfiling
 
 /// Architecture
-# ifdef WASM_PTRS_64BITS
 # if WASM_PTRS_64BITS
 #   define d_m3Use32BitSlots                    0
 # else
 #   define d_m3Use32BitSlots                    1
-# endif
 # endif
 
 ///
@@ -106,8 +105,8 @@
 /// Operations index
 ///
 #include "wasm3_defs.h"
-#include "m3_op_names_generated.h"
 #include "m3_config.h"
+#include "m3_op_names_generated.h"
 
 #include "m3_debug.h"
 
@@ -457,10 +456,10 @@ typedef void* ptr;
 #define m3ApiOffsetToPtr(offset)              m3_ResolvePointer(_mem, offset)
 #define m3ApiPtrToOffset(ptr)                 get_offset_pointer(_mem, ptr)
 
-#define m3ApiReturnType(TYPE)                 TYPE* raw_return = ((TYPE*) (m3ApiOffsetToPtr((mos)(uintptr_t)pcPP(_sp))));
-#define m3ApiMultiValueReturnType(TYPE, NAME) TYPE* NAME = ((TYPE*) (m3ApiOffsetToPtr((mos)(uintptr_t)pcPP(_sp))));
-#define m3ApiGetArg(TYPE, NAME)               TYPE NAME = *((TYPE *) (m3ApiOffsetToPtr((mos)(uintptr_t)pcPP(_sp))));
-#define m3ApiGetBaseArg(TYPE, NAME)           TYPE NAME = (TYPE)(*(ptr*)(m3ApiOffsetToPtr((mos)(uintptr_t)pcPP(_sp))));
+#define m3ApiReturnType(TYPE)                 TYPE* raw_return = ((TYPE*) (m3ApiOffsetToPtr((mos)(uintptr_t)_sp++)));
+#define m3ApiMultiValueReturnType(TYPE, NAME) TYPE* NAME = ((TYPE*) (m3ApiOffsetToPtr((mos)(uintptr_t)_sp++)));
+#define m3ApiGetArg(TYPE, NAME)               TYPE NAME = *((TYPE *) (m3ApiOffsetToPtr((mos)(uintptr_t)_sp++)));
+#define m3ApiGetBaseArg(TYPE, NAME)           TYPE NAME = (TYPE)(*(ptr*)(m3ApiOffsetToPtr((mos)(uintptr_t)_sp++)));
 
 #define _m3ApiReturnType(TYPE)                 TYPE* raw_return = ((TYPE*) (_sp++));
 #define _m3ApiMultiValueReturnType(TYPE, NAME) TYPE* NAME = ((TYPE*) (_sp++));

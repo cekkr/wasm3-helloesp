@@ -46,13 +46,13 @@
 d_m3BeginExternC
 
 // Riscrive l'operazione precedente con un nuovo operatore
-#define rewrite_op(OP)              *((void**)(_pc-BITS_MUL)) = (void*)(OP)
+#define rewrite_op(OP)              *((void**)(_pc-1)) = (void*)(OP)
 
 // Salta un valore immediato nel program counter
-#define skip_immediate(TYPE)        (pcPP(&_pc))
+#define skip_immediate(TYPE)        (_pc++)
 
 // Legge un valore immediato dal program counter e lo incrementa
-#define immediate_ptr(TYPE)             (TYPE*)m3SegmentedMemAccess(_mem, pcPP(&_pc), sizeof(TYPE))
+#define immediate_ptr(TYPE)             (TYPE*)m3SegmentedMemAccess(_mem, _pc++, sizeof(TYPE))
 #define immediate(TYPE)                 *immediate_ptr(TYPE)
 
 // Accede al valore nello slot dello stack usando un offset immediato
@@ -1301,6 +1301,11 @@ d_m3Op  (ContinueLoopIf)
     }
 }
  
+////
+////
+////
+
+//todo: deprecate it
 #define MEMACCESS_SAFE(type, mem, offset) \
     ({ \
         void* ptr = m3SegmentedMemAccess(mem, offset, sizeof(type)); \
@@ -1312,6 +1317,7 @@ d_m3Op  (ContinueLoopIf)
     })
 
 DEBUG_TYPE WASM_DEBUG_Const = WASM_DEBUG_ALL || (WASM_DEBUG && true); // Const32 and Const64
+bool WASM_ConstUseComplexAssing = false;
 
 d_m3Op (Const32) {
     /* Simply Also Known As
@@ -1319,24 +1325,37 @@ d_m3Op (Const32) {
     slot (u32) = value;
     nextOp ();
     */
-    if(WASM_DEBUG_Const) ESP_LOGI("WASM3", "Const32 called");
-
-    u32 value = MEMACCESS_SAFE(u32, _mem, _pc++);
-
-    //ESP_ERROR_CHECK(heap_caps_check_integrity_all(true));
-
-    m3slot_t imm = immediate(m3slot_t);
-    m3stack_t dest_offset = _sp + imm;
-    ESP_LOGW("WASM3", "Const32: _sp = %p, dest_offset = %p, imm = %d", _sp, dest_offset, imm);
-    u32* dest = m3SegmentedMemAccess(_mem, _sp + imm, sizeof(u32));
-    
-    bool isErr = (dest == ERROR_POINTER);
-    if (WASM_DEBUG_Const || isErr) {
-        ESP_LOGW("WASM3", "Destination memory failed at sp=%u, immediate=%d, dest=%p, _pc=%p", _sp, imm, dest, _pc);
-        if(isErr) return m3Err_pointerOverflow;
+    if(WASM_DEBUG_Const){ 
+        ESP_LOGI("WASM3", "Const32 called");
+        waitForIt();
     }
-    
-    *dest = value;
+
+    u32 value = MEMACCESS(u32, _mem, _pc++);
+
+    if(WASM_ConstUseComplexAssing){
+        i32 imm = immediate(i32);    
+        m3stack_t dest_offset = _sp + imm;
+        if(WASM_DEBUG_Const) ESP_LOGW("WASM3", "Const32: _sp = %p, dest_offset = %p, imm = %d", _sp, dest_offset, imm);
+        u32* dest = m3SegmentedMemAccess(_mem, CAST_PTR dest_offset, sizeof(u32));
+        
+        bool isErr = (dest == ERROR_POINTER);
+        if (isErr != NULL) {
+            ESP_LOGW("WASM3", "Destination memory failed at sp=%u, immediate=%d, dest=%p, _pc=%p", _sp, imm, dest, _pc);
+            waitForIt();
+            if(isErr) return m3Err_pointerOverflow;
+        }
+        
+        if(WASM_DEBUG_Const){ 
+            ESP_LOGI("WASM3", "Const32: assignment to %p of value %d", dest, value);
+            waitForIt();
+        }
+
+        *dest = value;
+        if(WASM_DEBUG_Const) ESP_LOGI("WASM3", "Const32: assignment done");
+    }
+    else {
+        slot(u32) = value;
+    }
 
     nextOp();
 }
@@ -1365,29 +1384,34 @@ d_m3Op (Const64) {
     
     m3_memcpy(_mem, &value, src_ptr, sizeof(u64));     
 
-    // aka immediate(i32);
-   _pc += (M3_SIZEOF_PTR == 4) ? 2 : 1;  // Su ESP32 sempre 2 perché M3_SIZEOF_PTR == 4
+        // aka immediate(i32);
+    _pc += (M3_SIZEOF_PTR == 4) ? 2 : 1;  // Su ESP32 sempre 2 perché M3_SIZEOF_PTR == 4
 
-   // Calcola l'offset di destinazione
-   m3slot_t imm = immediate(m3slot_t);
-   m3stack_t dest_offset = _sp + imm;
-   
-   // Verifica l'accesso alla memoria di destinazione
-   void* dest = m3SegmentedMemAccess(_mem, dest_offset, sizeof(u64));
-   if (WASM_DEBUG_Const || dest == ERROR_POINTER) {
-       ESP_LOGW("WASM3", "Destination memory access at sp=%u, immediate=%d, dest=%p", _sp, imm, dest);
-       return m3Err_pointerOverflow;
-   }
+    if(WASM_ConstUseComplexAssing){
+        // Calcola l'offset di destinazione
+        m3slot_t imm = immediate(m3slot_t);
+        m3stack_t dest_offset = _sp + imm;
+        
+        // Verifica l'accesso alla memoria di destinazione
+        void* dest = m3SegmentedMemAccess(_mem, dest_offset, sizeof(u64));
+        if (WASM_DEBUG_Const || dest == ERROR_POINTER) {
+            ESP_LOGW("WASM3", "Destination memory access at sp=%u, immediate=%d, dest=%p", _sp, imm, dest);
+            return m3Err_pointerOverflow;
+        }
 
-   // Verifica allineamento su ESP32
-   if (WASM_Const64_CheckAlignment && (uintptr_t)dest & 7) {
-       ESP_LOGW("WASM3", "Unaligned 64-bit access at offset %u", dest_offset);
-   }
+        // Verifica allineamento su ESP32
+        if (WASM_Const64_CheckAlignment && (uintptr_t)dest & 7) {
+            ESP_LOGW("WASM3", "Unaligned 64-bit access at offset %u", dest_offset);
+        }
 
-   // Copia il valore usando sempre memcpy per sicurezza
-   m3_memcpy(_mem, dest, &value, sizeof(u64));
+        // Copia il valore usando sempre memcpy per sicurezza
+        m3_memcpy(_mem, dest, &value, sizeof(u64));
+    }
+    else {
+        slot(u64) = value;
+    }
 
-   nextOp();
+    nextOp();
 }
 
 d_m3Op  (Unsupported)

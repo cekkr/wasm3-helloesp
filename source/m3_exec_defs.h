@@ -8,6 +8,7 @@
 #pragma once
 
 #include "m3_core.h"
+#include "m3_op_names_generated.h"
 
 d_m3BeginExternC
 
@@ -96,8 +97,7 @@ d_m3BeginExternC
 //  #define d_m3RetSig                  static inline m3ret_t vectorcall
 //  #define d_m3Op(NAME)                M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
 
-#define d_m3RetSig_NOINLINE 1
-
+#define d_m3RetSig_NOINLINE 0
 #if d_m3RetSig_NOINLINE
 #define d_m3RetSig_ATTR static NOINLINE_ATTR
 #else 
@@ -109,13 +109,17 @@ d_m3BeginExternC
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, OP_TRACE_TYPE opId);
     #define d_m3RetSig      d_m3RetSig_ATTR m3ret_t vectorcall
     #define d_m3Op(NAME) M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, OP_TRACE_TYPE opId)    
-    #define TRACE_FUNC_NAME(pc) , __FUNCTION__
+    
+    // __FUNCTION__ it's a char* C predefined identifier 
+    // currently unused in IM3Operation call TRACE_FUNC_NAME(__FUNCTION__)
+    //#define TRACE_FUNC_NAME(pc) , __FUNCTION__
+    #define TRACE_FUNC_NAME(func) , func
 #else
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
     #define d_m3RetSig      d_m3RetSig_ATTR m3ret_t vectorcall
     #define d_m3Op(NAME) M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
 
-    #define TRACE_FUNC_NAME(pc)
+    #define TRACE_FUNC_NAME(func)
 #endif
 
 #if M3Runtime_Stack_Segmented
@@ -125,10 +129,10 @@ d_m3BeginExternC
             if (trace_context.current_stack_depth >= TRACE_STACK_DEPTH_MAX) { \
                 result = m3Err_trapStackOverflow; \
             } else { \
-                void* op = (void*)(* MEMPOINT(IM3Operation, _mem, _pc)); \
+                IM3Operation op = (void*)(* MEMPOINT(IM3Operation, _mem, _pc)); \
                 trace_enter(op, trace_context.current_stack_depth, __FUNCTION__); \
                 trace_context.current_stack_depth++; \
-                result = ((IM3Operation)op)(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME(_pc)); \
+                result = op(_pc + 1, d_m3OpArgs, TRACE_FUNC_NAME(opId)); \
                 trace_context.current_stack_depth--; \
                 trace_exit(op, trace_context.current_stack_depth, __FUNCTION__); \
             } \
@@ -140,21 +144,25 @@ d_m3BeginExternC
             if (trace_context.current_stack_depth >= TRACE_STACK_DEPTH_MAX) { \
                 result = m3Err_trapStackOverflow; \
             } else { \
-                void* op = (void*)(* MEMPOINT(IM3Operation, _mem, PC)); \
+                IM3Operation op = (void*)(* MEMPOINT(IM3Operation, _mem, _pc)); \
                 trace_enter(op, trace_context.current_stack_depth, __FUNCTION__); \
                 trace_context.current_stack_depth++; \
-                result = ((IM3Operation)op)(PC + 1, d_m3OpArgs TRACE_FUNC_NAME(PC)); \
+                result = op(_pc + 1, d_m3OpArgs, TRACE_FUNC_NAME(opId)); \
                 trace_context.current_stack_depth--; \
                 trace_exit(op, trace_context.current_stack_depth, __FUNCTION__); \
             } \
             result; \
         })
     #else
-        #define nextOpImpl() \
-            ((IM3Operation)(* MEMPOINT(IM3Operation, _mem, _pc)))(_pc + BITS_MUL, d_m3OpArgs TRACE_FUNC_NAME(_pc))
+        #define nextOpImpl() ({\
+            IM3Operation op = (MEMACCESS(IM3Operation, _mem, _pc)); \
+            op(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME(opId)); \
+        })
 
-        #define jumpOpImpl(PC) \
-            ((IM3Operation)(* MEMPOINT(IM3Operation, _mem, PC)))(PC + BITS_MUL, d_m3OpArgs TRACE_FUNC_NAME(PC))
+        #define jumpOpImpl(PC) ({ \
+            IM3Operation op = (MEMACCESS(IM3Operation, _mem, _pc)); \
+            op(PC + 1, d_m3OpArgs TRACE_FUNC_NAME(__FUNCTION__)); \
+        })
     #endif
 #else
     #define nextOpImpl() ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME(_pc))
