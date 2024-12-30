@@ -1010,7 +1010,7 @@ M3Result ReadLEB_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t
     return result;
 }
 
-DEBUG_TYPE WASM_DEBUG_ReadLEB_ptr = true;
+DEBUG_TYPE WASM_DEBUG_ReadLEB_ptr = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result ReadLEB_ptr(IM3Memory memory, m3stack_t o_value, bytes_t* io_bytes, cbytes_t i_end) {
     if (!o_value) return m3Err_malformedData;
     

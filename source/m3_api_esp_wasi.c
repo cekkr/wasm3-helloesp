@@ -617,7 +617,7 @@ _catch:
 
 #if PASSTHROUGH_HELLOESP
 
-DEBUG_TYPE WASM_DEBUG_m3_LinkEspWASI_Hello = false;
+DEBUG_TYPE WASM_DEBUG_m3_LinkEspWASI_Hello = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result m3_LinkEspWASI_Hello(IM3Module module, shell_t *shell, m3_wasi_context_t** ctx)
 {
     M3Result result = m3Err_none;

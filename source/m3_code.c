@@ -106,7 +106,7 @@ u32  NumFreeLines  (IM3CodePage i_page)
 }
 
 
-DEBUG_TYPE WASM_DEBUG_EmitWord_impl = false;
+DEBUG_TYPE WASM_DEBUG_EmitWord_impl = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 void  EmitWord_impl  (IM3CodePage i_page, void * i_word)
 {   
     if(WASM_DEBUG_EmitWord_impl){

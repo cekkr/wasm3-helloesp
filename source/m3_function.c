@@ -506,7 +506,7 @@ M3Result addFunctionToModule(IM3Module module, const char* functionName, const c
 }
 
 // Funzione helper per registrare una funzione nel modulo
-DEBUG_TYPE WASM_DEBUG_RegisterWasmFunction = false;
+DEBUG_TYPE WASM_DEBUG_RegisterWasmFunction = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry, m3_wasi_context_t* ctx) {
     M3Result result = m3Err_none;
     
@@ -560,7 +560,7 @@ M3Result RegisterWasmFunction(IM3Module module, const WasmFunctionEntry* entry, 
 }
 
 // Funzione per registrare multiple funzioni da un array
-DEBUG_TYPE WASM_DEBUG_RegisterWasmFunctions = false;
+DEBUG_TYPE WASM_DEBUG_RegisterWasmFunctions = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result RegisterWasmFunctions(IM3Module module, const WasmFunctionEntry* entries, size_t count, m3_wasi_context_t* ctx) {
     M3Result result = m3Err_none;
     

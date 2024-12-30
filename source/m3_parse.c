@@ -434,7 +434,7 @@ _                   (NormalizeType (& normalType, wasmType));
     return result;
 }
 
-DEBUG_TYPE WASM_DEBUG_PARSESECTION_DATA = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_PARSESECTION_DATA = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result  ParseSection_Data  (M3Module * io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
@@ -609,7 +609,7 @@ _       (io_module->environment->customSectionHandler(io_module, name, i_bytes, 
 }
 
 
-DEBUG_TYPE WASM_DEBUG_PARSEMODULESECTION = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_PARSEMODULESECTION = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 DEBUG_TYPE WASM_DEBUG_PARSEMODULESECTION_FUNCTION = WASM_DEBUG_ALL || (WASM_DEBUG && false); // activate backtrace on function section
 
 M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_bytes, u32 i_numBytes)
@@ -670,7 +670,7 @@ M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_
 
 #define WASM_ParseModule_EndWithExceptedSection true
 
-DEBUG_TYPE WASM_DEBUG_PARSE_MODULE = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_PARSE_MODULE = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 static const bool WASM_PARSE_MODULE_IGNORE_SECTION_ORDER = false;
 DEBUG_TYPE WASM_DEBUG_PARSE_MODULE_EXCEPTED_SECTION = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result  m3_ParseModule  (IM3Environment i_environment, IM3Module * o_module, cbytes_t i_bytes, u32 i_numBytes, IM3Runtime o_runtime)

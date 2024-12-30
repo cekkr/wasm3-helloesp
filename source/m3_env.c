@@ -621,7 +621,7 @@ M3Result ResizeMemory(IM3Runtime io_runtime, u32 i_numPages) {
 ////////////////////////////////////////////////////////////////////////
 
 // Memory initialization M3Runtime - M3Module
-DEBUG_TYPE WASM_DEBUG_INIT_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_INIT_MEMORY = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 const bool WASM_INIT_MEMORY_PREALLOC_SEGMENTS = false;
 M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .h
 {
@@ -660,7 +660,7 @@ M3Result InitMemory(IM3Runtime io_runtime, IM3Module i_module) // todo: add to .
 ///
 ///
 
-DEBUG_TYPE WASM_DEBUG_InitGlobals = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_InitGlobals = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 M3Result  InitGlobals  (IM3Module io_module)
 {
     M3Result result = m3Err_none;
@@ -1035,7 +1035,7 @@ M3ValueType  m3_GetGlobalType  (IM3Global          i_global)
 }
 
 
-DEBUG_TYPE WASM_DEBUG_VERBOSE_v_FindFunction = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_VERBOSE_v_FindFunction = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 void *  v_FindFunction  (IM3Module i_module, const char * const i_name)
 {
     // Prefer exported functions

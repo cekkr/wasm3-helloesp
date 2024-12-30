@@ -643,7 +643,7 @@ d_m3Op (CallIndirect)
     else forwardTrap(r);
 }
 
-DEBUG_TYPE WASM_DEBUG_CallRawFunction = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_CallRawFunction = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 d_m3Op (CallRawFunction)
 {
     CALL_WATCHDOG
@@ -1316,7 +1316,7 @@ d_m3Op  (ContinueLoopIf)
         *(type*)ptr; \
     })
 
-DEBUG_TYPE WASM_DEBUG_Const = WASM_DEBUG_ALL || (WASM_DEBUG && true); // Const32 and Const64
+DEBUG_TYPE WASM_DEBUG_Const = WASM_DEBUG_ALL || (WASM_DEBUG && false); // Const32 and Const64
 bool WASM_ConstUseComplexAssing = false;
 
 d_m3Op (Const32) {

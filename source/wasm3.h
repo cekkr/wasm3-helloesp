@@ -45,33 +45,34 @@
 
 #define M3CodePage_RemoveCodePageOfCapacity_FreePage 0
 
-#define WASM_DEBUG 1
+#define WASM_DEBUG 0
 #define WASM_DEBUG_ALL 0
 
 #if HELLOESP_WASM_DEBUG
-#undef WASM_DEBUG
 #define WASM_DEBUG 1
 #endif
 
-#define DEBUG_MEMORY 1
+#define DEBUG_MEMORY 0
 
 #define WASM_ENABLE_OP_TRACE 0
 #define TRACK_MEMACCESS 0
 #define M3_FUNCTIONS_ENUM 1
 #define WASM_ENABLE_CHECK_MEMORY_PTR 0
+
+#ifndef WASM_PTRS_64BITS
 #define WASM_PTRS_64BITS 0
+#endif
 
 #if WASM_ENABLE_OP_TRACE
     //#define d_m3EnableOpTracing 1 // problems with m3_info.c DRAM size (1048932) [solve it]
     #define d_m3EnableOpProfiling 1 // problems with op_DumpStack reference (anyway, the same problem occurs without it)
+    //#define d_m3EnableStrace 3 // enabling it cause problems during compiled function name retrieving
 #endif
 
-#define d_m3EnableStrace 3
-
-// #define d_m3EnableOpProfiling 1
-// d_m3EnableOpTracing 1 // else of d_m3EnableOpProfiling
-
+///
 /// Architecture
+///
+
 # if WASM_PTRS_64BITS
 #   define d_m3Use32BitSlots                    0
 # else
@@ -451,7 +452,7 @@ typedef uint32_t mos;
 
 #define CAST_PTR (mos)(uintptr_t)
 
-typedef void* ptr;
+typedef void* ptr; //todo: check it
 
 #define m3ApiOffsetToPtr(offset)              m3_ResolvePointer(_mem, offset)
 #define m3ApiPtrToOffset(ptr)                 get_offset_pointer(_mem, ptr)
