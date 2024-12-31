@@ -576,8 +576,13 @@ void  m3_PrintProfilerInfo  ()
 
         if (maxSlot->opName)
         {
-            fprintf (stderr, "%13llu  %s\n", maxSlot->hitCount, maxSlot->opName);
+            #if M3_FUNCTIONS_ENUM
+            ESP_LOGE ("WASM3", "%13llu  %s\n", maxSlot->hitCount, getOpName(maxSlot->opName));
+            maxSlot->opName = -10;
+            #else 
+            ESP_LOGE ("WASM3", "%13llu  %s\n", maxSlot->hitCount, maxSlot->opName);
             maxSlot->opName = NULL;
+            #endif
         }
     }
     while (maxSlot->hitCount);

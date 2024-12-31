@@ -103,7 +103,7 @@ d_m3BeginExternC
     #define d_m3TracePrint(fmt, ...)
 #endif
 
-#if d_m3EnableStrace >= 3
+#if d_m3EnableStrace >= 3 || WASM_TRACE_LOADSTORE
     #define d_m3TraceLoad(TYPE,offset,val)      d_m3TracePrint("load." #TYPE "  0x%x = %" PRI##TYPE, offset, val)
     #define d_m3TraceStore(TYPE,offset,val)     d_m3TracePrint("store." #TYPE " 0x%x , %" PRI##TYPE, offset, val)
 #else
@@ -863,7 +863,8 @@ d_m3Op  (Entry)
 
         #if d_m3EnableStrace >= 2
             const char* funName = m3_GetFunctionName(function);
-            const char* printFunArgs = SPrintFunctionArgList (function, _sp + function->numRetSlots);
+            m3stack_t __sp = MEMPOINT(m3stack_t, _mem, _sp);
+            const char* printFunArgs = SPrintFunctionArgList (function, __sp + function->numRetSlots);
             d_m3TracePrint("%s %s {", funName, printFunArgs);
 
             trace_rt->callDepth++;
@@ -881,7 +882,8 @@ d_m3Op  (Entry)
             if (rettype != c_m3Type_none) {
                 int size = 256;
                 char* str = malloc(size*sizeof(char));
-                SPrintArg (str, size, _sp, rettype);
+                m3stack_t __sp = MEMPOINT(m3stack_t, _mem, _sp);
+                SPrintArg (str, size, __sp, rettype);
                 d_m3TracePrint("} = %s", str);
                 free(str);
             } else {
@@ -1091,7 +1093,7 @@ d_m3Op  (DumpStack)
 #if d_m3HasFloat
     printf ("                                    fp0: %" PRIf64 "\n", _fp0);
 #endif
-    pc_t sp = _sp;
+    pc_t sp = MEMPOINT(pc_t, _mem, _sp);
 
     for (u32 i = 0; i < stackHeight; ++i)
     {
@@ -1368,6 +1370,8 @@ d_m3Op (Const32) {
         slot(u32) = value;
     }
 
+    if(WASM_DEBUG_Const) ESP_LOGI("WASM3", "Const32: assigning value %d", value);
+
     nextOp();
 }
 
@@ -1421,6 +1425,8 @@ d_m3Op (Const64) {
     else {
         slot(u64) = value;
     }
+
+    if(WASM_DEBUG_Const) ESP_LOGI("WASM3", "Const64: assigning value %d", value);
 
     nextOp();
 }
@@ -1502,7 +1508,7 @@ d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_r)                 \
         {                                               \
             u8* src8 = m3MemData(_mem) + operand;       \
             SRC_TYPE value;                             \
-            m3_memcpy(_mem, &value, src8, sizeof(value));\
+            m3_memcpy(_mem, &value, src8, sizeof(SRC_TYPE));\
             M3_BSWAP_##SRC_TYPE(value);                 \
             REG = (DEST_TYPE)value;                     \
             d_m3TraceLoad(DEST_TYPE, operand, REG);     \
@@ -1523,7 +1529,7 @@ d_m3Op(DEST_TYPE##_Load_##SRC_TYPE##_s)                 \
         {                                               \
             u8* src8 = m3MemData(_mem) + operand;       \
             SRC_TYPE value;                             \
-            m3_memcpy(_mem, &value, src8, sizeof(value));\
+            m3_memcpy(_mem, &value, src8, sizeof(SRC_TYPE));\
             M3_BSWAP_##SRC_TYPE(value);                 \
             REG = (DEST_TYPE)value;                     \
             d_m3TraceLoad(DEST_TYPE, operand, REG);     \

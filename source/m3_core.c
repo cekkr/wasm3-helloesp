@@ -618,7 +618,7 @@ const bool WASM_READ_BACKTRACE_WASMUNDERRUN = true;
 const bool WASM_READ_IGNORE_END = false;
 
 DEBUG_TYPE WASM_DEBUG_READ_RESOLVE_POINTER = WASM_DEBUG_ALL || (WASM_DEBUG && false);
-DEBUG_TYPE WASM_DEBUG_READ_CHECKWASMUNDERRUN = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_READ_CHECKWASMUNDERRUN = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 DEBUG_TYPE WASM_DEBUG_Read = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 
 void __read_checkWasmUnderrun(mos pos, mos end){
@@ -702,7 +702,7 @@ M3Result Read_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t i_
         return m3Err_wasmUnderrun;
     }
 
-    ESP_LOGW("WASM3", "source_ptr: %p, *source_ptr: %d", source_ptr, *source_ptr);
+    if(WASM_DEBUG_Read) ESP_LOGW("WASM3", "source_ptr: %p, *source_ptr: %d", source_ptr, *source_ptr);
 
     MEMACCESS(u32, memory, dest_ptr) = * source_ptr;
     MEMACCESS(bytes_t, memory, io_bytes) = check_ptr;
@@ -844,7 +844,7 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
         dest_ptr = (bytes_t)o_value;
     }
 
-    size_t offset = 1; // why 1 and not sizeof(m3opcode_t)?
+    size_t offset = 1; // u8 at time
     bytes_t check_ptr = (bytes_t)source_ptr + offset;
 
     m3opcode_t opcode;  
@@ -858,10 +858,9 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
     opcode = * source_ptr;
 
     #if d_m3CascadedOpcodes == 0
-        if (M3_UNLIKELY(opcode == c_waOp_extended)) {
-            check_ptr++;
-            if ((void*)(source_ptr + offset) > (void*)end){
-                __read_checkWasmUnderrun(CAST_PTR (source_ptr + offset), CAST_PTR end);
+        if (M3_UNLIKELY(opcode == c_waOp_extended)) {            
+            if ((void*)(check_ptr + offset) > (void*)end){
+                __read_checkWasmUnderrun(CAST_PTR (check_ptr + offset), CAST_PTR end);
                 return m3Err_wasmUnderrun;
             }
 
@@ -1013,15 +1012,17 @@ M3Result ReadLEB_u32(IM3Memory memory, u32* o_value, bytes_t* io_bytes, cbytes_t
     return result;
 }
 
-DEBUG_TYPE WASM_DEBUG_ReadLEB_ptr = WASM_DEBUG_ALL || (WASM_DEBUG && false);
+DEBUG_TYPE WASM_DEBUG_ReadLEB_ptr = WASM_DEBUG_ALL || (WASM_DEBUG && true);
 M3Result ReadLEB_ptr(IM3Memory memory, m3stack_t o_value, bytes_t* io_bytes, cbytes_t i_end) {
     if (!o_value) return m3Err_malformedData;
     
-    if(WASM_DEBUG_ReadLEB_ptr) ESP_LOGI("WASM3", "ReadLEB_ptr at %d bits", (32*BITS_MUL));
+    if(WASM_DEBUG_ReadLEB_ptr) ESP_LOGI("WASM3", "ReadLEB_ptr at %d bits (%p <= %p) end %p", (32*BITS_MUL), o_value, io_bytes, i_end);
 
     u64 value;
     M3Result result = ReadLebUnsigned(memory, &value, 32*BITS_MUL, io_bytes, i_end);
-    *o_value = (u32)value;
+    *o_value = (m3slot_t)value;
+
+    if(WASM_DEBUG_ReadLEB_ptr) ESP_LOGI("WASM3", "ReadLEB_ptr: result: %lld", value);
 
     return result;
 }

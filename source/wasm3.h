@@ -54,7 +54,8 @@
 
 #define DEBUG_MEMORY 0
 
-#define WASM_ENABLE_OP_TRACE 1 // fuck it
+#define WASM_ENABLE_OP_TRACE 1
+#define WASM_TRACE_LOADSTORE 1
 #define M3_FUNCTIONS_ENUM 1
 #define TRACK_MEMACCESS 0
 
@@ -65,9 +66,10 @@
 #endif
 
 #if WASM_ENABLE_OP_TRACE
-    #define d_m3EnableOpTracing 1 // problems with m3_info.c DRAM size (1048932) [solve it]
-    //#define d_m3EnableOpProfiling 1 // problems with op_DumpStack reference (anyway, the same problem occurs without it)
-    #define d_m3EnableStrace 3 // enabling it cause problems during compiled function name retrieving
+    //#define d_m3EnableOpTracing 1
+    //#define d_m3EnableStrace 3 // enable with d_m3EnableOpTracing
+
+    #define d_m3EnableOpProfiling 1 // problems with op_DumpStack reference (anyway, the same problem occurs without it)    
 #endif
 
 //#define d_m3EnableStrace 1

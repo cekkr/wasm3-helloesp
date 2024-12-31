@@ -1,6 +1,7 @@
 #include "m3_segmented_memory.h"
 #include "esp_log.h"
 #include "m3_pointers.h"
+#include "wasm3.h"
 #include <stdint.h>
 
 #define WASM_SEGMENTED_MEM_LAZY_ALLOC true
@@ -1902,7 +1903,7 @@ ChunkInfo get_chunk_info(M3Memory* memory, void* ptr) {
 M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
     // Early validation
     if (!dest || !src || !n) {
-        ESP_LOGE("WASM3", "m3_memcpy: NULL pointer or zero size");
+        ESP_LOGW("WASM3", "m3_memcpy: NULL pointer or zero size");
         return m3Err_malformedData;
     }
 
@@ -1913,8 +1914,8 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
     }
 
     // Check if pointers are segmented
-    bool dest_is_segmented = IsValidMemoryAccess(memory, (mos)dest, n);
-    bool src_is_segmented = IsValidMemoryAccess(memory, (mos)src, n);
+    bool dest_is_segmented = IsValidMemoryAccess(memory, CAST_PTR dest, n);
+    bool src_is_segmented = IsValidMemoryAccess(memory, CAST_PTR src, n);
 
     if(!dest_is_segmented && !src_is_segmented) {
         memcpy(dest, src, n);
@@ -1926,8 +1927,8 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
 
     while (bytes_remaining > 0) {
         // Resolve pointers if they're segmented
-        void* real_dest = dest_is_segmented ? m3_ResolvePointer(memory, (mos)curr_dest) : curr_dest;
-        void* real_src = src_is_segmented ? m3_ResolvePointer(memory, (mos)curr_src) : curr_src;
+        void* real_dest = dest_is_segmented ? m3_ResolvePointer(memory, CAST_PTR curr_dest) : curr_dest;
+        void* real_src = src_is_segmented ? m3_ResolvePointer(memory, CAST_PTR curr_src) : curr_src;
 
         if ((dest_is_segmented && real_dest == ERROR_POINTER) || 
             (src_is_segmented && real_src == ERROR_POINTER)) {
@@ -1940,12 +1941,12 @@ M3Result m3_memcpy(M3Memory* memory, void* dest, const void* src, size_t n) {
         size_t copy_size = bytes_remaining;
         
         if (dest_is_segmented) {
-            size_t dest_to_boundary = memory->segment_size - ((mos)curr_dest % memory->segment_size);
+            size_t dest_to_boundary = memory->segment_size - (CAST_PTR curr_dest % memory->segment_size);
             copy_size = MIN(copy_size, dest_to_boundary);
         }
         
         if (src_is_segmented) {
-            size_t src_to_boundary = memory->segment_size - ((mos)curr_src % memory->segment_size);
+            size_t src_to_boundary = memory->segment_size - (CAST_PTR curr_src % memory->segment_size);
             copy_size = MIN(copy_size, src_to_boundary);
         }        
 
