@@ -68,7 +68,7 @@ d_m3BeginExternC
     #else 
         d_m3RetSig  traceOp   (d_m3OpSig, cstr_t i_operationName);
     #endif
-    #define nextOp()                 M3_MUSTTAIL return traceOp (d_m3OpAllArgs, __FUNCTION__)
+    #define nextOp()                 M3_MUSTTAIL return traceOp (d_m3OpAllArgs, i_operationName)
 # else
 #   define nextOp()                 nextOpDirect()
 # endif
