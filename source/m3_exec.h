@@ -901,7 +901,7 @@ d_m3Op  (Entry)
     else newTrap (m3Err_trapStackOverflow);
 }
 
-DEBUG_TYPE WASM_DEBUG_Loop = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_Loop = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 d_m3Op  (Loop)
 {
     if(WASM_DEBUG_Loop) ESP_LOGI("WASM3", "Loop beginning");
@@ -1277,7 +1277,7 @@ d_m3Op  (BranchIfPrologue_s)
     else jumpOp (branch);
 }
 
-DEBUG_TYPE WASM_DEBUG_ContinueLoop = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_ContinueLoop = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 d_m3Op  (ContinueLoop)
 {
     if(WASM_DEBUG_ContinueLoop) ESP_LOGI("WASM3", "ContinueLoop called");
@@ -1293,7 +1293,7 @@ d_m3Op  (ContinueLoop)
 }
 
 
-DEBUG_TYPE WASM_DEBUG_ContinueLoopIf = WASM_DEBUG_ALL || (WASM_DEBUG && true);
+DEBUG_TYPE WASM_DEBUG_ContinueLoopIf = WASM_DEBUG_ALL || (WASM_DEBUG && false);
 d_m3Op  (ContinueLoopIf)
 {
     if(WASM_DEBUG_ContinueLoopIf) ESP_LOGI("WASM3", "ContinueLoopIf called");
@@ -1329,7 +1329,7 @@ d_m3Op  (ContinueLoopIf)
         *(type*)ptr; \
     })
 
-DEBUG_TYPE WASM_DEBUG_Const = WASM_DEBUG_ALL || (WASM_DEBUG && true); // Const32 and Const64
+DEBUG_TYPE WASM_DEBUG_Const = WASM_DEBUG_ALL || (WASM_DEBUG && false); // Const32 and Const64
 bool WASM_ConstUseComplexAssing = false;
 
 d_m3Op (Const32) {
@@ -1698,15 +1698,15 @@ d_m3RetSig  profileOp  (d_m3OpSig, OP_TRACE_TYPE i_operationName)
 # endif
 
 # if d_m3EnableOpTracing || d_m3EnableOpProfiling
-    d_m3RetSig traceOp(d_m3OpSig, OP_TRACE_TYPE opName){
-        # if d_m3EnableOpTracing
-            return debugOp(d_m3OpAllArgs, opName);
-        # endif
+d_m3RetSig traceOp(d_m3OpSig, OP_TRACE_TYPE opName){
+    # if d_m3EnableOpTracing
+        return debugOp(d_m3OpAllArgs, opName);
+    # endif
 
-        # if d_m3EnableOpProfiling
-            return profileOp(d_m3OpAllArgs, opName);
-        # endif
-    }
+    # if d_m3EnableOpProfiling
+        return profileOp(d_m3OpAllArgs, opName);
+    # endif
+}
 #endif
 
 d_m3EndExternC

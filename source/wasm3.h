@@ -45,7 +45,7 @@
 
 #define M3CodePage_RemoveCodePageOfCapacity_FreePage 0
 
-#define WASM_DEBUG 1
+#define WASM_DEBUG 0
 #define WASM_DEBUG_ALL 0
 
 #if HELLOESP_WASM_DEBUG
@@ -54,8 +54,8 @@
 
 #define DEBUG_MEMORY 0
 
-#define WASM_ENABLE_OP_TRACE 1
-#define WASM_TRACE_LOADSTORE 1
+#define WASM_ENABLE_OP_TRACE 0
+#define WASM_TRACE_LOADSTORE 0
 #define M3_FUNCTIONS_ENUM 1
 #define TRACK_MEMACCESS 0
 

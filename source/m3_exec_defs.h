@@ -159,18 +159,8 @@ d_m3BeginExternC
             result; \
         })
     #else
-        #define nextOpImpl() ({\
-            IM3Operation op = (MEMACCESS(IM3Operation, _mem, _pc)); \
-            ESP_LOGI("WASM3", "Call OP: %p", op); waitForIt(); \
-            M3Result result = op(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME); \
-            result; \
-        })
-
-        #define jumpOpImpl(PC) ({ \
-            IM3Operation op = (MEMACCESS(IM3Operation, _mem, _pc)); \
-            M3Result result = op(PC + 1, d_m3OpArgs TRACE_FUNC_NAME); \
-            result; \
-        })
+        #define nextOpImpl() ((MEMACCESS(IM3Operation, _mem, _pc))(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME))
+        #define jumpOpImpl(PC) ((MEMACCESS(IM3Operation, _mem, PC))(PC + 1, d_m3OpArgs TRACE_FUNC_NAME))
     #endif
 #else
     #define nextOpImpl() ((IM3Operation)(* _pc))(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME)
