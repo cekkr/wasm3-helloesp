@@ -1007,7 +1007,7 @@ d_m3Op  (SetRegister_##TYPE)            \
 d_m3Op(SetSlot_##TYPE)                 \
 {                                       \
     slot (TYPE) = (TYPE) REG;           \
-nextOp ();                           \
+    nextOp ();                           \
 }                                       \
                                         \
 d_m3Op (PreserveSetSlot_##TYPE)         \
@@ -1018,7 +1018,7 @@ d_m3Op (PreserveSetSlot_##TYPE)         \
     * preserve = * stack;               \
     * stack = (TYPE) REG;               \
                                         \
-nextOp ();                           \
+    nextOp ();                           \
 }
 
 d_m3SetRegisterSetSlot (i32, _r0)
