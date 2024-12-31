@@ -1672,20 +1672,12 @@ d_m3Store_i (i64, i64)
 #if d_m3EnableOpTracing
 d_m3RetSig  debugOp  (d_m3OpSig, OP_TRACE_TYPE i_operationName)
 {
-    char name [100];
-
     #if M3_FUNCTIONS_ENUM
-    strcpy (name, strstr (getOpName(i_operationName), "op_") + 3);
+    ESP_LOGI("WASM3", "Tracing op: %d %s", i_operationName, getOpName(i_operationName));
     #else 
-    strcpy (name, strstr (i_operationName, "op_") + 3);
+    ESP_LOGI("WASM3", "Tracing op: %d %s", i_operationName, i_operationName);
     #endif
 
-    char * bracket = strstr (name, "(");
-    if (bracket) {
-        *bracket  = 0;
-    }
-
-    puts (name);
     nextOpDirect();
 }
 # endif
