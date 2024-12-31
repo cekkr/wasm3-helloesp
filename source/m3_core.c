@@ -853,7 +853,7 @@ M3Result Read_opcode(IM3Memory memory, m3opcode_t* o_value, bytes_t* io_bytes, c
     if ((void*)check_ptr > (void*)end){
         __read_checkWasmUnderrun(CAST_PTR check_ptr, CAST_PTR end);
         return m3Err_wasmUnderrun;
-    }        
+    }
 
     opcode = * source_ptr;
 
@@ -909,7 +909,7 @@ M3Result ReadLebUnsigned(IM3Memory memory, u64* o_value, u32 i_maxNumBits, bytes
 
     while (check_ptr <= end) {
         u64 byte = MEMACCESS(u64, memory, check_ptr);
-        check_ptr++;      
+        check_ptr++;
 
         value |= ((byte & 0x7f) << shift);
         shift += 7;
@@ -962,9 +962,12 @@ M3Result ReadLebSigned(IM3Memory memory, i64* o_value, u32 i_maxNumBits, bytes_t
     bytes_t check_ptr = source_ptr;
     M3Result result = m3Err_none;
 
-    if(check_ptr > i_end) result = m3Err_wasmUnderrun;
+    cbytes_t end = MEMPOINT(cbytes_t, memory, i_end);
+    if(check_ptr > end) {
+        result = m3Err_wasmUnderrun;
+    }
 
-    while (check_ptr <= i_end) {
+    while (check_ptr <= end) {
         u64 byte = MEMACCESS(u64, memory, check_ptr);
         check_ptr++;
 

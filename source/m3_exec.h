@@ -118,7 +118,7 @@ d_m3BeginExternC
                         _mem->runtime, "memory size: %zu; access offset: %zu",      \
                         _mem->total_size, operand))
 
-#   define d_outOfBoundsMemOp(OFFSET, SIZE) newTrap (ErrorRuntime (m3Err_trapOutOfBoundsMemoryAccess,   \
+  #define d_outOfBoundsMemOp(OFFSET, SIZE) newTrap (ErrorRuntime (m3Err_trapOutOfBoundsMemoryAccess,   \
                       _mem->runtime, "memory size: %zu; access offset: %zu; size: %u",     \
                       _mem->total_size, OFFSET, SIZE))
 #else
@@ -1297,7 +1297,7 @@ d_m3Op  (ContinueLoopIf)
 
     i32 condition = (i32) _r0;
     void * loopId = immediate (void *);
-    
+
     if(WASM_DEBUG_ContinueLoopIf) ESP_LOGI("WASM3", "ContinueLoopIf: condition: %d, loopId: %p", condition, loopId);
 
     if (condition)
@@ -1326,7 +1326,7 @@ d_m3Op  (ContinueLoopIf)
         *(type*)ptr; \
     })
 
-DEBUG_TYPE WASM_DEBUG_Const = WASM_DEBUG_ALL || (WASM_DEBUG && false); // Const32 and Const64
+DEBUG_TYPE WASM_DEBUG_Const = WASM_DEBUG_ALL || (WASM_DEBUG && true); // Const32 and Const64
 bool WASM_ConstUseComplexAssing = false;
 
 d_m3Op (Const32) {
