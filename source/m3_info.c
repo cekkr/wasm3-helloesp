@@ -527,14 +527,15 @@ void  log_emit  (IM3Compilation o, IM3Operation i_operation)
 
 typedef struct M3ProfilerSlot
 {
-    cstr_t      opName;
+    OP_TRACE_TYPE      opName;
     u64         hitCount;
 }
 M3ProfilerSlot;
 
-static M3ProfilerSlot s_opProfilerCounts [d_m3ProfilerSlotMask + 1]  __attribute__((section(".rodata"))) = {};
+// you can't  __attribute__((section(".rodata"))) because you have to edit it
+static M3ProfilerSlot s_opProfilerCounts [d_m3ProfilerSlotMask + 1] = {};
 
-void  ProfileHit  (cstr_t i_operationName)
+void  ProfileHit  (OP_TRACE_TYPE i_operationName)
 {
     u64 ptr = (u64) i_operationName;
 

@@ -12,7 +12,7 @@
 
 d_m3BeginExternC
 
-void            ProfileHit              (cstr_t i_operationName);
+void            ProfileHit              (OP_TRACE_TYPE i_operationName);
 
 #if DEBUG
 

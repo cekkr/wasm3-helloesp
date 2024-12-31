@@ -109,18 +109,22 @@ d_m3BeginExternC
     #define d_m3RetSig      d_m3RetSig_ATTR m3ret_t vectorcall
     #define d_m3Op(NAME) M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, OP_TRACE_TYPE i_operationName)    
     
-    // Modified TRACE_FUNC_NAME to pass opId when OP_TRACE_TYPE is int
+
+    #define TRACE_FUNC_NAME , i_operationName
+
     #if M3_FUNCTIONS_ENUM
-        #define TRACE_FUNC_NAME , i_operationName
+        #define TRACE_NAME getOpName(i_operationName)
     #else
-        #define TRACE_FUNC_NAME ,__FUNCTION__
+        #define TRACE_NAME i_operationName
     #endif
+    
 #else
     typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig);
     #define d_m3RetSig      d_m3RetSig_ATTR m3ret_t vectorcall
     #define d_m3Op(NAME) M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig)
 
     #define TRACE_FUNC_NAME
+    #define TRACE_NAME __FUNCTION__
 #endif
 
 #if M3Runtime_Stack_Segmented
@@ -131,11 +135,11 @@ d_m3BeginExternC
                 result = m3Err_trapStackOverflow; \
             } else { \
                 IM3Operation op = (MEMACCESS(IM3Operation, _mem, _pc)); \
-                trace_enter(op, trace_context.current_stack_depth, __FUNCTION__); \
+                trace_enter(op, trace_context.current_stack_depth, TRACE_NAME); \
                 trace_context.current_stack_depth++; \
                 result = op(_pc + 1, d_m3OpArgs TRACE_FUNC_NAME); \
                 trace_context.current_stack_depth--; \
-                trace_exit(op, trace_context.current_stack_depth, __FUNCTION__); \
+                trace_exit(op, trace_context.current_stack_depth, TRACE_NAME); \
             } \
             result; \
         })
@@ -146,11 +150,11 @@ d_m3BeginExternC
                 result = m3Err_trapStackOverflow; \
             } else { \
                 IM3Operation op = (MEMACCESS(IM3Operation, _mem, PC)); \
-                trace_enter(op, trace_context.current_stack_depth, __FUNCTION__); \
+                trace_enter(op, trace_context.current_stack_depth, TRACE_NAME); \
                 trace_context.current_stack_depth++; \
                 result = op(PC + 1, d_m3OpArgs TRACE_FUNC_NAME); \
                 trace_context.current_stack_depth--; \
-                trace_exit(op, trace_context.current_stack_depth, __FUNCTION__); \
+                trace_exit(op, trace_context.current_stack_depth, TRACE_NAME); \
             } \
             result; \
         })

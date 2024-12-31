@@ -58,7 +58,8 @@
 # endif
 
 # ifndef d_m3ProfilerSlotMask
-#   define d_m3ProfilerSlotMask                 0xFFFF
+// was 0xFFFF
+#   define d_m3ProfilerSlotMask                 1024*8
 # endif
 
 # ifndef d_m3RecordBacktraces
