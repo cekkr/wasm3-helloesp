@@ -105,13 +105,13 @@ d_m3BeginExternC
 #endif
 
 #if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
-    typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, OP_TRACE_TYPE opId);
+    typedef m3ret_t (vectorcall * IM3Operation) (d_m3OpSig, OP_TRACE_TYPE i_operationName);
     #define d_m3RetSig      d_m3RetSig_ATTR m3ret_t vectorcall
-    #define d_m3Op(NAME) M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, OP_TRACE_TYPE opId)    
+    #define d_m3Op(NAME) M3_NO_UBSAN d_m3RetSig op_##NAME (d_m3OpSig, OP_TRACE_TYPE i_operationName)    
     
     // Modified TRACE_FUNC_NAME to pass opId when OP_TRACE_TYPE is int
     #if M3_FUNCTIONS_ENUM
-        #define TRACE_FUNC_NAME ,opId
+        #define TRACE_FUNC_NAME , i_operationName
     #else
         #define TRACE_FUNC_NAME ,__FUNCTION__
     #endif
@@ -185,7 +185,7 @@ d_m3BeginExternC
 
 #if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
     #if M3_FUNCTIONS_ENUM
-        d_m3RetSig RunCode (d_m3OpSig, OP_TRACE_TYPE opId)
+        d_m3RetSig RunCode (d_m3OpSig, OP_TRACE_TYPE i_operationName)
     #else
         d_m3RetSig RunCode (d_m3OpSig, cstr_t i_operationName)
     #endif

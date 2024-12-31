@@ -54,7 +54,7 @@
 
 #define DEBUG_MEMORY 0
 
-#define WASM_ENABLE_OP_TRACE 0 // fuck it
+#define WASM_ENABLE_OP_TRACE 1 // fuck it
 #define M3_FUNCTIONS_ENUM 1
 #define TRACK_MEMACCESS 0
 

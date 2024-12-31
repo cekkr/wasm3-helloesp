@@ -132,7 +132,7 @@ d_m3BeginExternC
 
 # if (d_m3EnableOpProfiling || d_m3EnableOpTracing)
 #if M3_FUNCTIONS_ENUM
-d_m3RetSig  Call  (d_m3OpSig, OP_TRACE_TYPE opId)
+d_m3RetSig  Call  (d_m3OpSig, OP_TRACE_TYPE i_operationName)
 #else
 d_m3RetSig  Call  (d_m3OpSig, cstr_t i_operationName)
 #endif
