@@ -465,7 +465,7 @@ typedef void* ptr; //todo: check it
 #define m3ApiReturnType(TYPE)                 TYPE* raw_return = ((TYPE*) (m3ApiOffsetToPtr((mos)(uintptr_t)_sp++)));
 #define m3ApiMultiValueReturnType(TYPE, NAME) TYPE* NAME = ((TYPE*) (m3ApiOffsetToPtr((mos)(uintptr_t)_sp++)));
 #define m3ApiGetArg(TYPE, NAME)               TYPE NAME = *((TYPE *) (m3ApiOffsetToPtr((mos)(uintptr_t)_sp++)));
-#define m3ApiGetBaseArg(TYPE, NAME)           TYPE NAME = (TYPE)(*(ptr*)(m3ApiOffsetToPtr((mos)(uintptr_t)_sp++)));
+#define m3ApiGetBaseArg(TYPE, NAME)           TYPE NAME = (TYPE)(*(void**)(m3ApiOffsetToPtr((mos)(uintptr_t)_sp++)));
 
 #define _m3ApiReturnType(TYPE)                 TYPE* raw_return = ((TYPE*) (_sp++));
 #define _m3ApiMultiValueReturnType(TYPE, NAME) TYPE* NAME = ((TYPE*) (_sp++));
