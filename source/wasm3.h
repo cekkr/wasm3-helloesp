@@ -478,12 +478,10 @@ typedef void* ptr; //todo: check it
 
 #define m3ApiTrap(VALUE)                      return VALUE
 
-/*#define m3ApiCheckMem(addr, len) \
-    if (M3_UNLIKELY(((uintptr_t)(addr) < (uintptr_t)_mem) || \
-        ((uintptr_t)(addr) + (len)) > ((uintptr_t)(_mem) + m3_GetMemorySize(runtime)))) { \
-        m3ApiTrap(m3Err_trapOutOfBoundsMemoryAccess); \
-    }
-*/
+// Native functions arguments access design
+#define m3_GetArgs()            uint64_t* args = (uint64_t*) m3ApiOffsetToPtr(CAST_PTR _sp++); int narg = 0
+#define m3_GetReturn(TYPE)      TYPE* raw_return = ((TYPE*) &args[narg++])
+#define m3_GetArg(TYPE, NAME)   TYPE NAME = (TYPE) args[narg++]
 
 // todo: implement it with segmentation
 #define m3ApiCheckMem(addr, len) 
